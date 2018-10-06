@@ -1,0 +1,7 @@
+{
+	"vehicle_type": "Quadcopter",
+	"vehicle_name": "A",
+	"vehicle_simulated": true,
+	"comms_simulated": true,
+	"cv_simulated": true
+}
