@@ -3,5 +3,8 @@
 	"vehicle_name": "A",
 	"vehicle_simulated": true,
 	"comms_simulated": true,
-	"cv_simulated": true
+	"cv_simulated":  {
+		"toggled_on": true,
+		"directory": "some/path/for/now/i/will/add/in/later/when/testing"	
+	}
 }
