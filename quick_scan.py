@@ -1,3 +1,4 @@
+import json, sys
 from digi.xbee.devices import XBeeDevice
 from autonomy import autonomy
 
@@ -25,21 +26,31 @@ def setup_xbee(configs):
     return xbee
 
 
+def parse_json(argv):
+    """Parses the .json file given as the first command line argument.
+    If no .json file is specified, defaults to "configs.json".
+    If the specified .json file is found, returns a dict of the contents.
+    Otherwise, raises a FileNotFoundError."""
+    try:
+        if (len(argv) == 1):
+            read_file = open("configs.json", "r")
+        else:
+            read_file =  open(argv[1], "r")
+
+        return json.load(read_file)
+
+    except FileNotFoundError:
+        raise
+
+
 def quick_scan():
+    # Parse configs file
+    configs = parse_json(sys.argv)
 
-    configs = {
-        "vehicle_type": "Quadcopter",
-        "vehicle_name": "A",
-        "vehicle_simulated": True,
-        "comms_simulated": False,
-        "cv_simulated":  {
-            "toggled_on": True,
-            "directory": "some/path/for/now/i/will/add/in/later/when/testing"
-        },
-        "os": "Mac"
-    }
-
+    # Setup xBee device
     xbee = setup_xbee(configs)
+
+    # Start autonomy thread
     autonomy(configs, xbee)
 
 

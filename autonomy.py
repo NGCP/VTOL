@@ -42,15 +42,15 @@ def xbee_callback(message):
          search_area = SearchArea(area["center"], area["rad1"], area["rad2"])
 
          start_mission = True
-         # acknowledge(address)
+         acknowledge(address)
 
       elif msg_type == "pause":
          pause_mission = True
-         # acknowledge(address)
+         acknowledge(address)
 
       elif msg_type == "stop":
          stop_mission = True
-         # acknowledge(address)
+         acknowledge(address)
 
    except KeyError as e:
       bad_msg(address, e.args[0])
