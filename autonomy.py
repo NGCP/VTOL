@@ -1,4 +1,5 @@
 import json
+from digi.xbee.devices import XBeeDevice, XBee64BitAddress, RemoteXBeeDevice
 
 # Globals, updated by xBee callback function
 start_mission = False # takeoff
@@ -7,58 +8,63 @@ stop_mission = False # return to start and land
 search_area = None # search area object, populated by callback on start
 xbee = None # xBee radio object
 
-
 # Represents a search area for quick scan aerial vehicles, each vehicle gets
 # a "slice" of area with center point, radius, and start and end angle
 class SearchArea:
-    def __init__(self, center, radius, theta0, theta1):
-        self.center = center # tuple containing coor. of center point
-        self.radius = radius # search radius from center, i.e. margin of error
-        self.theta0 = theta0 # first bounding angle
-        self.theta1 = theta1 # second bounding angle
+   def __init__(self, center, rad1, rad2):
+      self.center = center # tuple containing coor. of center point
+      self.rad1 = rad1 # first search radius from center
+      self.rad2 = rad2 # second search radius from center
+
+   def __str__(self):
+      return "SearchArea(" + \
+            str(self.center) +  ", " + \
+            str(self.rad1) + ", " + \
+            str(self.rad2) + ")"
 
 
 # Callback function for messages from GCS, parses JSON and sets globals
 def xbee_callback(message):
-    global start_mission
-    global pause_mission
-    global stop_mission
-    global search_area
+   global start_mission
+   global pause_mission
+   global stop_mission
+   global search_area
 
-    address = message.remote_device.get_64bit_addr()
-    data = message.data.decode("utf8")
-    print("Received data from %s: %s" % (address, data))
+   address = message.remote_device.get_64bit_addr()
+   msg = json.loads(message.data.decode("utf8"))
+   print("Received data from %s: %s" % (address, msg))
 
-    try:
-        msg_type = message["type"]
+   try:
+      msg_type = msg["type"]
 
-        if msg_type == "start":
-            # set search area
-            area = message["searchArea"]
-            search_area = SearchArea(area["center"], area["radius"], area["theta0"], area["theta1"])
+      if msg_type == "start":
+         area = msg["searchArea"]
+         search_area = SearchArea(area["center"], area["rad1"], area["rad2"])
 
-            start_mission = True
-            acknowledge(address)
+         start_mission = True
+         # acknowledge(address)
 
-        elif msg_type == "pause":
-            pause_mission = True
-            acknowledge(address)
+      elif msg_type == "pause":
+         pause_mission = True
+         # acknowledge(address)
 
-        elif msg_type == "stop":
-            stop_mission = True
-            acknowledge(address)
+      elif msg_type == "stop":
+         stop_mission = True
+         # acknowledge(address)
 
-    except KeyError as e:
-        bad_msg(address, e.args[0])
+   except KeyError as e:
+      bad_msg(address, e.args[0])
 
 
 # Sends message received acknowledgement to GCS
 # :param address: address of GCS
 def acknowledge(address):
-    ack = {
-        type: 'ack'
-    }
-    xbee.send_data(address, json.dumps(ack))
+   ack = {
+      "type": "ack"
+   }
+   # Instantiate a remote XBee device object to send data.
+   send_xbee = RemoteXBeeDevice(xbee, address)
+   xbee.send_data(send_xbee, json.dumps(ack))
 
 
 # Sends "bad message" to GCS if message received was poorly formatted/unreadable,
@@ -66,19 +72,21 @@ def acknowledge(address):
 # :param address: address of GCS
 # :param missing: attribute from message that caused KeyError
 def bad_msg(address, missing):
-    msg = {
-        type: 'badMessage',
-        missing: missing
-    }
-    xbee.send_data(address, json.dumps(msg))
+   msg = {
+     "type": "badMessage",
+     "missing": missing
+   }
+   # Instantiate a remote XBee device object to send data.
+   send_xbee = RemoteXBeeDevice(xbee, address)
+   xbee.send_data(send_xbee, json.dumps(msg))
 
 
 # Main autonomous flight thread
 # :param configs: dict from configs file
 # :param radio: xBee radio object
 def autonomy(configs, radio):
-    global xbee
-    xbee = radio
+   global xbee
+   xbee = radio
 
-    # Add the callback.
-    xbee.add_data_received_callback(xbee_callback)
+   # Add the callback.
+   xbee.add_data_received_callback(xbee_callback)

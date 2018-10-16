@@ -1,3 +1,6 @@
+from digi.xbee.devices import XBeeDevice
+from autonomy import autonomy
+
 # Instantiates xBee device object
 def setup_xbee(configs):
     xbee = None
@@ -8,7 +11,7 @@ def setup_xbee(configs):
         port_name = ""
 
         if os == "Mac":
-            port_name = "tty.usbserial-DA01R50T"
+            port_name = "/dev/tty.usbserial-DJ00HY2G"
         elif os == "Linux":
             port_name = "/dev/ttyUSB0"
         # TODO: figure out windows port name
@@ -20,3 +23,25 @@ def setup_xbee(configs):
         xbee.open()
 
     return xbee
+
+
+def quick_scan():
+
+    configs = {
+        "vehicle_type": "Quadcopter",
+        "vehicle_name": "A",
+        "vehicle_simulated": True,
+        "comms_simulated": False,
+        "cv_simulated":  {
+            "toggled_on": True,
+            "directory": "some/path/for/now/i/will/add/in/later/when/testing"
+        },
+        "os": "Mac"
+    }
+
+    xbee = setup_xbee(configs)
+    autonomy(configs, xbee)
+
+
+if __name__ == "__main__":
+    quick_scan()
