@@ -10,8 +10,7 @@ search_area = None # search area object, populated by callback on start
 xbee = None # xBee radio object
 
 
-# Represents a search area for quick scan aerial vehicles, each vehicle gets
-# a "slice" of area with center point, radius, and start and end angle
+# Represents a search area for quick scan aerial vehicles
 class SearchArea:
    def __init__(self, center, rad1, rad2):
       self.center = center # tuple containing coor. of center point
@@ -25,7 +24,7 @@ class SearchArea:
             str(self.rad2) + ")"
 
 
-# Callback function for messages from GCS, parses JSON and sets globals
+# Callback function for messages from GCS, parses JSON message and sets globals
 def xbee_callback(message):
    global start_mission
    global pause_mission
@@ -40,11 +39,10 @@ def xbee_callback(message):
       msg_type = msg["type"]
 
       if msg_type == "start":
-         area = msg["searchArea"]
-         search_area = SearchArea(area["center"], area["rad1"], area["rad2"])
-
          start_mission = True
          acknowledge(address, msg_type)
+         area = msg["searchArea"]
+         search_area = SearchArea(area["center"], area["rad1"], area["rad2"])
 
       elif msg_type == "pause":
          pause_mission = True
