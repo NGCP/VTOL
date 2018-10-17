@@ -2,6 +2,7 @@ import json, sys
 from digi.xbee.devices import XBeeDevice
 from autonomy import autonomy
 
+
 # Instantiates xBee device object
 def setup_xbee(configs):
     xbee = None
@@ -12,7 +13,7 @@ def setup_xbee(configs):
         port_name = ""
 
         if os == "Mac":
-            port_name = "/dev/tty.usbserial-DJ00HY2G"
+            port_name = configs["xbee_port_name"]
         elif os == "Linux":
             port_name = "/dev/ttyUSB0"
         # TODO: figure out windows port name

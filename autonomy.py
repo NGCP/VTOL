@@ -1,12 +1,14 @@
 import json
 from digi.xbee.devices import XBeeDevice, XBee64BitAddress, RemoteXBeeDevice
 
+
 # Globals, updated by xBee callback function
 start_mission = False # takeoff
 pause_mission = False # vehicle will hover
 stop_mission = False # return to start and land
 search_area = None # search area object, populated by callback on start
 xbee = None # xBee radio object
+
 
 # Represents a search area for quick scan aerial vehicles, each vehicle gets
 # a "slice" of area with center point, radius, and start and end angle
@@ -42,15 +44,19 @@ def xbee_callback(message):
          search_area = SearchArea(area["center"], area["rad1"], area["rad2"])
 
          start_mission = True
-         acknowledge(address)
+         acknowledge(address, msg_type)
 
       elif msg_type == "pause":
          pause_mission = True
-         acknowledge(address)
+         acknowledge(address, msg_type)
+
+      elif msg_type == "resume":
+         pause_mission = False
+         acknowledge(address, msg_type)
 
       elif msg_type == "stop":
          stop_mission = True
-         acknowledge(address)
+         acknowledge(address, msg_type)
 
    except KeyError as e:
       bad_msg(address, e.args[0])
@@ -58,9 +64,10 @@ def xbee_callback(message):
 
 # Sends message received acknowledgement to GCS
 # :param address: address of GCS
-def acknowledge(address):
+def acknowledge(address, received_type):
    ack = {
-      "type": "ack"
+      "type": "ack",
+      "received": received_type
    }
    # Instantiate a remote XBee device object to send data.
    send_xbee = RemoteXBeeDevice(xbee, address)

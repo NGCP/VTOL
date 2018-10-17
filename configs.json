@@ -7,5 +7,6 @@
 		"toggled_on": true,
 		"directory": "some/path/for/now/i/will/add/in/later/when/testing"	
 	},
-	"os": "Mac"
+	"os": "Mac",
+	"xbee_port_name": "/dev/tty.usbserial-DJ00HY2G"
 }
