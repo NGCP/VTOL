@@ -1,0 +1,34 @@
+from digi.xbee.devices import XBeeDevice
+from digi.xbee.devices import RemoteXBeeDevice
+from digi.xbee.models.status import NetworkDiscoveryStatus
+from digi.xbee.models.address import XBee64BitAddress
+import time
+import serial
+
+BAUD_RATE = 57600
+PORT = "/dev/tty.usbserial-DA01R50T"
+DATA_TO_SEND = "Hello World!"
+
+
+def main():
+    device = XBeeDevice(PORT, BAUD_RATE)
+    try:
+        device.open()
+
+        xbee_network = device.get_network()
+        remote_device = RemoteXBeeDevice(device, XBee64BitAddress.from_hex_string("0013A20040F8064D"))
+        if remote_device is None:
+            print("Invalid MAC Address")
+            exit(1)
+
+        print("Sending data to %s >> %s..." % (remote_device.get_64bit_addr(), DATA_TO_SEND))
+        device.send_data(remote_device, DATA_TO_SEND)
+        print("Success")
+
+    finally:
+        if device is not None and device.is_open():
+            device.close()
+
+
+if __name__ == '__main__':
+    main()
