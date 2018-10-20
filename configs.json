@@ -8,5 +8,6 @@
 		"directory": "some/path/for/now/i/will/add/in/later/when/testing"	
 	},
 	"os": "Mac",
-	"xbee_port_name": "/dev/tty.usbserial-DJ00HY2G"
+	"xbee_port_name": "/dev/tty.usbserial-DJ00HY2G",
+	"mission_control_MAC": "0013A200409BD79C"
 }
