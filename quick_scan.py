@@ -1,4 +1,4 @@
-import json, sys, subprocess
+import json, sys, subprocess, time
 from digi.xbee.devices import XBeeDevice
 from autonomy import autonomy
 
@@ -14,12 +14,20 @@ def setup_xbee(configs):
 
         if os == "Mac":
             # System call to get port name of connected XBee radio
-            port_name = subprocess.check_output("ls /dev/tty.usbserial-*").strip()
+            port_name = subprocess.run(["ls", "/dev/"], stdout=subprocess.PIPE, encoding="utf-8").stdout
+            try:
+                i = port_name.index("tty.usbserial-") # index in dev directory of port name
+                port_name = "/dev/" + port_name[i: i + 22]
+            except ValueError:
+                print("Connect the XBee radio!")
+                return
         elif os == "Linux":
             port_name = "/dev/ttyUSB0"
         # TODO: figure out windows port name
         elif os == "Windows":
             port_name = "COMS1"
+
+        print(port_name)
 
         # Instantiate XBee device object.
         xbee = XBeeDevice(port_name, 57600)
@@ -51,6 +59,9 @@ def quick_scan():
 
     # Setup XBee device
     xbee = setup_xbee(configs)
+    while xbee is None:
+        time.sleep(5)
+        xbee = setup_xbee(configs)
 
     # Start autonomy thread
     autonomy(configs, xbee)
