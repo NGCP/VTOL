@@ -166,6 +166,7 @@ def setup_update_thread(configs):
     if configs["coms_simulated"] == "false":
         update_thread = UpdateThread(stop_flag, configs)
         update_thread.start()
+        
     else:
         print("This is a simulated test. Mission control updates are not being sent.")
         return -1
@@ -183,7 +184,7 @@ def autonomy(configs, radio):
     global xbee
     xbee = radio
 
-    setup_update_thread(configs)
-
     # Add the callback.
     xbee.add_data_received_callback(xbee_callback)
+
+    setup_update_thread(configs)
