@@ -1,13 +1,20 @@
 from digi.xbee.devices import XBeeDevice
-from sys import platform     
+from sys import platform
+import subprocess
 
 def main():
     device  = None
     port_name = ""
 
     if platform == "darwin":
-        # TODO: figure out mac port name
-        port_name = "/dev/tty.usbserial-DA01QW1R"
+        # System call to get port name on macOS
+        port_name = subprocess.run(["ls", "/dev/"], stdout=subprocess.PIPE, encoding="utf-8").stdout
+        try:
+            i = port_name.index("tty.usbserial-")  # index in dev directory of port name
+            port_name = "/dev/" + port_name[i: i + 22]
+        except ValueError:
+            print("Connect the XBee radio!")
+            return
     elif platform == "linux" or platform == "linux2":
         port_name = "/dev/ttyUSB0"
     elif platform == "win32":
