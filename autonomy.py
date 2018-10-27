@@ -9,6 +9,74 @@ search_area = None  # search area object, populated by callback on start
 xbee = None  # XBee radio object
 
 
+vehicle_position = None
+heading = None
+error_message = None
+vehicle_status = "ready"    # Default status
+
+
+class UpdateThread(Thread):
+    """
+    Generates and sends an update in JSON format to Mission Control
+    """
+    def __init__(self, event, configs):
+        """
+        Constructs UpdateThread object with the threading.Thread base class constructor
+
+        :param event: threading.Event object that terminates thread when internal flag is set()
+        :param configs: dict from configs file
+        """
+        Thread.__init__(self)
+        self.stopped = event
+        self.configs = configs
+
+
+    def run(self):
+        """
+        Instantiates remote XBee device object to transmit updates every 0.5 seconds.
+        Sends update while Event object's internal flag is defaulted to false.
+        """
+        remote_device = RemoteXBeeDevice(xbee,
+            XBee64BitAddress.from_hex_string(configs["mission_control_MAC"]))
+        update_json = ""
+
+        while not self.stopped.wait(0.5):
+            update_json = self.generate_update()
+            xbee.send_data(remote_device,update_json)
+
+
+    def generate_update(self):
+        """
+        Generate update based on global variables and configs dict.
+        vehicle_status, vehicle_position, heading, error_message assumed to be global variables.
+
+        :return: json update string
+        """
+        update_parameters = {"type": "update", "vehicleType": self.configs["vehicle_type"],
+                             "status": vehicle_status}
+
+        # TODO: implement battery as parameter
+
+        # Remove if vehicle_position is calculated before this method is called
+        if vehicle_position:
+            update_parameters["lat"] = vehicle_position[0]
+            update_parameters["lon"] = vehicle_position[1]
+
+        if heading:
+            update_parameters["heading"] = heading
+
+        if error_message:
+            update_parameters["errorMessage"] = error_message
+
+        update_json = json.dumps(update_parameters)
+
+        return update_json
+
+
+    def send_update(self, remote_device, update_json):
+        xbee.send_data(remote_device, update_json)
+
+
 # Represents a search area for quick scan aerial vehicles
 class SearchArea:
     def __init__(self, center, rad1, rad2):
@@ -85,12 +153,37 @@ def bad_msg(address, missing):
     xbee.send_data(send_xbee, json.dumps(msg))
 
 
+def setup_update_thread(configs):
+    """
+    Instantiates an Event object as stop condition for thread and an UpdateThread object
+    Starts Mission Control update thread.
+
+    :param configs: dict from configs file
+    :return: -1 if simulated test. None otherwise.
+    """
+    stop_flag = Event()
+
+    if configs["coms_simulated"] == "false":
+        update_thread = UpdateThread(stop_flag, configs)
+        update_thread.start()
+    else:
+        print("This is a simulated test. Mission control updates are not being sent.")
+        return -1
+
+
+# In case thread needs to be terminated for testing
+def stop_update_thread(stop_flag):
+    stop_flag.set()
+
+
 # Main autonomous flight thread
 # :param configs: dict from configs file
 # :param radio: XBee radio object
 def autonomy(configs, radio):
     global xbee
     xbee = radio
+
+    setup_update_thread(configs)
 
     # Add the callback.
     xbee.add_data_received_callback(xbee_callback)
