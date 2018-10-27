@@ -27,8 +27,6 @@ def setup_xbee(configs):
         elif os == "Windows":
             port_name = "COMS1"
 
-        print(port_name)
-
         # Instantiate XBee device object.
         xbee = XBeeDevice(port_name, 57600)
         xbee.open()
