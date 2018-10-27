@@ -42,7 +42,7 @@ class UpdateThread(Thread):
 
         while not self.stopped.wait(0.5):
             update_json = self.generate_update()
-            xbee.send_data(remote_device,update_json)
+            xbee.send_data(remote_device, update_json)
 
 
     def generate_update(self):
@@ -72,9 +72,6 @@ class UpdateThread(Thread):
 
         return update_json
 
-
-    def send_update(self, remote_device, update_json):
-        xbee.send_data(remote_device, update_json)
 
 
 # Represents a search area for quick scan aerial vehicles
@@ -166,7 +163,7 @@ def setup_update_thread(configs):
     if configs["coms_simulated"] == "false":
         update_thread = UpdateThread(stop_flag, configs)
         update_thread.start()
-        
+
     else:
         print("This is a simulated test. Mission control updates are not being sent.")
         return -1
