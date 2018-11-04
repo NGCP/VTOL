@@ -14,6 +14,9 @@ def detailed_search():
     # Start autonomy thread
     detailed_search_autonomy(configs, xbee)
 
+    # Initialize global queue for POIs
+    global POI_queue
+
 
 if __name__ == "__main__":
     detailed_search()
