@@ -2,7 +2,6 @@ from digi.xbee.devices import XBeeDevice
 from sys import platform     
 
 def main():
-    device  = None
     port_name = ""
 
     if platform == "darwin":
