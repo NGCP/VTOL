@@ -7,6 +7,7 @@ import serial
 from sys import platform
 
 DATA_TO_SEND = "Hello World!"
+MAC_ADDRESS = "0013A20040F8064D"
 
 def main():
     port_name = ""
@@ -26,7 +27,7 @@ def main():
         xbee_network = device.get_network()
 
         #Insert the MAC Address of desired radio here
-        remote_device = RemoteXBeeDevice(device, XBee64BitAddress.from_hex_string("0013A20040F8064D"))
+        remote_device = RemoteXBeeDevice(device, XBee64BitAddress.from_hex_string(MAC_ADDRESS)
 
         if remote_device is None:
             print("Invalid MAC Address")
