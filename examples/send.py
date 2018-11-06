@@ -4,6 +4,7 @@ from digi.xbee.models.status import NetworkDiscoveryStatus
 from digi.xbee.models.address import XBee64BitAddress
 import time
 import serial
+from quick_scan import mac_xbee_port_name
 from sys import platform
 
 DATA_TO_SEND = "Hello World!"
@@ -12,8 +13,7 @@ def main():
     port_name = ""
 
     if platform == "darwin":
-        #TODO: figure out mac port name
-        port_name = "/dev/tty.usbserial-DA01QW1R"
+        port_name = mac_xbee_port_name()
     elif platform == "linux" or platform == "linux2":
         port_name= "/dev/ttyUSB0"
     elif platform == "win32":

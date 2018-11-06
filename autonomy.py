@@ -1,5 +1,5 @@
 import json
-from digi.xbee.devices import XBeeDevice, XBee64BitAddress, RemoteXBeeDevice
+from digi.xbee.devices import RemoteXBeeDevice
 
 
 # Globals, updated by xBee callback function
@@ -7,7 +7,7 @@ start_mission = False # takeoff
 pause_mission = False # vehicle will hover
 stop_mission = False # return to start and land
 search_area = None # search area object, populated by callback on start
-xbee = None # xBee radio object
+xbee = None # XBee radio object
 
 
 # Represents a search area for quick scan aerial vehicles
@@ -88,7 +88,7 @@ def bad_msg(address, missing):
 
 # Main autonomous flight thread
 # :param configs: dict from configs file
-# :param radio: xBee radio object
+# :param radio: XBee radio object
 def autonomy(configs, radio):
    global xbee
    xbee = radio

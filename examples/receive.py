@@ -1,13 +1,14 @@
 from digi.xbee.devices import XBeeDevice
-from sys import platform     
+from sys import platform
+# from .. import quick_scan
+from quick_scan import mac_xbee_port_name
 
 def main():
     device  = None
     port_name = ""
 
     if platform == "darwin":
-        # TODO: figure out mac port name
-        port_name = "/dev/tty.usbserial-DA01QW1R"
+        port_name = mac_xbee_port_name()
     elif platform == "linux" or platform == "linux2":
         port_name = "/dev/ttyUSB0"
     elif platform == "win32":
