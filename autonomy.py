@@ -12,19 +12,41 @@ xbee = None  # XBee radio object
 # Represents a search area for quick scan aerial vehicles
 class SearchArea:
     def __init__(self, center, rad1, rad2):
-        self.center = center  # tuple containing coor. of center point
-        self.rad1 = rad1  # first search radius from center
-        self.rad2 = rad2  # second search radius from center
+        self.center = center # tuple containing coor. of center point
+        self.rad1 = rad1 # first search radius from center
+        self.rad2 = rad2 # second search radius from center
 
     def __str__(self):
         return "SearchArea(" + \
-               str(self.center) + ", " + \
-               str(self.rad1) + ", " + \
-               str(self.rad2) + ")"
+            str(self.center) +  ", " + \
+            str(self.rad1) + ", " + \
+            str(self.rad2) + ")"
+            
+# Instantiates xBee device object
+def setup_xbee(configs):
+    xbee = None
 
+    # Only set-up xBee radio if not simulated
+    if configs["comms_simulated"] == False:
+        os = configs["os"]
+        port_name = ""
+
+        if os == "Mac":
+            port_name = configs["xbee_port_name"]
+        elif os == "Linux":
+            port_name = "/dev/ttyUSB0"
+        # TODO: figure out windows port name
+        elif os == "Windows":
+            port_name = "COMS1"
+
+        # Instantiate XBee device object.
+        xbee = XBeeDevice(port_name, 57600)
+        xbee.open()
+
+    return xbee
 
 # Callback function for messages from GCS, parses JSON message and sets globals
-def xbee_callback(message):
+def quick_scan_callback(message):
     global start_mission
     global pause_mission
     global stop_mission
@@ -58,6 +80,10 @@ def xbee_callback(message):
     except KeyError as e:
         bad_msg(address, e.args[0])
 
+def detailed_search_callback(message):
+    #todo implement detailed_search_callback here
+    return
+
 
 # Sends message received acknowledgement to GCS
 # :param address: address of GCS
@@ -87,10 +113,17 @@ def bad_msg(address, missing):
 
 # Main autonomous flight thread
 # :param configs: dict from configs file
-# :param radio: XBee radio object
-def autonomy(configs, radio):
+# :param radio: xBee radio object
+def quick_scan_autonomy(configs, radio):
     global xbee
     xbee = radio
 
     # Add the callback.
-    xbee.add_data_received_callback(xbee_callback)
+    xbee.add_data_received_callback(quick_scan_callback)
+
+def detailed_search_autonomy(configs, radio):
+    global xbee
+    xbee = radio
+
+    # Add the callback.
+    xbee.add_data_received_callback(detailed_search_callback)

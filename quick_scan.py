@@ -63,6 +63,8 @@ def parse_configs(argv):
 
     except FileNotFoundError:
         raise
+from autonomy import quick_scan_autonomy, setup_xbee
+from utilities import parse_json
 
 
 def quick_scan():
@@ -76,7 +78,7 @@ def quick_scan():
         xbee = None
 
     # Start autonomy thread
-    autonomy(configs, xbee)
+    quick_scan_autonomy(configs, xbee)
 
 
 if __name__ == "__main__":
