@@ -1,6 +1,5 @@
 from digi.xbee.devices import XBeeDevice
 from sys import platform
-# from .. import quick_scan
 from quick_scan import mac_xbee_port_name
 
 def main():
