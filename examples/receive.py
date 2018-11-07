@@ -2,8 +2,9 @@ from digi.xbee.devices import XBeeDevice
 from sys import platform
 from quick_scan import mac_xbee_port_name
 
+
 def main():
-    device  = None
+    device = None
     port_name = ""
 
     if platform == "darwin":
@@ -22,11 +23,12 @@ def main():
         while True:
             xbee_message = device.read_data()
             if xbee_message is not None:
-                print("Received '%s' from %s" % 
-                        (xbee_message.data.decode(), xbee_message.remote_device.get_64bit_addr()))
+                print("Received '%s' from %s" %
+                      (xbee_message.data.decode(), xbee_message.remote_device.get_64bit_addr()))
     finally:
         if device is not None and device.is_open():
             device.close()
+
 
 if __name__ == '__main__':
     main()

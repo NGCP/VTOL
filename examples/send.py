@@ -9,13 +9,14 @@ from sys import platform
 
 DATA_TO_SEND = "Hello World!"
 
+
 def main():
     port_name = ""
 
     if platform == "darwin":
         port_name = mac_xbee_port_name()
     elif platform == "linux" or platform == "linux2":
-        port_name= "/dev/ttyUSB0"
+        port_name = "/dev/ttyUSB0"
     elif platform == "win32":
         port_name = "COMS1"
 
@@ -25,7 +26,7 @@ def main():
         device.open()
         xbee_network = device.get_network()
 
-        #Insert the MAC Address of desired radio here
+        # Insert the MAC Address of desired radio here
         remote_device = RemoteXBeeDevice(device, XBee64BitAddress.from_hex_string("0013A20040F8064D"))
 
         if remote_device is None:

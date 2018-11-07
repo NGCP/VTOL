@@ -53,7 +53,7 @@ def parse_json(argv):
         if (len(argv) == 1):
             read_file = open("configs.json", "r")
         else:
-            read_file =  open(argv[1], "r")
+            read_file = open(argv[1], "r")
 
         return json.load(read_file)
 
