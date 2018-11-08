@@ -1,13 +1,11 @@
 {
-	"vehicle_type": "Quadcopter",
-	"vehicle_name": "A",
-	"vehicle_simulated": true,
-	"comms_simulated": false,
-	"cv_simulated":  {
-		"toggled_on": true,
-		"directory": "some/path/for/now/i/will/add/in/later/when/testing"	
-	},
-	"os": "Mac",
-	"xbee_port_name": "/dev/tty.usbserial-DJ00HY2G",
-	"mission_control_MAC": "0013A200409BD79C"
+  "vehicle_type": "Quadcopter",
+  "vehicle_name": "A",
+  "vehicle_simulated": true,
+  "comms_simulated": false,
+  "cv_simulated": {
+    "toggled_on": true,
+    "directory": "some/path/for/now/i/will/add/in/later/when/testing"
+  },
+  "mission_control_MAC": "0013A200409BD79C"
 }
