@@ -8,7 +8,7 @@ DATA_TO_SEND = "Hello World!"
 
 
 def main():
-    # Set-up XBee device with configs file
+    # Instantiate XBee device
     device = setup_xbee()
 
     try:

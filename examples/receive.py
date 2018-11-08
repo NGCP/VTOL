@@ -4,7 +4,7 @@ from quick_scan import setup_xbee
 
 
 def main():
-    # Set-up XBee device with configs file
+    # Instantiate XBee device
     device = setup_xbee()
 
     try:

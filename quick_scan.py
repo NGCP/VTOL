@@ -27,8 +27,9 @@ def setup_xbee():
             xbee.open()
             return xbee
 
-        # FileNotFoundError, SerialException are thrown on Linux machines
-        # mac_xbee_port_name() will throw a ValueError if port name could not be found on a Mac
+        # FileNotFoundError and SerialException are thrown on Linux machines
+        # if error with opening XBee device, mac_xbee_port_name() will throw
+        # a ValueError if port name could not be found on a Mac
         except (FileNotFoundError, SerialException, ValueError) as e:
             print(e)
             print("Connect the XBee radio!")
