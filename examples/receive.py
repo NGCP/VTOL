@@ -1,23 +1,13 @@
-from digi.xbee.devices import XBeeDevice
-from sys import platform
-from quick_scan import mac_xbee_port_name
+import sys
+sys.path.append('..')
+from quick_scan import setup_xbee
 
 
 def main():
-    device = None
-    port_name = ""
-
-    if platform == "darwin":
-        port_name = mac_xbee_port_name()
-    elif platform == "linux" or platform == "linux2":
-        port_name = "/dev/ttyUSB0"
-    elif platform == "win32":
-        port_name = "COMS1"
-
-    device = XBeeDevice(port_name, 57600)
+    # Set-up XBee device with configs file
+    device = setup_xbee()
 
     try:
-        device.open()
         device.flush_queues()
         print("Waiting for data...\n")
         while True:

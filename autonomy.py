@@ -1,7 +1,6 @@
 import json
 from digi.xbee.devices import RemoteXBeeDevice
 
-
 # Globals, updated by xBee callback function
 start_mission = False  # takeoff
 pause_mission = False  # vehicle will hover
