@@ -1,6 +1,6 @@
 import json
 
-def parse_json(argv):
+def parse_configs(argv):
     """Parses the .json file given as the first command line argument.
     If no .json file is specified, defaults to "configs.json".
     If the specified .json file is found, returns a dict of the contents.

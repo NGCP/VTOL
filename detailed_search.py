@@ -1,15 +1,19 @@
 import json, sys
 from digi.xbee.devices import XBeeDevice
 from autonomy import detailed_search_autonomy, setup_xbee
-from utilities import parse_json
+from utilities import parse_configs
 
 
 def detailed_search():
+
     # Parse configs file
-    configs = parse_json(sys.argv)
+    configs = parse_configs(sys.argv)
 
     # Setup xBee device
-    xbee = setup_xbee(configs)
+    if configs["comms_simulated"] == False:
+        xbee = setup_xbee()
+    else:
+        xbee = None
 
     # Start autonomy thread
     detailed_search_autonomy(configs, xbee)

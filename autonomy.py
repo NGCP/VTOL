@@ -1,5 +1,6 @@
-import json
-from digi.xbee.devices import RemoteXBeeDevice
+import json, subprocess, time, sys
+from serial import SerialException
+from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
 
 # Globals, updated by xBee callback function
 start_mission = False  # takeoff
@@ -7,7 +8,6 @@ pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
 search_area = None  # search area object, populated by callback on start
 xbee = None  # XBee radio object
-
 
 # Represents a search area for quick scan aerial vehicles
 class SearchArea:
@@ -22,28 +22,45 @@ class SearchArea:
             str(self.rad1) + ", " + \
             str(self.rad2) + ")"
             
-# Instantiates xBee device object
-def setup_xbee(configs):
-    xbee = None
+# Instantiates XBee device object
+def setup_xbee():
+    # Continues looking until connection is found
+    while (1):
+        try:
+            port_name = ""
 
-    # Only set-up xBee radio if not simulated
-    if configs["comms_simulated"] == False:
-        os = configs["os"]
-        port_name = ""
+            if sys.platform == "darwin":
+                port_name = mac_xbee_port_name()
+            elif sys.platform == "linux" or sys.platform == "linux2":
+                port_name = "/dev/ttyUSB0"
+            # TODO: figure out windows port name
+            elif sys.platform == "win32":
+                port_name = "COMS1"
 
-        if os == "Mac":
-            port_name = configs["xbee_port_name"]
-        elif os == "Linux":
-            port_name = "/dev/ttyUSB0"
-        # TODO: figure out windows port name
-        elif os == "Windows":
-            port_name = "COMS1"
+            # Instantiate XBee device object.
+            xbee = XBeeDevice(port_name, 57600)
+            xbee.open()
+            return xbee
 
-        # Instantiate XBee device object.
-        xbee = XBeeDevice(port_name, 57600)
-        xbee.open()
+        # FileNotFoundError and SerialException are thrown on Linux machines
+        # if error with opening XBee device, mac_xbee_port_name() will throw
+        # a ValueError if port name could not be found on a Mac
+        except (FileNotFoundError, SerialException, ValueError) as e:
+            print(e)
+            print("Connect the XBee radio!")
+            time.sleep(5)
 
-    return xbee
+
+# Looks in /dev directory for connected XBee serial port name on a macOS.
+def mac_xbee_port_name():
+    try:
+        # System call to get port name of connected XBee radio
+        port_name = subprocess.run(["ls", "/dev/"], stdout=subprocess.PIPE, encoding="utf-8").stdout
+        i = port_name.index("tty.usbserial-")  # index in dev directory of port name
+        return "/dev/" + port_name[i: i + 22]  # 22 is length of "tty.usbserial-" + 8-char port name
+
+    except ValueError:
+        raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
 
 # Callback function for messages from GCS, parses JSON message and sets globals
 def quick_scan_callback(message):
@@ -81,7 +98,7 @@ def quick_scan_callback(message):
         bad_msg(address, e.args[0])
 
 def detailed_search_callback(message):
-    #todo implement detailed_search_callback here
+    #TODO implement detailed_search_callback here
     return
 
 
