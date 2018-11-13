@@ -13,7 +13,7 @@ vehicle_position = None
 heading = None
 error_message = None
 vehicle_status = "ready"    # Default status
-
+battery_level = None
 
 class UpdateThread(Thread):
     """
@@ -48,7 +48,7 @@ class UpdateThread(Thread):
     def generate_update(self):
         """
         Generate update based on global variables and configs dict.
-        vehicle_status, vehicle_position, heading, error_message assumed to be global variables.
+        vehicle_status, vehicle_position, battery_level,  heading, error_message assumed to be global variables.
 
         :return: json update string
         """
@@ -67,6 +67,11 @@ class UpdateThread(Thread):
 
         if error_message:
             update_parameters["errorMessage"] = error_message
+
+        if battery_level:
+            update_parameters["battery"] = battery_level
+            if RemoteXbeeDevice.battery:
+                update_parameters["battery"] = RemoteXbeeDevice.battery
 
         update_json = json.dumps(update_parameters)
 
