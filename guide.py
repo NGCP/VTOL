@@ -78,8 +78,9 @@ def guide():
         time.sleep(.5)
 
     print "Taking off"
-    alt = 20
-    increments = 4  #revisit this
+    alt = 20  # Talk to Pomona about this
+    # revisit this (Talking with Pomona about incements based on ration vs distance)
+    increments = 4
     pauses = 1
     groundspeed = 5
     continue_path = False
@@ -124,6 +125,7 @@ def guide():
             time.sleep(1)
         pauses += 1
 
+    # Land vehicle procedure ??
     vehicle.close()
 
     # Shut down simulator
