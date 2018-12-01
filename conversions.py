@@ -222,4 +222,16 @@ def enu2ecef(e1, n1, u1, lat0, lon0, h0, ell=None, deg=True):
     x0, y0, z0 = geodetic2ecef(lat0, lon0, h0, ell, deg=deg)
     dx, dy, dz = enu2uvw(e1, n1, u1, lat0, lon0, deg=deg)
 
+def enu2uvw(east: float, north: float, up: float,
+            lat0: float, lon0: float, deg: bool = True) -> Tuple[float, float, float]:
+    if deg:
+        lat0 = radians(lat0)
+        lon0 = radians(lon0)
 
+    t = cos(lat0) * up - sin(lat0) * north
+    w = sin(lat0) * up + cos(lat0) * north
+
+    u = cos(lon0) * t - sin(lon0) * east
+    v = sin(lon0) * t + cos(lon0) * east
+
+    return u, v, w
