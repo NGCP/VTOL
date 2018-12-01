@@ -124,4 +124,18 @@ def autonomy(configs, radio):
 
     while not start_mission:
          # do nothing
+
+    connection_string = "/dev/serial0"
+    sitl = None
+
+    # Start SITL if vehicle is being simulated
+    if (configs["vehicle_simulated"] is True):
+        import dronekit_sitl
+        sitl = dronekit_sitl.start_default()
+        connection_string = sitl.connection_string()
+
+    # Connect to vehicle
+    vehicle = connect(connection_string, wait_ready=True)
+
+    # Takeoff
     takeoff(vehicle, configs["altitude"])
