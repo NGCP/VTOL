@@ -1,5 +1,4 @@
 import json
-import sys
 import math
 import pymap3d as pm
 from digi.xbee.devices import RemoteXBeeDevice
@@ -135,7 +134,7 @@ def generateWaypoints(configs, search_area):
         waypointsLLA.append([newLat, newLon, newAlt])
 
         # generate a waypoint every pi/2 radian
-        theta += math.pi / 8
+        theta += configs["d_theta_rad"]
 
     return (waypointsNED, waypointsLLA)
 
@@ -152,6 +151,6 @@ def autonomy(configs, radio):
 
     # Generate waypoints after start_mission = True
     while(!start_mission):
-        time.sleep(1)
+        # do nothing
 
     generateWaypoints(configs, search_area)
