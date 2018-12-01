@@ -1,6 +1,6 @@
 import json
 import math
-import pymap3d as pm
+from conversions import *
 from digi.xbee.devices import RemoteXBeeDevice
 
 # Globals, updated by xBee callback function
@@ -100,8 +100,8 @@ def generateWaypoints(configs, search_area):
     altitude = configs["altitude"]
     lat = origin['lat']
     lon = origin['lon']
-    centerX, centerY, centerZ = pm.geodetic2ecef(lat, lon, altitude)
-    n, e, d = pm.ecef2ned(centerX, centerY, centerZ, lat, lon, altitude)
+    centerX, centerY, centerZ = geodetic2ecef(lat, lon, altitude)
+    n, e, d = ecef2ned(centerX, centerY, centerZ, lat, lon, altitude)
     waypointsLLA.append([lat, lon, altitude])
     waypointsNED.append([n, e, d])
 
@@ -127,12 +127,12 @@ def generateWaypoints(configs, search_area):
         y = centerY + math.sin(around) * away
 
         # convert ECEF to NED and LLA
-        n, e, d = pm.ecef2ned(x, y, z, lat, lon, altitude)
-        newLat, newLon, newAlt = pm.ned2geodetic(n, e, d, lat, lon, altitude);
+        n, e, d = ecef2ned(x, y, z, lat, lon, altitude)
+        newLat, newLon, newAlt = ned2geodetic(n, e, d, lat, lon, altitude);
         waypointsNED.append([n, e, d])
         waypointsLLA.append([newLat, newLon, newAlt])
 
-        # generate a waypoint every pi/2 radian
+        # generate a waypoint every pi/8 radian
         theta += configs["d_theta_rad"]
 
     return (waypointsNED, waypointsLLA)
