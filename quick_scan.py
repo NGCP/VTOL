@@ -5,7 +5,6 @@ import time
 from digi.xbee.devices import XBeeDevice
 from serial import SerialException
 from autonomy import autonomy
-import pymap3d as pm
 
 
 # Instantiates XBee device object

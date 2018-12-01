@@ -1,4 +1,7 @@
 import json
+import sys
+import math
+import pymap3d as pm
 from digi.xbee.devices import RemoteXBeeDevice
 
 # Globals, updated by xBee callback function
@@ -95,31 +98,28 @@ def generateWaypoints(origin, radius):
     waypointsLLA = []
 
     altitude = configs["altitude"]
+    print("altitude" + (str)(altitude))
     direction = 1
-    lat = vehicle.location.global_frame.lat
-    lon = vehicle.location.global_frame.lon
+    lat = origin['lat']
+    lon = origin['lon']
     centerX, centerY, centerZ = pm.geodetic2ecef(lat, lon, altitude)
+    n, e, d = pm.ecef2ned(centerX, centerY, centerZ, lat, lon, altitude)
+    waypointsLLA.append([lat, lon, altitude])
+    waypointsNED.append([n, e, d])
 
     fovH = math.radians(62.2)     # raspicam horizontal FOV
     fovV = math.radians(48.8)     # raspicam vertical FOV
     boxH = 2 * altitude / math.tan(fovH / 2)     # height of bounding box
     boxV = 2 * altitude / math.tan(fovV / 2)     # width of bounding box
 
-    coils = (configs["coil_lower"] + configs["coil_upper"]) / 2  # number of complete rotations - hardcoded at the moment
-    chord = boxV * 0.75     # distance between points, with 25% overlap
+    b = (0.75 * boxH) / (2 * math.pi)   # distance between coils with 25% overlap
     rotation = -(math.pi / 2)   # number of radians spiral is rotated
-    maxTheta = coils * 2 * math.pi  # theta for last coil
-    awayStep = radius / maxTheta    # how far to step away from center
+    maxTheta = radius / b   # after using formula r = b * theta
 
-    n, e, d = pm.ecef2ned(centerX, centerY, centerZ, lat, lon, altitude)
-    waypointsLLA.append([lat, lon, altitude])
-    waypointsNED.append([n, e, d])
-
-    theta = chord / awayStep
-
+    theta = 0
     while theta <= maxTheta:
         # distance away from center
-        away = awayStep * theta
+        away = b * theta
 
         # distance around center
         around = direction * theta + rotation
@@ -131,13 +131,30 @@ def generateWaypoints(origin, radius):
         # convert ECEF to NED and LLA
         n, e, d = pm.ecef2ned(x, y, z, lat, lon, altitude)
         newLat, newLon, newAlt = pm.ned2geodetic(n, e, d, lat, lon, altitude);
-
         waypointsNED.append([n, e, d])
         waypointsLLA.append([newLat, newLon, newAlt])
 
-        theta += chord / away
+        # generate a waypoint every pi/2 radian
+        theta += math.pi / 8
 
     return (waypointsNED, waypointsLLA)
+
+
+def parse_configs(argv):
+    """Parses the .json file given as the first command line argument.
+    If no .json file is specified, defaults to "configs.json".
+    If the specified .json file is found, returns a dict of the contents.
+    Otherwise, raises a FileNotFoundError."""
+    try:
+        if (len(argv) == 1):
+            read_file = open("configs.json", "r")
+        else:
+            read_file = open(argv[1], "r")
+
+        return json.load(read_file)
+
+    except FileNotFoundError:
+        raise
 
 
 # Main autonomous flight thread
