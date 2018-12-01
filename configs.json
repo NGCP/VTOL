@@ -8,6 +8,7 @@
     "directory": "some/path/for/now/i/will/add/in/later/when/testing"
   },
   "mission_control_MAC": "0013A200409BD79C",
+  "altitude": 50,
   "coil_lower": 20,
   "coil_upper": 100
 }
