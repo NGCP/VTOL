@@ -123,7 +123,7 @@ def autonomy(configs, radio):
     xbee.add_data_received_callback(xbee_callback)
 
     while not start_mission:
-         # do nothing
+        pass
 
     connection_string = "/dev/serial0"
     sitl = None
