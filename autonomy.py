@@ -89,16 +89,16 @@ def bad_msg(address, missing):
 
 
 # Generate waypoints for VTOL
-def generateWaypoints(origin, radius):
+def generateWaypoints(configs, search_area):
     print("Begin generating waypoints")
-
-    configs = parse_configs(sys.argv)
 
     waypointsNED = []
     waypointsLLA = []
 
+    origin = search_area.center
+    radius = search_area.rad2
+
     altitude = configs["altitude"]
-    print("altitude" + (str)(altitude))
     direction = 1
     lat = origin['lat']
     lon = origin['lon']
@@ -140,23 +140,6 @@ def generateWaypoints(origin, radius):
     return (waypointsNED, waypointsLLA)
 
 
-def parse_configs(argv):
-    """Parses the .json file given as the first command line argument.
-    If no .json file is specified, defaults to "configs.json".
-    If the specified .json file is found, returns a dict of the contents.
-    Otherwise, raises a FileNotFoundError."""
-    try:
-        if (len(argv) == 1):
-            read_file = open("configs.json", "r")
-        else:
-            read_file = open(argv[1], "r")
-
-        return json.load(read_file)
-
-    except FileNotFoundError:
-        raise
-
-
 # Main autonomous flight thread
 # :param configs: dict from configs file
 # :param radio: XBee radio object
@@ -166,3 +149,9 @@ def autonomy(configs, radio):
 
     # Add the callback.
     xbee.add_data_received_callback(xbee_callback)
+
+    # Generate waypoints after start_mission = True
+    while(!start_mission):
+        time.sleep(1)
+
+    generateWaypoints(configs, search_area)
