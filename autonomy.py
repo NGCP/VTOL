@@ -60,7 +60,7 @@ def xbee_callback(message):
 
 
 # Commands drone to take off by arming vehicle and flying to altitude
-def takeoff(altitude):
+def takeoff(vehicle, altitude):
     print "Pre-arm checks"
     while not vehicle.is_armable:
         print "Waiting for vehicle to initialize"
@@ -124,4 +124,4 @@ def autonomy(configs, radio):
 
     while not start_mission:
          # do nothing
-    takeoff()
+    takeoff(vehicle, configs["altitude"])
