@@ -205,3 +205,21 @@ def ecef2geodetic(x, y, z, ell=None, deg=True):
         return degrees(lat), degrees(lon), alt
     else:
         return lat, lon, alt  # radians
+
+
+def enu2ecef(e1, n1, u1, lat0, lon0, h0, ell=None, deg=True):
+    """
+    ENU to ECEF
+    inputs:
+     e1, n1, u1 (meters)   east, north, up
+     observer: lat0, lon0, h0 (degrees/radians,degrees/radians, meters)
+    ell    reference ellipsoid
+    deg    degrees input/output  (False: radians in/out)
+    output
+    ------
+    x,y,z  [meters] target ECEF location                         [0,Infinity)
+    """
+    x0, y0, z0 = geodetic2ecef(lat0, lon0, h0, ell, deg=deg)
+    dx, dy, dz = enu2uvw(e1, n1, u1, lat0, lon0, deg=deg)
+
+

@@ -1,7 +1,7 @@
 import json
 import math
 from conversions import *
-from digi.xbee.devices import RemoteXBeeDevice
+# from digi.xbee.devices import RemoteXBeeDevice
 
 # Globals, updated by xBee callback function
 start_mission = False  # takeoff
@@ -127,7 +127,7 @@ def generateWaypoints(configs, search_area):
         y = centerY + math.sin(around) * away
 
         # convert ECEF to NED and LLA
-        n, e, d = ecef2ned(x, y, z, lat, lon, altitude)
+        n, e, d = ecef2ned(x, y, centerZ, lat, lon, altitude)
         newLat, newLon, newAlt = ned2geodetic(n, e, d, lat, lon, altitude);
         waypointsNED.append([n, e, d])
         waypointsLLA.append([newLat, newLon, newAlt])
