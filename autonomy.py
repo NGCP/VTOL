@@ -1,27 +1,26 @@
 import json
-from digi.xbee.devices import XBeeDevice, XBee64BitAddress, RemoteXBeeDevice
-
+from digi.xbee.devices import RemoteXBeeDevice
 
 # Globals, updated by xBee callback function
-start_mission = False # takeoff
-pause_mission = False # vehicle will hover
-stop_mission = False # return to start and land
-search_area = None # search area object, populated by callback on start
-xbee = None # xBee radio object
+start_mission = False  # takeoff
+pause_mission = False  # vehicle will hover
+stop_mission = False  # return to start and land
+search_area = None  # search area object, populated by callback on start
+xbee = None  # XBee radio object
 
 
 # Represents a search area for quick scan aerial vehicles
 class SearchArea:
     def __init__(self, center, rad1, rad2):
-        self.center = center # tuple containing coor. of center point
-        self.rad1 = rad1 # first search radius from center
-        self.rad2 = rad2 # second search radius from center
+        self.center = center  # tuple containing coor. of center point
+        self.rad1 = rad1  # first search radius from center
+        self.rad2 = rad2  # second search radius from center
 
     def __str__(self):
         return "SearchArea(" + \
-            str(self.center) +  ", " + \
-            str(self.rad1) + ", " + \
-            str(self.rad2) + ")"
+               str(self.center) + ", " + \
+               str(self.rad1) + ", " + \
+               str(self.rad2) + ")"
 
 
 # Callback function for messages from GCS, parses JSON message and sets globals
@@ -85,6 +84,8 @@ def takeoff(altitude):
             print "Reached target altitude"
             break
         time.sleep(1)
+            stop_mission = True
+            acknowledge(address, msg_type)
 
 
 # Sends message received acknowledgement to GCS
@@ -105,8 +106,8 @@ def acknowledge(address, received_type):
 # :param missing: attribute from message that caused KeyError
 def bad_msg(address, missing):
     msg = {
-       "type": "badMessage",
-       "missing": missing
+        "type": "badMessage",
+        "missing": missing
     }
     # Instantiate a remote XBee device object to send data.
     send_xbee = RemoteXBeeDevice(xbee, address)
@@ -115,7 +116,7 @@ def bad_msg(address, missing):
 
 # Main autonomous flight thread
 # :param configs: dict from configs file
-# :param radio: xBee radio object
+# :param radio: XBee radio object
 def autonomy(configs, radio):
     global xbee
     xbee = radio
