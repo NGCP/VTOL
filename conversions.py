@@ -12,7 +12,7 @@ class Ellipsoid:
     https://en.wikibooks.org/wiki/PROJ.4#Spheroid
     """
 
-    def __init__(self, model):
+    def __init__(self, model='wgs84'):
         if model == 'wgs84':
             """https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84"""
             self.a = 6378137.  # semi-major axis [m]
