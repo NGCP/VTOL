@@ -98,7 +98,6 @@ def generateWaypoints(configs, search_area):
     radius = search_area.rad2
 
     altitude = configs["altitude"]
-    direction = 1
     lat = origin['lat']
     lon = origin['lon']
     centerX, centerY, centerZ = pm.geodetic2ecef(lat, lon, altitude)
@@ -121,7 +120,7 @@ def generateWaypoints(configs, search_area):
         away = b * theta
 
         # distance around center
-        around = direction * theta + rotation
+        around = theta + rotation
 
         # around & away -> x & y
         x = centerX + math.cos(around) * away
@@ -150,7 +149,7 @@ def autonomy(configs, radio):
     xbee.add_data_received_callback(xbee_callback)
 
     # Generate waypoints after start_mission = True
-    while(!start_mission):
+    while not start_mission:
         # do nothing
 
     generateWaypoints(configs, search_area)
