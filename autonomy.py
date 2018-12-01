@@ -150,6 +150,6 @@ def autonomy(configs, radio):
 
     # Generate waypoints after start_mission = True
     while not start_mission:
-        # do nothing
+        pass
 
     generateWaypoints(configs, search_area)

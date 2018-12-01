@@ -12,7 +12,7 @@ class Ellipsoid:
     https://en.wikibooks.org/wiki/PROJ.4#Spheroid
     """
 
-    def __init__(self, model: str = 'wgs84') -> None:
+    def __init__(self, model):
         if model == 'wgs84':
             """https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84"""
             self.a = 6378137.  # semi-major axis [m]
@@ -43,7 +43,7 @@ class Ellipsoid:
             raise NotImplementedError('{} model not implemented, let us know and we will add it (or make a pull request)'.format(model))
 
 
-def get_radius_normal(lat_radians: float, ell: Ellipsoid = None) -> float:
+def get_radius_normal(lat_radians, ell):
     """ Compute normal radius of planetary body"""
     if ell is None:
         ell = Ellipsoid()
@@ -54,7 +54,7 @@ def get_radius_normal(lat_radians: float, ell: Ellipsoid = None) -> float:
     return a**2 / sqrt(a**2 * cos(lat_radians)**2 + b**2 * sin(lat_radians)**2)
 
 
-def ecef2ned(x, y, z, lat0, lon0, h0, ell=None, deg=True) -> Tuple[float, float, float]:
+def ecef2ned(x, y, z, lat0, lon0, h0, ell=None, deg=True):
     """
     input
     -----
@@ -70,9 +70,7 @@ def ecef2ned(x, y, z, lat0, lon0, h0, ell=None, deg=True) -> Tuple[float, float,
 
     return n, e, -u
 
-def ecef2enu(x: float, y: float, z: float,
-             lat0: float, lon0: float, h0: float,
-             ell: Ellipsoid = None, deg: bool = True) -> Tuple[float, float, float]:
+def ecef2enu(x, y, z, lat0, lon0, h0, ell, deg):
     """
     input
     -----
@@ -89,8 +87,7 @@ def ecef2enu(x: float, y: float, z: float,
     return uvw2enu(x - x0, y - y0, z - z0, lat0, lon0, deg=deg)
 
 
-def uvw2enu(u: float, v: float, w: float,
-            lat0: float, lon0: float, deg: bool = True) -> Tuple[float, float, float]:
+def uvw2enu(u, v, w, lat0, lon0, deg=True):
     if deg:
         lat0 = radians(lat0)
         lon0 = radians(lon0)
@@ -103,8 +100,7 @@ def uvw2enu(u: float, v: float, w: float,
     return East, North, Up
 
 
-def geodetic2ecef(lat: float, lon: float, alt: float,
-                  ell: Ellipsoid = None, deg: bool = True) -> Tuple[float, float, float]:
+def geodetic2ecef(lat, lon, alt, ell=None, deg=True):
     """
     Point
     input:
@@ -143,9 +139,7 @@ def geodetic2ecef(lat: float, lon: float, alt: float,
     return x, y, z
 
 
-def ned2geodetic(n: float, e: float, d: float,
-                 lat0: float, lon0: float, h0: float,
-                 ell=None, deg: bool = True) -> Tuple[float, float, float]:
+def ned2geodetic(n, e, d, lat0, lon0, h0, ell=None, deg=True):
     """
     input
     -----
@@ -162,8 +156,7 @@ def ned2geodetic(n: float, e: float, d: float,
     return ecef2geodetic(x, y, z, ell, deg=deg)
 
 
-def ecef2geodetic(x: float, y: float, z: float,
-                  ell: Ellipsoid = None, deg: bool = True) -> Tuple[float, float, float]:
+def ecef2geodetic(x, y, z, ell=None, deg=True):
     """
     convert ECEF (meters) to geodetic coordinates
     input
