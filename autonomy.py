@@ -90,9 +90,10 @@ def bad_msg(address, missing):
 # :param radio: XBee radio object
 def autonomy(configs, radio, autonomyToCV):
     print("autonomy thread started")
-    
+
     global xbee
     xbee = radio
 
-    # Add the callback.
+    # Add the callback
     xbee.add_data_received_callback(xbee_callback)
+    return

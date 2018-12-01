@@ -86,6 +86,7 @@ def parse_configs(argv):
     except FileNotFoundError:
         raise
 
+
 def quick_scan():
     # Parse configs file
     configs = parse_configs(sys.argv)
