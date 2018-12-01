@@ -52,8 +52,8 @@ def xbee_callback(message):
             acknowledge(address, msg_type)
 
         elif msg_type == "stop":
-           stop_mission = True
-           acknowledge(address, msg_type)
+            stop_mission = True
+            acknowledge(address, msg_type)
 
     except KeyError as e:
         bad_msg(address, e.args[0])
@@ -84,8 +84,6 @@ def takeoff(altitude):
             print "Reached target altitude"
             break
         time.sleep(1)
-            stop_mission = True
-            acknowledge(address, msg_type)
 
 
 # Sends message received acknowledgement to GCS
