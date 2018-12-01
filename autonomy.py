@@ -7,6 +7,7 @@ pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
 search_area = None  # search area object, populated by callback on start
 xbee = None  # XBee radio object
+home_location = None # takeoff location of vehicle
 
 
 # Represents a search area for quick scan aerial vehicles
@@ -61,6 +62,9 @@ def xbee_callback(message):
 
 # Commands drone to take off by arming vehicle and flying to altitude
 def takeoff(altitude):
+    print "Set home location" 
+    home_location = vehicle.location.global_relative_frame
+
     print "Pre-arm checks"
     while not vehicle.is_armable:
         print "Waiting for vehicle to initialize"
