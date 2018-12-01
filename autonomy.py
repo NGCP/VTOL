@@ -7,6 +7,7 @@ pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
 search_area = None  # search area object, populated by callback on start
 xbee = None  # XBee radio object
+home_location = None # takeoff location of vehicle
 
 
 # Represents a search area for quick scan aerial vehicles
@@ -57,6 +58,31 @@ def xbee_callback(message):
 
     except KeyError as e:
         bad_msg(address, e.args[0])
+
+
+# Commands vehicle to land
+def land():
+    print "Returning to launch"
+    vehicle.mode = VehicleMode("RTL")
+
+    while vehicle.mode.name is "RTL":
+        meters_left = get_distance_metres(vehicle.location.global_relative_frame, home_location)
+        print("Distance from home location: ", meters_left);
+        if meters_left < 3:
+            break
+        time.sleep(1)
+
+    print "Landing vehicle"
+    vehicle.mode = VehicleMode("LAND")
+
+    print "Closing vehicle object"
+    while True:
+        print "Altitude: ", vehicle.location.global_relative_frame.alt
+        if vehicle.location.global_relative_frame.alt <= 1:
+            print "Reached landing altitude"
+            break
+        time.sleep(1)
+    vehicle.close()
 
 
 # Sends message received acknowledgement to GCS
