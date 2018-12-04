@@ -1,5 +1,7 @@
 import json
-from digi.xbee.devices import RemoteXBeeDevice
+import time
+from threading import Thread
+from digi.xbee.devices import RemoteXBeeDevice, XBee64BitAddress
 
 # Globals, updated by xBee callback function
 start_mission = False  # takeoff
@@ -23,6 +25,22 @@ class SearchArea:
                str(self.rad2) + ")"
 
 
+# Dummy message class for comm simulation thread to be compatible with xbee_callback function
+class DummyMessage:
+    def __init__(self, data=None):
+        self.data = data  # UTF-8 encoded JSON message
+        self.remote_device = DummyRemoteDevice()
+
+
+# Dummy remote device object for use in DummyMessage, has fake address 0
+class DummyRemoteDevice:
+    def __init__(self):
+        pass
+
+    def get_64bit_addr(self):
+        return XBee64BitAddress.from_hex_string("0")
+
+
 # Callback function for messages from GCS, parses JSON message and sets globals
 def xbee_callback(message):
     global start_mission
@@ -31,7 +49,7 @@ def xbee_callback(message):
     global search_area
 
     address = message.remote_device.get_64bit_addr()
-    msg = json.loads(message.data.decode("utf8"))
+    msg = json.loads(message.data)
     print("Received data from %s: %s" % (address, msg))
 
     try:
@@ -55,8 +73,12 @@ def xbee_callback(message):
             stop_mission = True
             acknowledge(address, msg_type)
 
+        else:
+            bad_msg(address, "Unknown message type: \'" + msg_type + "\'")
+
+    # KeyError if message was missing an expected key
     except KeyError as e:
-        bad_msg(address, e.args[0])
+        bad_msg(address, "Missing \'" + e.args[0] + "\' key")
 
 
 # Sends message received acknowledgement to GCS
@@ -66,23 +88,50 @@ def acknowledge(address, received_type):
         "type": "ack",
         "received": received_type
     }
-    # Instantiate a remote XBee device object to send data.
-    send_xbee = RemoteXBeeDevice(xbee, address)
-    xbee.send_data(send_xbee, json.dumps(ack))
+    # xbee is None if comms is simulated
+    if xbee:
+        # Instantiate a remote XBee device object to send data.
+        send_xbee = RemoteXBeeDevice(xbee, address)
+        xbee.send_data(send_xbee, json.dumps(ack))
 
 
-# Sends "bad message" to GCS if message received was poorly formatted/unreadable,
-# also includes attribute attempted to retrieve
+# Sends "bad message" to GCS if message received was poorly formatted/unreadable
+# and describes error from parsing original message.
 # :param address: address of GCS
-# :param missing: attribute from message that caused KeyError
-def bad_msg(address, missing):
+# :param problem: string describing error from parsing original message
+def bad_msg(address, problem):
     msg = {
         "type": "badMessage",
-        "missing": missing
+        "error": problem
     }
-    # Instantiate a remote XBee device object to send data.
-    send_xbee = RemoteXBeeDevice(xbee, address)
-    xbee.send_data(send_xbee, json.dumps(msg))
+    # xbee is None if comms is simulated
+    if xbee:
+        # Instantiate a remote XBee device object to send data.
+        send_xbee = RemoteXBeeDevice(xbee, address)
+        xbee.send_data(send_xbee, json.dumps(msg))
+    else:
+        print("Error:", problem)
+
+
+# Reads through comm simulation file from configs and calls xbee_callback to simulate radio messages.
+def comm_simulation(comm_file):
+    try:
+        f = open(comm_file, "r")
+    except FileNotFoundError:
+        raise
+
+    line = f.readline().strip()
+    prev_time = float(line[:line.index("~")])
+    while line != "":
+        delim = line.index("~")
+        curr_time = float(line[:delim])
+        time.sleep(curr_time - prev_time)
+
+        # Send message to xbee_callback
+        xbee_callback(DummyMessage(line[delim + 1:]))
+
+        line = f.readline().strip()
+        prev_time = curr_time
 
 
 # Main autonomous flight thread
@@ -91,6 +140,18 @@ def bad_msg(address, missing):
 def autonomy(configs, radio):
     global xbee
     xbee = radio
+    comm_sim = None
 
-    # Add the callback.
-    xbee.add_data_received_callback(xbee_callback)
+    # If comms is simulated, start comm simulation thread
+    if xbee is None:
+        comm_sim = Thread(target=comm_simulation, args=(configs["comms_simulated"]["comm_sim_file"],))
+        comm_sim.start()
+
+    # Comms un-simulated
+    else:
+        # Add the callback.
+        xbee.add_data_received_callback(xbee_callback)
+
+    # Wait for comm simulation thread to end
+    if comm_sim:
+        comm_sim.join()
