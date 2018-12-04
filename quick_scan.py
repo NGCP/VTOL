@@ -36,7 +36,7 @@ def setup_xbee():
             time.sleep(5)
 
 
-# Looks in /dev directory for connected XBee serial port name.
+# Looks in /dev directory for connected XBee serial port name on a macOS.
 def mac_xbee_port_name():
     try:
         # System call to get port name of connected XBee radio
