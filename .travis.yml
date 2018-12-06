@@ -1,0 +1,16 @@
+branches:
+  only:
+    - master
+    - add-travis
+language: python
+python:
+  - '2.7'
+install:
+  - pip install dronekit
+  - pip install pymavlink
+  - pip install pyserial
+  - pip install opencv
+  
+script:
+  - python2 quick_scan_tests.py
+
