@@ -1,7 +1,4 @@
-0.0~{"type":"start"}
 0.5~{"type":"start", "searchArea":{"center":[1, 1], "rad1":0, "rad2":100}}
 1.0~{"type":"pause"}
 2.0~{"type":"resume"}
 3.0~{"type":"stop"}
-4.0~{"sfas":"werwerew"}
-5~{}
