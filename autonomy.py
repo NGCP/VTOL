@@ -194,18 +194,13 @@ def autonomy(configs, radio):
     xbee = radio
     comm_sim = None
 
-    if not configs["comms_simulated"]["toggled_on"]:
-        from digi.xbee.devices import RemoteXBeeDevice, XBee64BitAddress
-
-
     # If comms is simulated, start comm simulation thread
     if xbee is None:
         comm_sim = Thread(target=comm_simulation, args=(configs["comms_simulated"]["comm_sim_file"],))
         comm_sim.start()
-
-    # Comms un-simulated
+    # Otherwise, import Xbee Python Library and set up callback
     else:
-        # Add the callback.
+        from digi.xbee.devices import RemoteXBeeDevice, XBee64BitAddress
         xbee.add_data_received_callback(xbee_callback)
 
     # Generate waypoints after start_mission = True
