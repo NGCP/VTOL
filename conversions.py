@@ -193,7 +193,8 @@ def ecef2geodetic(x, y, z, ell=None, deg=True):
     eps = ((ell.b * u - ell.a * huE + E**2) * sin(Beta)) / (ell.a * huE * 1 / cos(Beta) - E**2 * cos(Beta))
 
     Beta += eps
-# %% final output
+    
+    # %% final output
     lat = arctan(ell.a / ell.b * tan(Beta))
 
     lon = arctan2(y, x)

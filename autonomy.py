@@ -3,7 +3,6 @@ import math
 from conversions import *
 import time
 from threading import Thread
-from digi.xbee.devices import RemoteXBeeDevice, XBee64BitAddress
 
 # Globals, updated by xBee callback function
 start_mission = False  # takeoff
@@ -40,7 +39,7 @@ class DummyRemoteDevice:
         pass
 
     def get_64bit_addr(self):
-        return XBee64BitAddress.from_hex_string("0")
+        return "comms simulation"
 
 
 # Callback function for messages from GCS, parses JSON message and sets globals
@@ -58,10 +57,10 @@ def xbee_callback(message):
         msg_type = msg["type"]
 
         if msg_type == "start":
-            start_mission = True
             acknowledge(address, msg_type)
             area = msg["searchArea"]
             search_area = SearchArea(area["center"], area["rad1"], area["rad2"])
+            start_mission = True
 
         elif msg_type == "pause":
             pause_mission = True
@@ -147,8 +146,8 @@ def generateWaypoints(configs, search_area):
     radius = search_area.rad2
 
     altitude = configs["altitude"]
-    lat = origin['lat']
-    lon = origin['lon']
+    lat = origin[0]
+    lon = origin[1]
     centerX, centerY, centerZ = geodetic2ecef(lat, lon, altitude)
     n, e, d = ecef2ned(centerX, centerY, centerZ, lat, lon, altitude)
     waypointsLLA.append([lat, lon, altitude])
@@ -177,7 +176,7 @@ def generateWaypoints(configs, search_area):
 
         # convert ECEF to NED and LLA
         n, e, d = ecef2ned(x, y, centerZ, lat, lon, altitude)
-        newLat, newLon, newAlt = ned2geodetic(n, e, d, lat, lon, altitude);
+        newLat, newLon, newAlt = ned2geodetic(n, e, d, lat, lon, altitude)
         waypointsNED.append([n, e, d])
         waypointsLLA.append([newLat, newLon, newAlt])
 
@@ -199,10 +198,9 @@ def autonomy(configs, radio):
     if xbee is None:
         comm_sim = Thread(target=comm_simulation, args=(configs["comms_simulated"]["comm_sim_file"],))
         comm_sim.start()
-
-    # Comms un-simulated
+    # Otherwise, import Xbee Python Library and set up callback
     else:
-        # Add the callback.
+        from digi.xbee.devices import RemoteXBeeDevice, XBee64BitAddress
         xbee.add_data_received_callback(xbee_callback)
 
     # Generate waypoints after start_mission = True
