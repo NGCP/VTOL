@@ -2,31 +2,9 @@ import json
 import sys
 import subprocess
 import time
-from threading import Thread, Lock
 from digi.xbee.devices import XBeeDevice
 from serial import SerialException
 from autonomy import autonomy
-from cv import cv
-
-class AutonomyToCV:
-    def __init__(self):
-        self.startMutex = Lock()
-        self.start = False
-
-        self.latMutex = Lock()
-        self.lat = 0.0
-
-        self.lonMutex = Lock()
-        self.lon = 0.0
-
-        self.altMutex = Lock()
-        self.alt = 0.0
-
-        self.northMutex = Lock()
-        self.north = 0.0
-
-        self.eastMutex = Lock()
-        self.east = 0.0
 
 
 # Instantiates XBee device object
@@ -86,6 +64,7 @@ def parse_configs(argv):
     except FileNotFoundError:
         raise
 
+
 def quick_scan():
     # Parse configs file
     configs = parse_configs(sys.argv)
@@ -97,15 +76,7 @@ def quick_scan():
         xbee = None
 
     # Start autonomy thread
-    autonomyToCV = AutonomyToCV()
-    autonomy_thread = Thread(target = autonomy, args = (configs, xbee, autonomyToCV))
-    cv_thread = Thread(target = cv, args = (configs, autonomyToCV))
-    
-    autonomy_thread.start()
-    cv_thread.start()
-
-    autonomy_thread.join()
-    cv_thread.join()
+    autonomy(configs, xbee)
 
 
 if __name__ == "__main__":

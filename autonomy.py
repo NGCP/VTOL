@@ -88,9 +88,7 @@ def bad_msg(address, missing):
 # Main autonomous flight thread
 # :param configs: dict from configs file
 # :param radio: XBee radio object
-def autonomy(configs, radio, autonomyToCV):
-    print("autonomy thread started")
-    
+def autonomy(configs, radio):
     global xbee
     xbee = radio
 
