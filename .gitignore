@@ -121,4 +121,9 @@ dmypy.json
 ### Python Patch ###
 .venv/
 
+# Custom
+*.swo
+*.swp
+*.idea
+
 # End of https://www.gitignore.io/api/python

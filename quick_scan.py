@@ -69,11 +69,11 @@ def quick_scan():
     # Parse configs file
     configs = parse_configs(sys.argv)
 
-    # Setup XBee device if communications not simulated
-    if configs["comms_simulated"] == False:
-        xbee = setup_xbee()
-    else:
+    if configs["comms_simulated"]["toggled_on"]:
         xbee = None
+    # Set up XBee device if communications not simulated
+    else:
+        xbee = setup_xbee()
 
     # Start autonomy thread
     autonomy(configs, xbee)
