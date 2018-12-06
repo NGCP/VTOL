@@ -137,7 +137,6 @@ def comm_simulation(comm_file):
 
 # Generate waypoints for VTOL
 def generateWaypoints(configs, search_area):
-    return []
     print("Begin generating waypoints")
 
     waypointsNED = []
