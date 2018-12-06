@@ -205,9 +205,6 @@ def autonomy(configs, radio):
         # Add the callback.
         xbee.add_data_received_callback(xbee_callback)
 
-    # Add the callback.
-    xbee.add_data_received_callback(xbee_callback)
-
     # Generate waypoints after start_mission = True
     while not start_mission:
         pass
