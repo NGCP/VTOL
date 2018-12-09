@@ -101,12 +101,11 @@ def takeoff(vehicle, altitude):
     vehicle.simple_takeoff(altitude) # take off to altitude
 
     # Wait until vehicle reaches minimum altitude
-    while True:
+    while vehicle.location.global_relative_frame.alt < altitude * 0.95:
         print "Altitude: ", vehicle.location.global_relative_frame.alt
-        if vehicle.location.global_relative_frame.alt >= altitude * 0.95: # Trigger below target
-            print "Reached target altitude"
-            break
         time.sleep(1)
+
+    print "Reached target altitude"
 
 
 # Sends message received acknowledgement to GCS
@@ -237,14 +236,14 @@ def autonomy(configs, radio):
     # Generate waypoints
     waypoints = generateWaypoints(configs, search_area)
 
-    connection_string = "/dev/serial0"
-    sitl = None
-
     # Start SITL if vehicle is being simulated
     if (configs["vehicle_simulated"] is True):
         import dronekit_sitl
         sitl = dronekit_sitl.start_default()
         connection_string = sitl.connection_string()
+    else:
+        connection_string = "/dev/serial0"
+        sitl = None
 
     # Connect to vehicle
     vehicle = connect(connection_string, wait_ready=True)
