@@ -83,14 +83,14 @@ def xbee_callback(message):
 
 
 # Commands drone to take off by arming vehicle and flying to altitude
-def takeoff(vehicle, altitude):
+def takeoff(configs, vehicle, altitude):
     print "Pre-arm checks"
     while not vehicle.is_armable:
         print "Waiting for vehicle to initialize"
         time.sleep(1)
 
     print "Arming motors"
-    vehicle.mode = VehicleMode("GUIDED")
+    vehicle.mode = VehicleMode(configs["flight_mode"])
     vehicle.armed = True
 
     while not vehicle.armed:
@@ -249,7 +249,7 @@ def autonomy(configs, radio):
     vehicle = connect(connection_string, wait_ready=True)
 
     # Takeoff
-    takeoff(vehicle, configs["altitude"])
+    takeoff(configs, vehicle, configs["altitude"])
     
     # Wait for comm simulation thread to end
     if comm_sim:
