@@ -3,6 +3,8 @@ import math
 from conversions import *
 import time
 from threading import Thread
+from dronekit import connect, Command, VehicleMode
+from pymavlink import mavutil
 
 # Globals, updated by xBee callback function
 start_mission = False  # takeoff
@@ -48,6 +50,7 @@ def xbee_callback(message):
     global pause_mission
     global stop_mission
     global search_area
+    global vehicle
 
     address = message.remote_device.get_64bit_addr()
     msg = json.loads(message.data)
@@ -213,7 +216,7 @@ def generateWaypoints(configs, search_area):
     return (waypointsNED, waypointsLLA)
 
 
-def adds_mission(lla_waypoint_list):
+def adds_mission(vehicle, lla_waypoint_list):
     """
     Adds a takeoff command and four waypoint commands to the current mission. 
     The waypoints are positioned to form a square of side length 2*aSize around the specified LocationGlobal (aLocation).
@@ -284,7 +287,7 @@ def autonomy(configs, radio):
     vehicle = connect(connection_string, wait_ready=True)
 
     # Send mission to vehicle
-    adds_mission(waypoints[1])
+    adds_mission(vehicle, waypoints[1])
 
     # Takeoff
     takeoff(configs["flight_mode"], vehicle, configs["altitude"])
