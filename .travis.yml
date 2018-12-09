@@ -9,7 +9,6 @@ install:
   - pip install dronekit
   - pip install pymavlink
   - pip install pyserial
-  - pip install opencv
   
 script:
   - python2 quick_scan_tests.py
