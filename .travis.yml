@@ -11,5 +11,5 @@ install:
   - pip install pyserial
   
 script:
-  - python2 quick_scan_tests.py
+  - python2 tests/quick_scan_tests.py
 
