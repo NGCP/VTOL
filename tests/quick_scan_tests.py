@@ -1,6 +1,6 @@
 from quick_scan import *
 from autonomy import *
-# from cv import *
+# TODO: add cv methods
 
 
 # check lack of exceptions
@@ -16,7 +16,7 @@ def test_no_exceptions():
 
     print("Test exceptions in quick_scan")
     quick_scan()
-    # cv()
+    # TODO: add cv methods
 
 
 # check if program reaches completion
