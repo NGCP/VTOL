@@ -138,13 +138,14 @@ def comm_simulation(comm_file):
 # Generate waypoints for VTOL
 def generateWaypoints(configs, search_area):
     print("Begin generating waypoints")
-
+    
     waypointsNED = []
     waypointsLLA = []
-
+    
     origin = search_area.center
     radius = search_area.rad2
-
+    
+    # pre-definied in configs file
     altitude = configs["altitude"]
     lat = origin[0]
     lon = origin[1]
@@ -152,38 +153,39 @@ def generateWaypoints(configs, search_area):
     n, e, d = ecef2ned(centerX, centerY, centerZ, lat, lon, altitude)
     waypointsLLA.append([lat, lon, altitude])
     waypointsNED.append([n, e, d])
-
+    
     fovH = math.radians(62.2)     # raspicam horizontal FOV
     fovV = math.radians(48.8)     # raspicam vertical FOV
     boxH = 2 * altitude / math.tan(fovH / 2)     # height of bounding box
     boxV = 2 * altitude / math.tan(fovV / 2)     # width of bounding box
-
+    
     b = (0.75 * boxH) / (2 * math.pi)   # distance between coils with 25% overlap
     rotation = -(math.pi / 2)   # number of radians spiral is rotated
     maxTheta = radius / b   # after using formula r = b * theta
-
+    
     theta = 0
     while theta <= maxTheta:
         # distance away from center
         away = b * theta
-
+        
         # distance around center
         around = theta + rotation
-
+        
         # around & away -> x & y
         x = centerX + math.cos(around) * away
         y = centerY + math.sin(around) * away
-
+        
         # convert ECEF to NED and LLA
         n, e, d = ecef2ned(x, y, centerZ, lat, lon, altitude)
-        newLat, newLon, newAlt = ned2geodetic(n, e, d, lat, lon, altitude)
+        newLat, newLon, newAlt = ned2geodetic(n, e, d, lat, lon, altitude);
         waypointsNED.append([n, e, d])
         waypointsLLA.append([newLat, newLon, newAlt])
-
+        
         # generate a waypoint every pi/8 radian
         theta += configs["d_theta_rad"]
-
+    
     return (waypointsNED, waypointsLLA)
+
 
 
 # Main autonomous flight thread
