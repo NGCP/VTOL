@@ -138,6 +138,35 @@ def geodetic2ecef(lat, lon, alt, ell=None, deg=True):
 
     return x, y, z
 
+def enu2uvw(east, north, up, lat0, lon0, deg = True):
+    if deg:
+        lat0 = radians(lat0)
+        lon0 = radians(lon0)
+
+    t = cos(lat0) * up - sin(lat0) * north
+    w = sin(lat0) * up + cos(lat0) * north
+
+    u = cos(lon0) * t - sin(lon0) * east
+    v = sin(lon0) * t + cos(lon0) * east
+
+    return u, v, w
+
+def enu2ecef(e1, n1, u1, lat0, lon0, h0, deg, ell = None):
+    """
+    ENU to ECEF
+    inputs:
+     e1, n1, u1 (meters)   east, north, up
+     observer: lat0, lon0, h0 (degrees/radians,degrees/radians, meters)
+    ell    reference ellipsoid
+    deg    degrees input/output  (False: radians in/out)
+    output
+    ------
+    x,y,z  [meters] target ECEF location                         [0,Infinity)
+    """
+    x0, y0, z0 = geodetic2ecef(lat0, lon0, h0, ell, deg=deg)
+    dx, dy, dz = enu2uvw(e1, n1, u1, lat0, lon0, deg=deg)
+
+    return x0 + dx, y0 + dy, z0 + dz
 
 def ned2geodetic(n, e, d, lat0, lon0, h0, ell=None, deg=True):
     """
@@ -151,7 +180,7 @@ def ned2geodetic(n, e, d, lat0, lon0, h0, ell=None, deg=True):
     -------
     target: lat,lon, h  (degrees/radians,degrees/radians, meters)
     """
-    x, y, z = enu2ecef(e, n, -d, lat0, lon0, h0, ell, deg=deg)
+    x, y, z = enu2ecef(e, n, -d, lat0, lon0, h0, deg=deg, ell=ell)
 
     return ecef2geodetic(x, y, z, ell, deg=deg)
 
@@ -193,8 +222,7 @@ def ecef2geodetic(x, y, z, ell=None, deg=True):
     eps = ((ell.b * u - ell.a * huE + E**2) * sin(Beta)) / (ell.a * huE * 1 / cos(Beta) - E**2 * cos(Beta))
 
     Beta += eps
-    
-    # %% final output
+# %% final output
     lat = arctan(ell.a / ell.b * tan(Beta))
 
     lon = arctan2(y, x)
@@ -206,33 +234,3 @@ def ecef2geodetic(x, y, z, ell=None, deg=True):
         return degrees(lat), degrees(lon), alt
     else:
         return lat, lon, alt  # radians
-
-
-def enu2ecef(e1, n1, u1, lat0, lon0, h0, ell=None, deg=True):
-    """
-    ENU to ECEF
-    inputs:
-     e1, n1, u1 (meters)   east, north, up
-     observer: lat0, lon0, h0 (degrees/radians,degrees/radians, meters)
-    ell    reference ellipsoid
-    deg    degrees input/output  (False: radians in/out)
-    output
-    ------
-    x,y,z  [meters] target ECEF location                         [0,Infinity)
-    """
-    x0, y0, z0 = geodetic2ecef(lat0, lon0, h0, ell, deg=deg)
-    dx, dy, dz = enu2uvw(e1, n1, u1, lat0, lon0, deg=deg)
-
-
-def enu2uvw(east, north, up, lat0, lon0, deg=True):
-    if deg:
-        lat0 = radians(lat0)
-        lon0 = radians(lon0)
-
-    t = cos(lat0) * up - sin(lat0) * north
-    w = sin(lat0) * up + cos(lat0) * north
-
-    u = cos(lon0) * t - sin(lon0) * east
-    v = sin(lon0) * t + cos(lon0) * east
-
-    return u, v, w
