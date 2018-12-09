@@ -2,7 +2,6 @@ import json
 import sys
 import subprocess
 import time
-from digi.xbee.devices import XBeeDevice
 from serial import SerialException
 from autonomy import autonomy
 
@@ -40,7 +39,8 @@ def setup_xbee():
 def mac_xbee_port_name():
     try:
         # System call to get port name of connected XBee radio
-        port_name = subprocess.run(["ls", "/dev/"], stdout=subprocess.PIPE, encoding="utf-8").stdout
+        process = subprocess.Popen(["ls", "/dev/"], stdout=subprocess.PIPE, encoding="utf-8")
+        port_name, err = process.communicate()
         i = port_name.index("tty.usbserial-")  # index in dev directory of port name
         return "/dev/" + port_name[i: i + 22]  # 22 is length of "tty.usbserial-" + 8-char port name
 
@@ -69,11 +69,12 @@ def quick_scan():
     # Parse configs file
     configs = parse_configs(sys.argv)
 
-    # Setup XBee device if communications not simulated
-    if configs["comms_simulated"] == False:
-        xbee = setup_xbee()
-    else:
+    if configs["comms_simulated"]["toggled_on"]:
         xbee = None
+    # Set up XBee device if communications not simulated
+    else:
+        from digi.xbee.devices import XBeeDevice
+        xbee = setup_xbee()
 
     # Start autonomy thread
     autonomy(configs, xbee)
