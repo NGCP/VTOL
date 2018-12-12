@@ -235,16 +235,19 @@ def adds_mission(vehicle, lla_waypoint_list):
     lat = 0
     lon = 1
      
-    #Add MAV_CMD_NAV_TAKEOFF command. This is ignored if the vehicle is already in the air.
+    # Add MAV_CMD_NAV_TAKEOFF command. This is ignored if the vehicle is already in the air.
+    # This command is there when vehicle is in AUTO mode, where it takes off through command list
+    # In guided mode, the actual takeoff function is needed, in which case this command is ignored
     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 10))
 
 
     #Define the four MAV_CMD_NAV_WAYPOINT locations and add the commands
     for point in lla_waypoint_list:
         cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point[0], point[1], 12))
-    # adds dummy end point
+
+    # adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination and that
     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, lla_waypoint_list[-1][0], lla_waypoint_list[-1][1], 12))
-    print(" Upload new commands to vehicle")
+    print("Upload new commands to vehicle")
     cmds.upload()
 
 
@@ -291,6 +294,17 @@ def autonomy(configs, radio):
 
     # Takeoff
     takeoff(configs["flight_mode"], vehicle, configs["altitude"])
+
+    # Monitor mission
+    while True:
+        nextWp = vehicle.commands.next
+        print "Distance to waypoint (%s): %s" % (nextwaypoint, distance_to_current_waypoint())
+        if nextWp == vehicle.commands.count:
+            print "Reached last waypoint"
+            break;
+        time.sleep(1)
+
+    # TODO: land()
     
     # Wait for comm simulation thread to end
     if comm_sim:
