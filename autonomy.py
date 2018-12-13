@@ -87,28 +87,28 @@ def xbee_callback(message):
 
 # Commands drone to take off by arming vehicle and flying to altitude
 def takeoff(flight_mode, vehicle, altitude):
-    print "Pre-arm checks"
+    print("Pre-arm checks")
     while not vehicle.is_armable:
-        print "Waiting for vehicle to initialize"
+        print("Waiting for vehicle to initialize")
         time.sleep(1)
 
-    print "Arming motors"
+    print("Arming motors")
     vehicle.mode = VehicleMode(flight_mode)
     vehicle.armed = True
 
     while not vehicle.armed:
-       print "Waiting to arm vehicle"
+       print("Waiting to arm vehicle")
        time.sleep(1)
 
-    print "Taking off"
+    print("Taking off")
     vehicle.simple_takeoff(altitude) # take off to altitude
 
     # Wait until vehicle reaches minimum altitude
     while vehicle.location.global_relative_frame.alt < altitude * 0.95:
-        print "Altitude: ", vehicle.location.global_relative_frame.alt
+        print("Altitude: ", vehicle.location.global_relative_frame.alt)
         time.sleep(1)
 
-    print "Reached target altitude"
+    print("Reached target altitude")
 
 
 # Sends message received acknowledgement to GCS
@@ -276,7 +276,6 @@ def autonomy(configs, radio):
     waypoints = generateWaypoints(configs, search_area)
     num_points = len(waypoints[1])
 
-
     # Start SITL if vehicle is being simulated
     if (configs["vehicle_simulated"] is True):
         import dronekit_sitl
@@ -293,15 +292,12 @@ def autonomy(configs, radio):
     adds_mission(vehicle, waypoints[1])
 
     # Takeoff
-    takeoff(configs["flight_mode"], vehicle, configs["altitude"])
+    if (configs["flight_mode"] == "GUIDED"):
+        takeoff(configs["flight_mode"], vehicle, configs["altitude"])
 
     # Monitor mission
-    while True:
-        nextWp = vehicle.commands.next
-        print "Distance to waypoint (%s): %s" % (nextwaypoint, distance_to_current_waypoint())
-        if nextWp == vehicle.commands.count:
-            print "Reached last waypoint"
-            break;
+    while vehicle.commands.next != vehicle.commands.count:
+        print(vehicle.commands.next)
         time.sleep(1)
 
     # TODO: land()
