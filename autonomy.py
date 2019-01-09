@@ -187,7 +187,6 @@ def generateWaypoints(configs, search_area):
     return (waypointsNED, waypointsLLA)
 
 
-
 # Main autonomous flight thread
 # :param configs: dict from configs file
 # :param radio: XBee radio object
@@ -202,7 +201,7 @@ def autonomy(configs, radio):
         comm_sim.start()
     # Otherwise, import Xbee Python Library and set up callback
     else:
-        from digi.xbee.devices import RemoteXBeeDevice, XBee64BitAddress
+        from digi.xbee.devices import RemoteXBeeDevice
         xbee.add_data_received_callback(xbee_callback)
 
     # Generate waypoints after start_mission = True
