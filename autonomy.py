@@ -3,7 +3,7 @@ import math
 from conversions import *
 import time
 from threading import Thread
-from dronekit import connect, Command, VehicleMode
+from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
 from pymavlink import mavutil
 
 # Globals, updated by xBee callback function
@@ -93,7 +93,8 @@ def takeoff(flight_mode, vehicle, altitude):
         time.sleep(1)
 
     print("Arming motors")
-    vehicle.mode = VehicleMode(flight_mode)
+    # Vehicle should arm in GUIDED mode
+    vehicle.mode = VehicleMode("GUIDED")
     vehicle.armed = True
 
     while not vehicle.armed:
@@ -206,7 +207,7 @@ def generateWaypoints(configs, search_area):
         
         # convert ECEF to NED and LLA
         n, e, d = ecef2ned(x, y, centerZ, lat, lon, altitude)
-        newLat, newLon, newAlt = ned2geodetic(n, e, d, lat, lon, altitude);
+        newLat, newLon, newAlt = ned2geodetic(n, e, d, lat, lon, altitude)
         waypointsNED.append([n, e, d])
         waypointsLLA.append([newLat, newLon, newAlt])
         
@@ -279,7 +280,7 @@ def autonomy(configs, radio):
     # Start SITL if vehicle is being simulated
     if (configs["vehicle_simulated"] is True):
         import dronekit_sitl
-        sitl = dronekit_sitl.start_default()
+        sitl = dronekit_sitl.start_default(lat=1, lon=1)
         connection_string = sitl.connection_string()
     else:
         connection_string = "/dev/serial0"
@@ -292,13 +293,17 @@ def autonomy(configs, radio):
     adds_mission(vehicle, waypoints[1])
 
     # Takeoff
-    if (configs["flight_mode"] == "GUIDED"):
-        takeoff(configs["flight_mode"], vehicle, configs["altitude"])
+    takeoff(configs["flight_mode"], vehicle, configs["altitude"])
 
-    # Monitor mission
-    while vehicle.commands.next != vehicle.commands.count:
-        print(vehicle.commands.next)
-        time.sleep(1)
+    vehicle.mode = VehicleMode(configs["flight_mode"])
+
+    # Fly about spiral pattern
+    if (configs["flight_mode"] == "AUTO"):
+        while vehicle.commands.next != vehicle.commands.count:
+            print(vehicle.location.global_frame)
+            time.sleep(1)
+    else:
+        raise Exception("Guided mode not supported")
 
     # TODO: land()
     
