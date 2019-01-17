@@ -50,7 +50,6 @@ def xbee_callback(message):
     global pause_mission
     global stop_mission
     global search_area
-    global vehicle
 
     address = message.remote_device.get_64bit_addr()
     msg = json.loads(message.data)
@@ -300,6 +299,7 @@ def autonomy(configs, radio):
     # Fly about spiral pattern
     if (configs["flight_mode"] == "AUTO"):
         while vehicle.commands.next != vehicle.commands.count:
+            # TODO monitor pause, resume, stop variables
             print(vehicle.location.global_frame)
             time.sleep(1)
     else:
