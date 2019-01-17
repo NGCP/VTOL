@@ -3,6 +3,8 @@ import math
 from conversions import *
 import time
 from threading import Thread
+from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
+from pymavlink import mavutil
 
 # Globals, updated by xBee callback function
 start_mission = False  # takeoff
@@ -80,6 +82,33 @@ def xbee_callback(message):
     # KeyError if message was missing an expected key
     except KeyError as e:
         bad_msg(address, "Missing \'" + e.args[0] + "\' key")
+
+
+# Commands drone to take off by arming vehicle and flying to altitude
+def takeoff(flight_mode, vehicle, altitude):
+    print("Pre-arm checks")
+    while not vehicle.is_armable:
+        print("Waiting for vehicle to initialize")
+        time.sleep(1)
+
+    print("Arming motors")
+    # Vehicle should arm in GUIDED mode
+    vehicle.mode = VehicleMode("GUIDED")
+    vehicle.armed = True
+
+    while not vehicle.armed:
+       print("Waiting to arm vehicle")
+       time.sleep(1)
+
+    print("Taking off")
+    vehicle.simple_takeoff(altitude) # take off to altitude
+
+    # Wait until vehicle reaches minimum altitude
+    while vehicle.location.global_relative_frame.alt < altitude * 0.95:
+        print("Altitude: ", vehicle.location.global_relative_frame.alt)
+        time.sleep(1)
+
+    print("Reached target altitude")
 
 
 # Sends message received acknowledgement to GCS
@@ -177,7 +206,7 @@ def generateWaypoints(configs, search_area):
         
         # convert ECEF to NED and LLA
         n, e, d = ecef2ned(x, y, centerZ, lat, lon, altitude)
-        newLat, newLon, newAlt = ned2geodetic(n, e, d, lat, lon, altitude);
+        newLat, newLon, newAlt = ned2geodetic(n, e, d, lat, lon, altitude)
         waypointsNED.append([n, e, d])
         waypointsLLA.append([newLat, newLon, newAlt])
         
@@ -186,6 +215,40 @@ def generateWaypoints(configs, search_area):
     
     return (waypointsNED, waypointsLLA)
 
+
+def adds_mission(vehicle, lla_waypoint_list):
+    """
+    Adds a takeoff command and four waypoint commands to the current mission. 
+    The waypoints are positioned to form a square of side length 2*aSize around the specified LocationGlobal (aLocation).
+
+    The function assumes vehicle.commands matches the vehicle mission state 
+    (you must have called download at least once in the session and after clearing the mission)
+    """    
+
+    cmds = vehicle.commands
+
+    print(" Clear any existing commands")
+    cmds.clear() 
+    
+    print(" Define/add new commands.")
+    # Add new commands. The meaning/order of the parameters is documented in the Command class. 
+    lat = 0
+    lon = 1
+     
+    # Add MAV_CMD_NAV_TAKEOFF command. This is ignored if the vehicle is already in the air.
+    # This command is there when vehicle is in AUTO mode, where it takes off through command list
+    # In guided mode, the actual takeoff function is needed, in which case this command is ignored
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 10))
+
+
+    #Define the four MAV_CMD_NAV_WAYPOINT locations and add the commands
+    for point in lla_waypoint_list:
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point[0], point[1], 12))
+
+    # adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination and that
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, lla_waypoint_list[-1][0], lla_waypoint_list[-1][1], 12))
+    print("Upload new commands to vehicle")
+    cmds.upload()
 
 
 # Main autonomous flight thread
@@ -209,7 +272,40 @@ def autonomy(configs, radio):
     while not start_mission:
         pass
 
+    # Generate waypoints
     waypoints = generateWaypoints(configs, search_area)
+    num_points = len(waypoints[1])
+
+    # Start SITL if vehicle is being simulated
+    if (configs["vehicle_simulated"] is True):
+        import dronekit_sitl
+        sitl = dronekit_sitl.start_default(lat=1, lon=1)
+        connection_string = sitl.connection_string()
+    else:
+        connection_string = "/dev/serial0"
+        sitl = None
+
+    # Connect to vehicle
+    vehicle = connect(connection_string, wait_ready=True)
+
+    # Send mission to vehicle
+    adds_mission(vehicle, waypoints[1])
+
+    # Takeoff
+    takeoff(configs["flight_mode"], vehicle, configs["altitude"])
+
+    vehicle.mode = VehicleMode(configs["flight_mode"])
+
+    # Fly about spiral pattern
+    if (configs["flight_mode"] == "AUTO"):
+        while vehicle.commands.next != vehicle.commands.count:
+            # TODO monitor pause, resume, stop variables
+            print(vehicle.location.global_frame)
+            time.sleep(1)
+    else:
+        raise Exception("Guided mode not supported")
+
+    # TODO: land()
     
     # Wait for comm simulation thread to end
     if comm_sim:

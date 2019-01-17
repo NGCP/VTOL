@@ -11,6 +11,7 @@
     "directory": "some/path/for/now/i/will/add/in/later/when/testing"
   },
   "mission_control_MAC": "0013A200409BD79C",
-  "altitude": 50,
-  "d_theta_rad": 0.392699
+  "altitude": 25,
+  "d_theta_rad": 0.392699,
+  "flight_mode": "AUTO"
 }
