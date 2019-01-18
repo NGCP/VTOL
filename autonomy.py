@@ -12,7 +12,7 @@ pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
 search_area = None  # search area object, populated by callback on start
 xbee = None  # XBee radio object
-
+cb_timestamp = 0 # timestamp for callback
 
 # Represents a search area for quick scan aerial vehicles
 class SearchArea:
@@ -50,7 +50,9 @@ def xbee_callback(message):
     global pause_mission
     global stop_mission
     global search_area
+    global cb_timestamp
 
+    cb_timestamp = time.time()
     address = message.remote_device.get_64bit_addr()
     msg = json.loads(message.data)
     print("Received data from %s: %s" % (address, msg))
@@ -259,6 +261,36 @@ def adds_mission(vehicle, lla_waypoint_list):
     print("Upload new commands to vehicle")
     cmds.upload()
 
+# Activates the loss of communication failsafe
+# if callback function hasn't been invoked for 10 seconds
+def poll_callback():
+    global cb_timestamp
+
+    # Wait until the first callback
+    while cb_timestamp == 0:
+        pass
+
+    # Every second, check if 10 seconds have passed since the last callback
+    while not stop_mission:
+        if ((time.time() - cb_timestamp) >= 10):
+            comm_failsafe()
+
+        time.sleep(1)
+
+# Loss of communication failsafe - hover the vehicle for 10 seconds
+# and land if communication doesn't resume
+def comm_loss_failsafe():
+    global cb_timestamp
+
+    print("Loss of communcation failsafe triggered")
+    # hover for 10 seconds
+    pause_mission = True
+    time.sleep(10)
+
+    # check if communication has resumed during the hover
+    if ((time.time() - cb_timestamp) >= 11):
+       # land()
+       print("Landing due to loss of communication")
 
 # Main autonomous flight thread
 # :param configs: dict from configs file
@@ -267,6 +299,10 @@ def autonomy(configs, radio):
     global xbee
     xbee = radio
     comm_sim = None
+
+    # Start thread to poll callback timestamp
+    poll_cb = Thread(target=poll_callback)
+    poll_cb.start()
 
     # If comms is simulated, start comm simulation thread
     if xbee is None:
