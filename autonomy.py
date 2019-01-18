@@ -314,7 +314,7 @@ def autonomy(configs, radio):
     else:
         raise Exception("Guided mode not supported")
 
-    # TODO: land()
+    land(vehicle)
     
     # Wait for comm simulation thread to end
     if comm_sim:
