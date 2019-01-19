@@ -13,7 +13,8 @@ start_mission = False  # takeoff
 pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
 xbee = None  # XBee radio object
-cb_timestamp = 0 # timestamp for callback
+cb_timestamp = 0 # timestamp - stores the time at which the callback function was last invoked
+
 
 # Dummy message class for comm simulation thread to be compatible with xbee_callback function
 class DummyMessage:
@@ -71,7 +72,7 @@ def mac_xbee_port_name():
         return "/dev/" + port_name[i: i + 22]  # 22 is length of "tty.usbserial-" + 8-char port name
 
     except ValueError:
-    raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
+        raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
 
 
 # Commands drone to take off by arming vehicle and flying to altitude
@@ -99,6 +100,12 @@ def takeoff(flight_mode, vehicle, altitude):
         time.sleep(1)
 
     print("Reached target altitude")
+
+
+# Commands vehicle to hover
+def hover(vehicle):
+    print("Hovering vehicle")
+    vehicle.mode = VehicleMode("BRAKE")
 
 
 # Commands vehicle to hover
@@ -173,7 +180,7 @@ def comm_simulation(comm_file, xbee_callback):
 
 # Activates the loss of communication failsafe
 # if callback function hasn't been invoked for 10 seconds
-def poll_callback():
+def poll_callback(vehicle):
     global cb_timestamp
 
     # Wait until the first callback
@@ -183,22 +190,21 @@ def poll_callback():
     # Every second, check if 10 seconds have passed since the last callback
     while not stop_mission:
         if ((time.time() - cb_timestamp) >= 10):
-            comm_failsafe()
+            comm_loss_failsafe(vehicle)
 
         time.sleep(1)
 
 
 # Loss of communication failsafe - hover the vehicle for 10 seconds
 # and land if communication doesn't resume
-def comm_loss_failsafe():
+def comm_loss_failsafe(vehicle):
     global cb_timestamp
 
     print("Loss of communcation failsafe triggered")
-    # hover for 10 seconds
-    pause_mission = True
+    hover(vehicle)
     time.sleep(10)
 
     # check if communication has resumed during the hover
-    if ((time.time() - cb_timestamp) >= 11):
-       # land()
+    if ((time.time() - cb_timestamp) >= 11):    
        print("Landing due to loss of communication")
+       land(vehicle)

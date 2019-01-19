@@ -9,7 +9,8 @@ from pymavlink import mavutil
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
 import autonomy
-from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land
+from autonomy import (comm_simulation, acknowledge, bad_msg, takeoff, land,
+					  poll_callback, cb_timestamp)
 
 search_area = None  # search area object, populated by callback on start
 
@@ -204,7 +205,7 @@ def quick_scan_autonomy(configs, radio, autonomyToCV):
     vehicle.mode = VehicleMode(configs["flight_mode"])
 
     # Start thread to poll callback timestamp
-    poll_cb = Thread(target=poll_callback, args=(vehicle))
+    poll_cb = Thread(target=poll_callback, args=[vehicle])
     poll_cb.start()
 
     # Fly about spiral pattern
