@@ -112,6 +112,10 @@ def takeoff(flight_mode, vehicle, altitude):
 
     print("Reached target altitude")
 
+# Commands vehicle to hover
+def hover():
+    print("Hovering vehicle")
+    vehicle.mode = VehicleMode["Loiter"]
 
 # Commands vehicle to land
 def land(vehicle):
@@ -283,14 +287,13 @@ def comm_loss_failsafe():
     global cb_timestamp
 
     print("Loss of communcation failsafe triggered")
-    # hover for 10 seconds
-    pause_mission = True
+    hover()
     time.sleep(10)
 
     # check if communication has resumed during the hover
-    if ((time.time() - cb_timestamp) >= 11):
-       # land()
+    if ((time.time() - cb_timestamp) >= 11):    
        print("Landing due to loss of communication")
+       # land()
 
 # Main autonomous flight thread
 # :param configs: dict from configs file
