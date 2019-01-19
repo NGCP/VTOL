@@ -2,6 +2,7 @@ import json
 import sys
 import subprocess
 import time
+from threading import Thread, Lock
 from serial import SerialException
 from autonomy import autonomy
 from cv import cv
