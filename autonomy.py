@@ -187,5 +187,4 @@ def comm_loss_failsafe():
     # check if communication has resumed during the hover
     if ((time.time() - cb_timestamp) >= 11):    
        print("Landing due to loss of communication")
-
        land()
