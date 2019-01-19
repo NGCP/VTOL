@@ -10,7 +10,7 @@ start_mission = False  # takeoff
 pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
 xbee = None  # XBee radio object
-cb_timestamp = 0 # timestamp for callback
+cb_timestamp = 0 # timestamp - stores the time at which the callback function was last invoked
 
 # Dummy message class for comm simulation thread to be compatible with xbee_callback function
 class DummyMessage:
@@ -171,7 +171,7 @@ def poll_callback():
     # Every second, check if 10 seconds have passed since the last callback
     while not stop_mission:
         if ((time.time() - cb_timestamp) >= 10):
-            comm_failsafe()
+            comm_loss_failsafe()
 
         time.sleep(1)
 
@@ -187,3 +187,5 @@ def comm_loss_failsafe():
     # check if communication has resumed during the hover
     if ((time.time() - cb_timestamp) >= 11):    
        print("Landing due to loss of communication")
+
+       land()
