@@ -304,10 +304,6 @@ def autonomy(configs, radio):
     xbee = radio
     comm_sim = None
 
-    # Start thread to poll callback timestamp
-    poll_cb = Thread(target=poll_callback)
-    poll_cb.start()
-
     # If comms is simulated, start comm simulation thread
     if xbee is None:
         comm_sim = Thread(target=comm_simulation, args=(configs["comms_simulated"]["comm_sim_file"],))
@@ -344,6 +340,10 @@ def autonomy(configs, radio):
     takeoff(configs["flight_mode"], vehicle, configs["altitude"])
 
     vehicle.mode = VehicleMode(configs["flight_mode"])
+
+    # Start thread to poll callback timestamp
+    poll_cb = Thread(target=poll_callback)
+    poll_cb.start()
 
     # Fly about spiral pattern
     if (configs["flight_mode"] == "AUTO"):
