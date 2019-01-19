@@ -98,7 +98,7 @@ def takeoff(vehicle, altitude):
 # Commands vehicle to hover
 def hover():
     print("Hovering vehicle")
-    vehicle.mode = VehicleMode["Loiter"]
+    vehicle.mode = VehicleMode("LOITER")
 
 # Commands vehicle to land
 def land(vehicle):
