@@ -15,5 +15,5 @@ def quick_scan():
     # Start autonomy thread
     quick_scan_autonomy(configs, xbee)
 
-#if __name__ == "__main__":
-    #quick_scan()
+if __name__ == "__main__":
+    quick_scan()

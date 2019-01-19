@@ -15,5 +15,5 @@ def detailed_search():
     # Start autonomy thread
     detailed_search_autonomy(configs, xbee)
 
-#if __name__ == "__main__":
-    #detailed_search()
+if __name__ == "__main__":
+    detailed_search()
