@@ -1,3 +1,4 @@
+import sys
 from quick_scan_autonomy import quick_scan_autonomy
 from autonomy import setup_xbee
 from util import parse_configs

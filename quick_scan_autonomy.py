@@ -1,6 +1,7 @@
 import json
 import math
-from autonomy import comm_simulation, adds_mission, takeoff, land
+import autonomy
+from autonomy import comm_simulation, acknowledge, bad_msg, adds_mission, takeoff, land
 from conversions import *
 from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
 from threading import Thread
@@ -35,24 +36,21 @@ def xbee_callback(message):
         msg_type = msg["type"]
 
         if msg_type == "start":
-            acknowledge(address, msg_type)
-            start_mission = True
-
-        elif msg_type == "addMission":
-            acknowledge(address, msg_type)
             area = msg["searchArea"]
             search_area = SearchArea(area["center"], area["rad1"], area["rad2"])
+            autonomy.start_mission = True
+            acknowledge(address, msg_type)
 
         elif msg_type == "pause":
-            pause_mission = True
+            autonomy.pause_mission = True
             acknowledge(address, msg_type)
 
         elif msg_type == "resume":
-            pause_mission = False
+            autonomy.pause_mission = False
             acknowledge(address, msg_type)
 
         elif msg_type == "stop":
-            stop_mission = True
+            autonomy.stop_mission = True
             acknowledge(address, msg_type)
 
         else:
@@ -120,20 +118,20 @@ def generateWaypoints(configs, search_area):
 # :param radio: XBee radio object
 def quick_scan_autonomy(configs, radio):
     global xbee
-    xbee = radio
+    autonomy.xbee = radio
     comm_sim = None
 
     # If comms is simulated, start comm simulation thread
-    if xbee is None:
+    if autonomy.xbee is None:
         comm_sim = Thread(target=comm_simulation, args=(configs["comms_simulated"]["comm_sim_file"], xbee_callback,))
         comm_sim.start()
     # Otherwise, import Xbee Python Library and set up callback
     else:
         from digi.xbee.devices import RemoteXBeeDevice, XBee64BitAddress
-        xbee.add_data_received_callback(xbee_callback)
+        autonomy.xbee.add_data_received_callback(xbee_callback)
 
     # Generate waypoints after start_mission = True
-    while not start_mission:
+    while not autonomy.start_mission:
         pass
 
     # Generate waypoints
