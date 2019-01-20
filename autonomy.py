@@ -177,6 +177,7 @@ def poll_callback(vehicle):
 
         time.sleep(1)
 
+
 # Loss of communication failsafe - hover the vehicle for 10 seconds
 # and land if communication doesn't resume
 def comm_loss_failsafe(vehicle):
