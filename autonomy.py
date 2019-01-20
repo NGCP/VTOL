@@ -95,10 +95,12 @@ def takeoff(vehicle, altitude):
 
     print("Reached target altitude")
 
+
 # Commands vehicle to hover
-def hover():
+def hover(vehicle):
     print("Hovering vehicle")
     vehicle.mode = VehicleMode("LOITER")
+
 
 # Commands vehicle to land
 def land(vehicle):
@@ -161,7 +163,7 @@ def comm_simulation(comm_file, xbee_callback):
 
 # Activates the loss of communication failsafe
 # if callback function hasn't been invoked for 10 seconds
-def poll_callback():
+def poll_callback(vehicle):
     global cb_timestamp
 
     # Wait until the first callback
@@ -171,20 +173,20 @@ def poll_callback():
     # Every second, check if 10 seconds have passed since the last callback
     while not stop_mission:
         if ((time.time() - cb_timestamp) >= 10):
-            comm_loss_failsafe()
+            comm_loss_failsafe(vehicle)
 
         time.sleep(1)
 
 # Loss of communication failsafe - hover the vehicle for 10 seconds
 # and land if communication doesn't resume
-def comm_loss_failsafe():
+def comm_loss_failsafe(vehicle):
     global cb_timestamp
 
     print("Loss of communcation failsafe triggered")
-    hover()
+    hover(vehicle)
     time.sleep(10)
 
     # check if communication has resumed during the hover
     if ((time.time() - cb_timestamp) >= 11):    
        print("Landing due to loss of communication")
-       land()
+       land(vehicle)
