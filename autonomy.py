@@ -8,7 +8,7 @@ from threading import Thread
 from serial import SerialException
 from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
 from pymavlink import mavutil
-from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
+#from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
 
 # Globals, updated by xBee callback function
 start_mission = False  # takeoff
@@ -35,6 +35,7 @@ class DummyRemoteDevice:
 # Instantiates XBee device object
 def setup_xbee():
     # Continues looking until connection is found
+    from digi.xbee.devices import XBeeDevice
     while (1):
         try:
             port_name = ""
@@ -119,6 +120,7 @@ def acknowledge(address, received_type):
     }
     # xbee is None if comms is simulated
     if xbee:
+        from digi.xbee.devices import RemoteXBeeDevice, XBee64BitAddress
         # Instantiate a remote XBee device object to send data.
         send_xbee = RemoteXBeeDevice(xbee, address)
         xbee.send_data(send_xbee, json.dumps(ack))
@@ -135,6 +137,7 @@ def bad_msg(address, problem):
     }
     # xbee is None if comms is simulated
     if xbee:
+        from digi.xbee.devices import RemoteXBeeDevice, XBee64BitAddress
         # Instantiate a remote XBee device object to send data.
         send_xbee = RemoteXBeeDevice(xbee, address)
         xbee.send_data(send_xbee, json.dumps(msg))

@@ -129,6 +129,7 @@ def quick_scan_autonomy(configs, radio):
         comm_sim.start()
     # Otherwise, import Xbee Python Library and set up callback
     else:
+        from digi.xbee.devices import RemoteXBeeDevice, XBee64BitAddress
         xbee.add_data_received_callback(xbee_callback)
 
     # Generate waypoints after start_mission = True
