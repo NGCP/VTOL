@@ -4,6 +4,7 @@ import time
 from conversions import *
 from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
 from threading import Thread
+from pymavlink import mavutil
 
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions

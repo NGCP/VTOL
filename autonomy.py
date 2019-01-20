@@ -7,7 +7,6 @@ import time
 from threading import Thread
 from serial import SerialException
 from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
-from pymavlink import mavutil
 
 # Globals, updated by xBee callback function
 start_mission = False  # takeoff
