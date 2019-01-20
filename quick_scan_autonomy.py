@@ -1,11 +1,14 @@
 import json
 import math
-import autonomy
 import time
-from autonomy import comm_simulation, acknowledge, bad_msg, adds_mission, takeoff, land
 from conversions import *
 from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
 from threading import Thread
+
+# first import gives access to global variables in "autonomy" namespace
+# second import is for functions
+import autonomy
+from autonomy import comm_simulation, acknowledge, bad_msg, adds_mission, takeoff, land
 
 search_area = None  # search area object, populated by callback on start
 

@@ -1,5 +1,9 @@
 import queue
+
+# first import gives access to global variables in "autonomy" namespace
+# second import is for functions
 import autonomy
+from autonomy import comm_simulation, acknowledge, bad_msg, adds_mission, takeoff, land
 
 POI_queue = queue.Queue()
 

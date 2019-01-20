@@ -1,3 +1,4 @@
+import sys
 from detailed_search_autonomy import detailed_search_autonomy
 from autonomy import setup_xbee
 from util import parse_configs
