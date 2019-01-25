@@ -12,6 +12,7 @@ stop_mission = False  # return to start and land
 xbee = None  # XBee radio object
 cb_timestamp = 0 # timestamp - stores the time at which the callback function was last invoked
 
+
 # Dummy message class for comm simulation thread to be compatible with xbee_callback function
 class DummyMessage:
     def __init__(self, data=None):
@@ -66,7 +67,7 @@ def mac_xbee_port_name():
         return "/dev/" + port_name[i: i + 22]  # 22 is length of "tty.usbserial-" + 8-char port name
 
     except ValueError:
-        raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
+    raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
 
 
 # Commands drone to take off by arming vehicle and flying to altitude

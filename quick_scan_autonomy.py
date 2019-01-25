@@ -31,7 +31,10 @@ class SearchArea:
 # Callback function for messages from GCS, parses JSON message and sets globals
 def xbee_callback(message):
     global search_area
+    global cb_timestamp
 
+    # Store the time at which the callback function is invoked
+    cb_timestamp = time.time()
     address = message.remote_device.get_64bit_addr()
     msg = json.loads(message.data)
     print("Received data from %s: %s" % (address, msg))
@@ -195,6 +198,10 @@ def quick_scan_autonomy(configs, autonomyToCV):
 
     vehicle.mode = VehicleMode(configs["flight_mode"])
 
+    # Start thread to poll callback timestamp
+    poll_cb = Thread(target=poll_callback, args=(vehicle))
+    poll_cb.start()
+
     # Fly about spiral pattern
     if configs["flight_mode"] == "AUTO":
         while vehicle.commands.next != vehicle.commands.count:
@@ -218,3 +225,7 @@ def quick_scan_autonomy(configs, autonomyToCV):
     # Wait for comm simulation thread to end
     if comm_sim:
         comm_sim.join()
+
+    # Wait for callback poll thread to end
+    if poll_cb:
+        poll_cb.join()
