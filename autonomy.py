@@ -13,6 +13,7 @@ start_mission = False  # takeoff
 pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
 xbee = None  # XBee radio object
+cb_timestamp = 0 # timestamp for callback
 
 # Dummy message class for comm simulation thread to be compatible with xbee_callback function
 class DummyMessage:
@@ -70,7 +71,7 @@ def mac_xbee_port_name():
         return "/dev/" + port_name[i: i + 22]  # 22 is length of "tty.usbserial-" + 8-char port name
 
     except ValueError:
-        raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
+    raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
 
 
 # Commands drone to take off by arming vehicle and flying to altitude
@@ -98,6 +99,12 @@ def takeoff(flight_mode, vehicle, altitude):
         time.sleep(1)
 
     print("Reached target altitude")
+
+
+# Commands vehicle to hover
+def hover(vehicle):
+    print("Hovering vehicle")
+    vehicle.mode = VehicleMode("BRAKE")
 
 
 # Commands vehicle to land
@@ -163,3 +170,35 @@ def comm_simulation(comm_file, xbee_callback):
         line = f.readline().strip()
         prev_time = curr_time
 
+
+# Activates the loss of communication failsafe
+# if callback function hasn't been invoked for 10 seconds
+def poll_callback():
+    global cb_timestamp
+
+    # Wait until the first callback
+    while cb_timestamp == 0:
+        pass
+
+    # Every second, check if 10 seconds have passed since the last callback
+    while not stop_mission:
+        if ((time.time() - cb_timestamp) >= 10):
+            comm_failsafe()
+
+        time.sleep(1)
+
+
+# Loss of communication failsafe - hover the vehicle for 10 seconds
+# and land if communication doesn't resume
+def comm_loss_failsafe():
+    global cb_timestamp
+
+    print("Loss of communcation failsafe triggered")
+    # hover for 10 seconds
+    pause_mission = True
+    time.sleep(10)
+
+    # check if communication has resumed during the hover
+    if ((time.time() - cb_timestamp) >= 11):
+       # land()
+       print("Landing due to loss of communication")
