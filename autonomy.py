@@ -116,7 +116,7 @@ def takeoff(flight_mode, vehicle, altitude):
 # Commands vehicle to hover
 def hover(vehicle):
     print("Hovering vehicle")
-    vehicle.mode = VehicleMode("LOITER")
+    vehicle.mode = VehicleMode("BRAKE")
 
 # Commands vehicle to land
 def land(vehicle):
