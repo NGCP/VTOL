@@ -4,7 +4,7 @@ import queue
 # second import is for functions
 import autonomy
 from autonomy import comm_simulation, acknowledge, bad_msg, adds_mission, takeoff, land
-
+import dronekit
 POI_queue = queue.Queue()
 
 # Callback function for messages from GCS, parses JSON message and sets globals
