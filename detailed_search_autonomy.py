@@ -26,7 +26,10 @@ def xbee_callback(message):
             start_mission = True
 
         elif msg_type == "addMission":
-            # handle for detailed_search
+            acknowledge(address, msg_type)
+	    msg_lat = msg['missionInfo']['lat']
+	    msg_lon = msg['missionInfo']['lon']
+	    POI_queue.put(dronekit.LocationGlobalRelative(msg_lan, msg_lon, None))
             pass 
 
         elif msg_type == "pause":
