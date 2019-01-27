@@ -202,11 +202,14 @@ def quick_scan_autonomy(configs, radio):
         while vehicle.commands.next != vehicle.commands.count:
             print(vehicle.location.global_frame)
             time.sleep(1)
+            # Holds the copter in place if receives pause
             if autonomy.pause_mission:
                 vehicle.mode = VehicleMode("ALT_HOLD")
+            # Lands the vehicle if receives stop mission
             elif autonomy.stop_mission:
                 land(vehicle)
                 return
+            # Continues path
             else:
                 vehicle.mode = VehicleMode("AUTO")
     else:
