@@ -29,7 +29,7 @@ def xbee_callback(message):
             acknowledge(address, msg_type)
 	    msg_lat = msg['missionInfo']['lat']
 	    msg_lon = msg['missionInfo']['lon']
-	    POI_queue.put(dronekit.LocationGlobalRelative(msg_lan, msg_lon, None))
+	    POI_queue.put(dronekit.LocationGlobalRelative(msg_lat, msg_lon, None))
 
         elif msg_type == "pause":
             pause_mission = True
