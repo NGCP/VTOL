@@ -106,6 +106,7 @@ def hover(vehicle):
     print("Hovering vehicle")
     vehicle.mode = VehicleMode("BRAKE")
 
+
 # Commands vehicle to land
 def land(vehicle):
     print("Returning to launch")
@@ -196,76 +197,34 @@ def comm_loss_failsafe(vehicle):
     hover(vehicle)
     time.sleep(10)
 
+
+# Activates the loss of communication failsafe
+# if callback function hasn't been invoked for 10 seconds
+def poll_callback(vehicle):
+    global cb_timestamp
+
+    # Wait until the first callback
+    while cb_timestamp == 0:
+        pass
+
+    # Every second, check if 10 seconds have passed since the last callback
+    while not stop_mission:
+        if ((time.time() - cb_timestamp) >= 10):
+            comm_loss_failsafe(vehicle)
+
+        time.sleep(1)
+
+
+# Loss of communication failsafe - hover the vehicle for 10 seconds
+# and land if communication doesn't resume
+def comm_loss_failsafe(vehicle):
+    global cb_timestamp
+
+    print("Loss of communcation failsafe triggered")
+    hover(vehicle)
+    time.sleep(10)
+
     # check if communication has resumed during the hover
     if ((time.time() - cb_timestamp) >= 11):    
        print("Landing due to loss of communication")
        land(vehicle)
-
-# Main autonomous flight thread
-# :param configs: dict from configs file
-# :param radio: XBee radio object
-def autonomy(configs, radio):
-    global xbee
-    xbee = radio
-    comm_sim = None
-
-    # If comms is simulated, start comm simulation thread
-    if xbee is None:
-        comm_sim = Thread(target=comm_simulation, args=(configs["comms_simulated"]["comm_sim_file"],))
-        comm_sim.start()
-    # Otherwise, import Xbee Python Library and set up callback
-    else:
-        from digi.xbee.devices import RemoteXBeeDevice, XBee64BitAddress
-        xbee.add_data_received_callback(xbee_callback)
-
-    # Generate waypoints after start_mission = True
-    while not start_mission:
-        pass
-
-    # Generate waypoints
-    waypoints = generateWaypoints(configs, search_area)
-    num_points = len(waypoints[1])
-
-    # Start SITL if vehicle is being simulated
-    if (configs["vehicle_simulated"] is True):
-        import dronekit_sitl
-        sitl = dronekit_sitl.start_default(lat=1, lon=1)
-        connection_string = sitl.connection_string()
-    else:
-        connection_string = "/dev/serial0"
-        sitl = None
-
-    # Connect to vehicle
-    vehicle = connect(connection_string, wait_ready=True)
-
-    # Send mission to vehicle
-    adds_mission(vehicle, waypoints[1])
-
-    # Takeoff
-    takeoff(configs["flight_mode"], vehicle, configs["altitude"])
-
-    vehicle.mode = VehicleMode(configs["flight_mode"])
-
-    # Start thread to poll callback timestamp
-    poll_cb = Thread(target=poll_callback, args=(vehicle))
-    poll_cb.start()
-
-    # Fly about spiral pattern
-    if (configs["flight_mode"] == "AUTO"):
-        while vehicle.commands.next != vehicle.commands.count:
-            # TODO monitor pause, resume, stop variables
-            print(vehicle.location.global_frame)
-            time.sleep(1)
-    else:
-        raise Exception("Guided mode not supported")
-
-    land(vehicle)
-    
-    # Wait for comm simulation thread to end
-    if comm_sim:
-        comm_sim.join()
-
-    # Wait for callback poll thread to end
-    if poll_cb:
-        poll_cb.join()
->>>>>>> Fixed exception
