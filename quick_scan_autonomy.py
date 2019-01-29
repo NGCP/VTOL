@@ -149,7 +149,7 @@ def quick_scan_adds_mission(vehicle, lla_waypoint_list):
     for point in lla_waypoint_list:
         cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point[0], point[1], 12))
 
-    # adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination and that
+    # adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination
     cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, lla_waypoint_list[-1][0], lla_waypoint_list[-1][1], 12))
     print("Upload new commands to vehicle")
     cmds.upload()
@@ -158,7 +158,7 @@ def quick_scan_adds_mission(vehicle, lla_waypoint_list):
 # Main autonomous flight thread
 # :param configs: dict from configs file
 # :param radio: XBee radio object
-def quick_scan_autonomy(configs, radio):
+def quick_scan_autonomy(configs, radio, autonomyToCV):
     global xbee
     autonomy.xbee = radio
     comm_sim = None
