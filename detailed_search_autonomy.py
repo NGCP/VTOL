@@ -16,8 +16,6 @@ def xbee_callback(message):
     global pause_mission
     global stop_mission
 
-    print(message)
-
     address = message.remote_device.get_64bit_addr()
     msg = json.loads(message.data)
     print("Received data from %s: %s" % (address, msg))

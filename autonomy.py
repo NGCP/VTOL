@@ -2,7 +2,7 @@ import json
 import sys
 import subprocess
 import time
-from xbee.devices import XBeeDevice, RemoteXBeeDevice
+from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
 from serial import SerialException
 from dronekit import VehicleMode
 
@@ -41,7 +41,6 @@ def setup_xbee():
 
             if sys.platform == "darwin":
                 port_name = mac_xbee_port_name()
-                print(port_name)
             elif sys.platform == "linux" or sys.platform == "linux2":
                 port_name = "/dev/ttyUSB0"
             # TODO: figure out windows port name
@@ -144,10 +143,7 @@ def bad_msg(address, problem):
 
 # Reads through comm simulation file from configs and calls xbee_callback to simulate radio messages.
 def comm_simulation(comm_file, xbee_callback):
-    try:
-        f = open(comm_file, "r")
-    except FileNotFoundError:
-        raise
+    f = open(comm_file, "r")
 
     line = f.readline().strip()
     prev_time = float(line[:line.index("~")])

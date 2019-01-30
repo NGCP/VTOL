@@ -1,8 +1,9 @@
-from xbee.devices import RemoteXBeeDevice
-from xbee.models.address import XBee64BitAddress
 import sys
+from digi.xbee.devices import RemoteXBeeDevice
+from digi.xbee.models.address import XBee64BitAddress
+
 sys.path.append('..')
-from autonomy import setup_xbee
+from VTOL.autonomy import setup_xbee
 
 # Insert the MAC Address of desired radio here
 MAC_ADDR = "0013A200409BD79C"
