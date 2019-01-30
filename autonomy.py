@@ -67,7 +67,7 @@ def mac_xbee_port_name():
         return "/dev/" + port_name[i: i + 22]  # 22 is length of "tty.usbserial-" + 8-char port name
 
     except ValueError:
-    raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
+        raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
 
 
 # Commands drone to take off by arming vehicle and flying to altitude
