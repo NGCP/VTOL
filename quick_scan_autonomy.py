@@ -9,7 +9,8 @@ from pymavlink import mavutil
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
 import autonomy
-from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, setup_xbee
+from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land,
+					 poll_callback
 
 search_area = None  # search area object, populated by callback on start
 
