@@ -71,7 +71,7 @@ def mac_xbee_port_name():
         return "/dev/" + port_name[i: i + 22]  # 22 is length of "tty.usbserial-" + 8-char port name
 
     except ValueError:
-    raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
+        raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
 
 
 # Commands drone to take off by arming vehicle and flying to altitude
@@ -169,33 +169,6 @@ def comm_simulation(comm_file, xbee_callback):
 
         line = f.readline().strip()
         prev_time = curr_time
-
-
-# Activates the loss of communication failsafe
-# if callback function hasn't been invoked for 10 seconds
-def poll_callback(vehicle):
-    global cb_timestamp
-
-    # Wait until the first callback
-    while cb_timestamp == 0:
-        pass
-
-    # Every second, check if 10 seconds have passed since the last callback
-    while not stop_mission:
-        if ((time.time() - cb_timestamp) >= 10):
-            comm_loss_failsafe(vehicle)
-
-        time.sleep(1)
-
-
-# Loss of communication failsafe - hover the vehicle for 10 seconds
-# and land if communication doesn't resume
-def comm_loss_failsafe(vehicle):
-    global cb_timestamp
-
-    print("Loss of communcation failsafe triggered")
-    hover(vehicle)
-    time.sleep(10)
 
 
 # Activates the loss of communication failsafe
