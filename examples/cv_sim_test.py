@@ -3,7 +3,7 @@ import cv2
 from cv import cv_simulation
 
 sys.path.append('..')
-from util import parse_configs 
+from util import parse_configs
 
 
 # Runs cv_simulation in a loop and displays the image that is returned from it

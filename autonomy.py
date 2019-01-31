@@ -3,7 +3,6 @@ import sys
 import subprocess
 import time
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
-from serial import SerialException
 from dronekit import VehicleMode
 
 # Globals, updated by xBee callback function
@@ -51,9 +50,8 @@ def setup_xbee():
             xbee.open()
             return xbee
 
-        # FileNotFoundError and SerialException are thrown on Linux machines.
-        # mac_xbee_port_name() will throw a ValueError if port name could not be found on a Mac
-        except (SerialException, ValueError, subprocess.CalledProcessError) as e:
+        # If error in setting up XBee, try again
+        except Exception as e:
             print(e)
             print("Connect the XBee radio!")
             time.sleep(5)

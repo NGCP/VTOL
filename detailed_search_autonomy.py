@@ -1,6 +1,6 @@
 import queue
-from threading import Thread
 import json
+from threading import Thread
 
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
