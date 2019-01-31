@@ -200,7 +200,7 @@ def quick_scan_autonomy(configs, autonomyToCV):
     vehicle.mode = VehicleMode(configs["flight_mode"])
 
     # Start thread to poll callback timestamp
-    poll_cb = Thread(target=poll_callback, args=(vehicle))
+    poll_cb = Thread(target=poll_callback, args=[vehicle])
     poll_cb.start()
 
     # Fly about spiral pattern
