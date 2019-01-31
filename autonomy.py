@@ -73,7 +73,7 @@ def mac_xbee_port_name():
 
 
 # Commands drone to take off by arming vehicle and flying to altitude
-def takeoff(vehicle, altitude):
+def takeoff(flight_mode, vehicle, altitude):
     print("Pre-arm checks")
     while not vehicle.is_armable:
         print("Waiting for vehicle to initialize")

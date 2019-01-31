@@ -1,5 +1,5 @@
-import math
 import json
+import math
 import time
 from conversions import *
 from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
@@ -134,20 +134,19 @@ def quick_scan_adds_mission(vehicle, lla_waypoint_list):
     # Add MAV_CMD_NAV_TAKEOFF command. This is ignored if the vehicle is already in the air.
     # This command is there when vehicle is in AUTO mode, where it takes off through command list
     # In guided mode, the actual takeoff function is needed, in which case this command is ignored
-    cmds.add(
-        Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0,
-                0, 0, 0, 0, 10))
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 10))
+
 
     # Define the four MAV_CMD_NAV_WAYPOINT locations and add the commands
     for point in lla_waypoint_list:
-        cmds.add(
-            Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
-                    0, 0, 0, 0, point[0], point[1], 12))
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point[0], point[1], 12))
 
     # Adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination.
     cmds.add(
         Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0,
                 0, 0, 0, lla_waypoint_list[-1][0], lla_waypoint_list[-1][1], 12))
+    # adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, lla_waypoint_list[-1][0], lla_waypoint_list[-1][1], 12))
     print("Upload new commands to vehicle")
     cmds.upload()
 
@@ -155,7 +154,7 @@ def quick_scan_adds_mission(vehicle, lla_waypoint_list):
 # Main autonomous flight thread
 # :param configs: dict from configs file
 # :param radio: XBee radio object
-def quick_scan_autonomy(configs):
+def quick_scan_autonomy(configs, autonomyToCV):
     comm_sim = None
 
     # If comms is simulated, start comm simulation thread
@@ -163,9 +162,10 @@ def quick_scan_autonomy(configs):
         comm_sim = Thread(target=comm_simulation, args=(configs["comms_simulated"]["comm_sim_file"], xbee_callback,))
         comm_sim.start()
 
-    # Set up XBee device if communications not simulated
+    # Otherwise, set up XBee device and add callback
     else:
         autonomy.xbee = setup_xbee()
+        autonomy.xbee.add_data_received_callback(xbee_callback)
 
     # Generate waypoints after start_mission = True
     while not autonomy.start_mission:
@@ -189,16 +189,26 @@ def quick_scan_autonomy(configs):
     quick_scan_adds_mission(vehicle, waypoints[1])
 
     # Takeoff
-    takeoff(vehicle, configs["altitude"])
+    # TODO: flight mode arg necessary in takeoff??
+    takeoff(configs["flight_mode"], vehicle, configs["altitude"])
 
     vehicle.mode = VehicleMode(configs["flight_mode"])
 
     # Fly about spiral pattern
-    if (configs["flight_mode"] == "AUTO"):
+    if configs["flight_mode"] == "AUTO":
         while vehicle.commands.next != vehicle.commands.count:
-            # TODO monitor pause, resume, stop variables
             print(vehicle.location.global_frame)
             time.sleep(1)
+            # Holds the copter in place if receives pause
+            if autonomy.pause_mission:
+                vehicle.mode = VehicleMode("ALT_HOLD")
+            # Lands the vehicle if receives stop mission
+            elif autonomy.stop_mission:
+                land(vehicle)
+                return
+            # Continues path
+            else:
+                vehicle.mode = VehicleMode("AUTO")
     else:
         raise Exception("Guided mode not supported")
 

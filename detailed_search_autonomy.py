@@ -56,9 +56,10 @@ def detailed_search_autonomy(configs):
         comm_sim = Thread(target=comm_simulation, args=(configs["comms_simulated"]["comm_sim_file"], xbee_callback,))
         comm_sim.start()
 
-    # Set up XBee device if communications not simulated
+    # Otherwise, set up XBee device and add callback
     else:
         autonomy.xbee = setup_xbee()
+        autonomy.xbee.add_data_received_callback(xbee_callback)
 
     # Generate waypoints after start_mission = True
     while not autonomy.start_mission:
