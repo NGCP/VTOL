@@ -5,6 +5,8 @@ import queue
 import autonomy
 from autonomy import comm_simulation, acknowledge, bad_msg, adds_mission, takeoff, land
 import dronekit
+from threading import Thread
+import json
 POI_queue = queue.Queue()
 
 # Callback function for messages from GCS, parses JSON message and sets globals
@@ -27,8 +29,10 @@ def xbee_callback(message):
 
         elif msg_type == "addMission":
             acknowledge(address, msg_type)
+	#takes data from json and assigns variables to corresponding data values
 	    msg_lat = msg['missionInfo']['lat']
 	    msg_lon = msg['missionInfo']['lon']
+	#data from json is inserted into dronekit object, which is then placed intp a queue
 	    POI_queue.put(dronekit.LocationGlobalRelative(msg_lat, msg_lon, None))
 
         elif msg_type == "pause":
@@ -51,5 +55,7 @@ def xbee_callback(message):
         bad_msg(address, "Missing \'" + e.args[0] + "\' key")
 
 def detailed_search_autonomy():
-    #TODO
-    pass
+#comms simulation to test addMission conditional	
+    if autonomy.xbee is None:
+        comm_sim = Thread(target=comm_simulation, args=(configs["comms_simulated"]["comm_sim_file"], xbee_callback,))
+        comm_sim.start()
