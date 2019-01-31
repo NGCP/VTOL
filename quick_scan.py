@@ -4,7 +4,6 @@ from util import parse_configs
 
 
 def quick_scan():
-
     # Parse configs file
     configs = parse_configs(sys.argv)
 

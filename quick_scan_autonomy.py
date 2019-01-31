@@ -1,4 +1,6 @@
 import math
+import json
+import time
 from conversions import *
 from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
 from threading import Thread
@@ -7,7 +9,7 @@ from pymavlink import mavutil
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
 import autonomy
-from autonomy import *
+from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, setup_xbee
 
 search_area = None  # search area object, populated by callback on start
 
@@ -28,11 +30,6 @@ class SearchArea:
 
 # Callback function for messages from GCS, parses JSON message and sets globals
 def xbee_callback(message):
-    global start_mission
-    global pause_mission
-    global stop_mission
-    global search_area
-
     address = message.remote_device.get_64bit_addr()
     msg = json.loads(message.data)
     print("Received data from %s: %s" % (address, msg))
@@ -41,9 +38,12 @@ def xbee_callback(message):
         msg_type = msg["type"]
 
         if msg_type == "start":
-            area = msg["searchArea"]
-            search_area = SearchArea(area["center"], area["rad1"], area["rad2"])
             autonomy.start_mission = True
+            acknowledge(address, msg_type)
+
+        elif msg_type == "addMission":
+            area = msg["searchArea"]
+            autonomy.search_area = SearchArea(area["center"], area["rad1"], area["rad2"])
             acknowledge(address, msg_type)
 
         elif msg_type == "pause":
@@ -67,7 +67,7 @@ def xbee_callback(message):
 
 
 # Generate waypoints for VTOL
-def generateWaypoints(configs, search_area):
+def generate_waypoints(configs, search_area):
     print("Begin generating waypoints")
 
     waypointsNED = []
@@ -124,7 +124,6 @@ def quick_scan_adds_mission(vehicle, lla_waypoint_list):
     The function assumes vehicle.commands matches the vehicle mission state 
     (you must have called download at least once in the session and after clearing the mission)
     """
-
     cmds = vehicle.commands
 
     print(" Clear any existing commands")
@@ -169,11 +168,11 @@ def quick_scan_autonomy(configs):
         autonomy.xbee = setup_xbee()
 
     # Generate waypoints after start_mission = True
-    while not start_mission:
+    while not autonomy.start_mission:
         pass
 
     # Generate waypoints
-    waypoints = generateWaypoints(configs, search_area)
+    waypoints = generate_waypoints(configs, search_area)
 
     # Start SITL if vehicle is being simulated
     if (configs["vehicle_simulated"]):

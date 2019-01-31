@@ -9,6 +9,7 @@ from VTOL.autonomy import setup_xbee
 MAC_ADDR = "0013A200409BD79C"
 DATA_TO_SEND = "Hello World!"
 
+
 def main():
     # Instantiate XBee device
     device = setup_xbee()

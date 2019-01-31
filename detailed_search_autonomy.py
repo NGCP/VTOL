@@ -1,10 +1,11 @@
 import queue
 from threading import Thread
+import json
 
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
 import autonomy
-from autonomy import *
+from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, setup_xbee
 
 # queue of points of interests
 POI_queue = queue.Queue()
@@ -12,10 +13,6 @@ POI_queue = queue.Queue()
 
 # Callback function for messages from GCS, parses JSON message and sets globals
 def xbee_callback(message):
-    global start_mission
-    global pause_mission
-    global stop_mission
-
     address = message.remote_device.get_64bit_addr()
     msg = json.loads(message.data)
     print("Received data from %s: %s" % (address, msg))
@@ -24,7 +21,7 @@ def xbee_callback(message):
         msg_type = msg["type"]
 
         if msg_type == "start":
-            start_mission = True
+            autonomy.start_mission = True
             acknowledge(address, msg_type)
 
         elif msg_type == "addMission":
@@ -32,15 +29,15 @@ def xbee_callback(message):
             pass
 
         elif msg_type == "pause":
-            pause_mission = True
+            autonomy.pause_mission = True
             acknowledge(address, msg_type)
 
         elif msg_type == "resume":
-            pause_mission = False
+            autonomy.pause_mission = False
             acknowledge(address, msg_type)
 
         elif msg_type == "stop":
-            stop_mission = True
+            autonomy.stop_mission = True
             acknowledge(address, msg_type)
 
         else:
@@ -62,10 +59,9 @@ def detailed_search_autonomy(configs):
     # Set up XBee device if communications not simulated
     else:
         autonomy.xbee = setup_xbee()
-        print("XBee radio set up!")
 
     # Generate waypoints after start_mission = True
-    while not start_mission:
+    while not autonomy.start_mission:
         pass
 
     # Wait for comm simulation thread to end

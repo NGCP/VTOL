@@ -6,7 +6,6 @@ from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
 from serial import SerialException
 from dronekit import VehicleMode
 
-
 # Globals, updated by xBee callback function
 start_mission = False  # takeoff
 pause_mission = False  # vehicle will hover
@@ -86,11 +85,11 @@ def takeoff(vehicle, altitude):
     vehicle.armed = True
 
     while not vehicle.armed:
-       print("Waiting to arm vehicle")
-       time.sleep(1)
+        print("Waiting to arm vehicle")
+        time.sleep(1)
 
     print("Taking off")
-    vehicle.simple_takeoff(altitude) # take off to altitude
+    vehicle.simple_takeoff(altitude)  # take off to altitude
 
     # Wait until vehicle reaches minimum altitude
     while vehicle.location.global_relative_frame.alt < altitude * 0.95:
