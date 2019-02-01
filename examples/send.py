@@ -7,7 +7,7 @@ from VTOL.autonomy import setup_xbee
 
 # Insert the MAC Address of desired radio here
 MAC_ADDR = "0013A200409BD79C"
-DATA_TO_SEND = "Hello World!"
+DATA_TO_SEND = "Hello XBee!"
 
 
 def main():
