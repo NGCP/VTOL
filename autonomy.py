@@ -7,12 +7,13 @@ import time
 from threading import Thread
 from serial import SerialException
 from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
+from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 
 # Globals, updated by xBee callback function
 start_mission = False  # takeoff
 pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
-xbee = None  # XBee radio object
+xbee = None  # XBee radio object 
 
 # Dummy message class for comm simulation thread to be compatible with xbee_callback function
 class DummyMessage:
@@ -163,3 +164,25 @@ def comm_simulation(comm_file, xbee_callback):
         line = f.readline().strip()
         prev_time = curr_time
 
+def MakeHandlerClassFromArgv(xbee_callback):
+    class RequestHandler(BaseHTTPRequestHandler):
+            
+        def do_POST(self):
+            self.send_response(200)
+            self.send_header('Content-type','text/html')
+            self.end_headers()
+            self.wfile.write("Recieved")
+            body = self.rfile.read(int(self.headers['Content-Length']))
+            xbee_callback(DummyMessage(body))
+            return
+    return RequestHandler
+
+def start_dummy_server(port, xbee_callback):
+    try:
+        server = HTTPServer(('0.0.0.0', port), MakeHandlerClassFromArgv(xbee_callback))
+        print 'Listening for requsets on port ' , port
+        server.serve_forever()
+
+    except KeyboardInterrupt:
+        print 'shutting down dummy coms'
+        server.socket.close()

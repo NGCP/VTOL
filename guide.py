@@ -1,15 +1,19 @@
 from dronekit import connect, VehicleMode, LocationGlobalRelative
 from threading import Thread
 # from digi.xbee.devices import RemoteXBeeDevice
+from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
 import math
 import json
 import dronekit_sitl
 import sys
 import time
+from autonomy import start_dummy_server, comm_simulation, land, takeoff
+from conversions import *
 
 start_mission = False
 destination = None
 continue_path = False
+stop_mission = False
 
 def parse_configs(argv):
     """Parses the .json file given as the first command line argument.
@@ -32,6 +36,7 @@ def xbee_callback(message):
     global start_mission
     global destination
     global continue_path
+    global stop_mission
 
     address = message.remote_device.get_64bit_addr()
     msg = json.loads(message.data.decode("utf8"))
@@ -47,6 +52,8 @@ def xbee_callback(message):
 
     elif msg_type == "continue":
         continue_path = True
+    elif msg_type == "stop":
+        stop_mission = True
     else:
         print("uknown type" + msg_type)
     # except KeyError as e:
@@ -74,82 +81,48 @@ def guide(configs, radio):
     xbee = radio
 
     # Add the callback.
-    configs = configs.get('guide_config')
-    print(configs)
+    configs = configs['guide_config']
     # xbee.add_data_received_callback(xbee_callback)
 
+    print("Waiting for start message")
+    while(not start_mission):
+        pass
     print ("Start simulator (SITL)")
     sitl = dronekit_sitl.start_default(
-        lat=configs.get('start_lat'), lon=configs.get('start_lon'))
+        lat=configs['start_lat'], lon=configs['start_lon'])
     connection_string = sitl.connection_string()
 
     # Connect to the Vehicle.
     print("Connecting to vehicle on: %s" % (connection_string,))
     vehicle = connect(connection_string, wait_ready=True)
 
-    # Get some vehicle attributes (state)
-    print("Get some vehicle attribute values:")
-    print(" GPS: %s" % vehicle.gps_0)
-    print(" Battery: %s" % vehicle.battery)
-    print(" Last Heartbeat: %s" % vehicle.last_heartbeat)
-    print(" Is Armable?: %s" % vehicle.is_armable)
-    print(" System status: %s" % vehicle.system_status.state)
-    print(" Mode: %s" % vehicle.mode.name)    # settable)
-
-    while not vehicle.is_armable:
-        print(" Waiting for vehicle to initialise...")
-        time.sleep(1)
-
-    print("Arming motors")
-    vehicle.mode = VehicleMode("GUIDED")
-    vehicle.armed = True
-    while not vehicle.armed:
-        print(" Waiting for arming...")
-        time.sleep(1)
-
-    print("waiting for coordinates")
-    while not start_mission:
-        time.sleep(.5)
-
-    print("Taking off")
-    # revisit this (Talking with Pomona about incements based on ration vs distance)
-    # Take off to target altitude
-    target_altitude = configs.get('altitude')
-    vehicle.simple_takeoff(target_altitude)
-
-    while True:
-        print(" Altitude: ", vehicle.location.global_relative_frame.alt)
-        # Break and return from function just below target altitude.
-        if vehicle.location.global_relative_frame.alt >= target_altitude * 0.95:
-            print("Reached target altitude")
-            break
-        time.sleep(1)
-
-    vehicle.groundspeed = configs.get('ground_speed')
+    vehicle.groundspeed = configs['ground_speed']
     home = vehicle.location.global_relative_frame
-    theta = math.atan((home.lon - destination.lon) /
-                      (home.lat - destination.lat))
-    d_lat = math.cos(theta) * configs.get('distance_meters') / 111111.0
-    d_lon = math.sin(theta) * configs.get('distance_meters') / 111111.0
+    (home_x, home_y, _) = geodetic2ecef(home.lat, home.lon, configs['altitude'])
+    (dest_x, dest_y, _)  = geodetic2ecef(destination.lat, destination.lon, configs['altitude'])
+    theta = math.atan((dest_y - home_y) /
+                      (dest_x - home_x))
+    dy = math.cos(theta) * configs['distance_meters']
+    dx = math.sin(theta) * configs['distance_meters']
 
-    print(d_lat, d_lon)
+    takeoff(VehicleMode("GUIDED"), vehicle, configs['altitude'])
 
     while get_distance_metres(vehicle.location.global_relative_frame, destination) > 1:
-        lat = vehicle.location.global_relative_frame.lat + d_lat/111111
-        lon = vehicle.location.global_relative_frame.lon + d_lon/111111
-
-        loc = LocationGlobalRelative(
-            lat, lon, vehicle.location.global_relative_frame.alt)
-        print(loc)
+        current = vehicle.location.global_relative_frame
+        (current_x, current_y, current_z) = geodetic2ecef(current.lat, current.lon, current.alt)
+        (lat, lon, alt) = ecef2geodetic(current_x+dx, current_y+dy, current_z)
+        loc = LocationGlobalRelative(lat, lon, alt)
         vehicle.simple_goto(loc)
         while(get_distance_metres(vehicle.location.global_relative_frame, loc) > 1):
-            print(get_distance_metres(vehicle.location.global_relative_frame, loc) > 1)
-            time.sleep(1)
+            print("flying :)")
+            time.sleep(.05)
         while not continue_path:
             print("awaiting continue path")
             time.sleep(1)
         continue_path = False
-
+        if stop_mission:
+            land()
+            break
     vehicle.groundspeed = 0
     while not continue_path:
         print("awaiting continue path")
@@ -160,54 +133,22 @@ def guide(configs, radio):
     vehicle.close()
 
     # Shut down simulator
-    if(configs.get('vehicle_simulated')):
+    if(configs['vehicle_simulated']):
         sitl.stop()
     print("Completed")
 
 # Reads through comm simulation file from configs and calls xbee_callback to simulate radio messages.
 
 
-# Dummy message class for comm simulation thread to be compatible with xbee_callback function
-class DummyMessage:
-    def __init__(self, data=None):
-        self.data = data  # UTF-8 encoded JSON message
-        self.remote_device = DummyRemoteDevice()
-
-
-# Dummy remote device object for use in DummyMessage, has fake address 0
-class DummyRemoteDevice:
-    def __init__(self):
-        pass
-
-    def get_64bit_addr(self):
-        return "comms simulation"
-
-
-def comm_simulation(comm_file):
-    try:
-        f = open(comm_file, "r")
-    except FileNotFoundError:
-        raise
-
-    line = f.readline().strip()
-    prev_time = float(line[:line.index("~")])
-    while line != "":
-        delim = line.index("~")
-        curr_time = float(line[:delim])
-        time.sleep(curr_time - prev_time)
-
-        # Send message to xbee_callback
-        xbee_callback(DummyMessage(line[delim + 1:]))
-
-        line = f.readline().strip()
-        prev_time = curr_time
-
-
 configs = parse_configs(sys.argv)
-comm_sim = Thread(target=comm_simulation, args=(
-    configs["comms_simulated"]["comm_sim_file"],))
-comm_sim.start()
-while(not start_mission):
-    pass
+if(configs['comms_simulated']['file_simulated']):
+    comm_sim = Thread(target=comm_simulation, args=(
+        configs["comms_simulated"]["comm_sim_file"],))
+    comm_sim.start()
+elif(configs['comms_simulated']['http_simulated']):
+    comm_sim = Thread(target=start_dummy_server, args=(configs['comms_simulated']['http_port'], xbee_callback))
+    comm_sim.daemon=True
+    comm_sim.start()
+
 
 guide(configs, comm_sim)

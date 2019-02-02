@@ -1,17 +1,28 @@
 {
-  "vehicle_type": "Quadcopter",
-  "vehicle_name": "A",
-  "vehicle_simulated": true,
-  "comms_simulated": {
-    "toggled_on": true,
-    "comm_sim_file": "comm_sim.txt"
-  },
-  "cv_simulated": {
-    "toggled_on": true,
-    "directory": "some/path/for/now/i/will/add/in/later/when/testing"
-  },
-  "mission_control_MAC": "0013A200409BD79C",
-  "altitude": 25,
-  "d_theta_rad": 0.392699,
-  "flight_mode": "AUTO"
+	"vehicle_type": "Quadcopter",
+	"vehicle_name": "A",
+	"vehicle_simulated": true,
+	"comms_simulated": {
+		"comm_sim_file": "comm_sim.txt",
+		"file_simulated": false,
+		"__Reads com requests from file": null,
+		"http_simulated": true,
+		"__Reads com requests from http port": null,
+		"http_port": 8080,
+		"toggled_on": true
+	},
+	"cv_simulated": {
+		"toggled_on": true,
+		"directory": "some/path/for/now/i/will/add/in/later/when/testing"
+	},
+	"mission_control_MAC": "0013A200409BD79C",
+	"altitude": 50,
+	"d_theta_rad": 0.392699,
+	"guide_config": {
+		"altitude": 10,
+		"distance_meters": 10,
+		"start_lat": 50,
+		"start_lon": 50,
+		"ground_speed": 5
+	}
 }
