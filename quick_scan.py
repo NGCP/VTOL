@@ -4,6 +4,28 @@ from quick_scan_autonomy import quick_scan_autonomy
 from quick_scan_cv import quick_scan_cv
 from util import parse_configs
 
+
+class AutonomyToCV:
+    def __init__(self):
+        self.startMutex = Lock()
+        self.start = False
+
+        self.latMutex = Lock()
+        self.lat = 0.0
+
+        self.lonMutex = Lock()
+        self.lon = 0.0
+
+        self.altMutex = Lock()
+        self.alt = 0.0
+
+        self.northMutex = Lock()
+        self.north = 0.0
+
+        self.eastMutex = Lock()
+        self.east = 0.0
+
+
 def quick_scan(filename = ""):
     # If the optional argument is set, override command line argument
     if filename != "":
@@ -29,5 +51,4 @@ def quick_scan(filename = ""):
 
 
 if __name__ == "__main__":
-    quick_scan()
-    
+quick_scan()
