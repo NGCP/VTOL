@@ -3,8 +3,10 @@ import queue
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
 import autonomy
-from autonomy import comm_simulation, acknowledge, bad_msg, adds_mission, takeoff, land
-
+from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land
+import dronekit
+from threading import Thread
+import json
 POI_queue = queue.Queue()
 
 # Callback function for messages from GCS, parses JSON message and sets globals
@@ -29,8 +31,8 @@ def xbee_callback(message):
             acknowledge(address, msg_type)
 	    msg_lat = msg['missionInfo']['lat']
 	    msg_lon = msg['missionInfo']['lon']
-	    POI_queue.put(dronekit.LocationGlobalRelative(msg_lan, msg_lon, None))
-            pass 
+	    POI_queue.put(dronekit.LocationGlobalRelative(msg_lat, msg_lon, None))
+	    POI_queue.get()
 
         elif msg_type == "pause":
             pause_mission = True
@@ -51,6 +53,12 @@ def xbee_callback(message):
     except KeyError as e:
         bad_msg(address, "Missing \'" + e.args[0] + "\' key")
 
-def detailed_search_autonomy():
-    #TODO
-    pass
+def detailed_search_autonomy(configs, xbee):
+    if autonomy.xbee is None:
+        comm_sim = Thread(target=comm_simulation, args=(configs["comms_simulated"]["comm_sim_file"], xbee_callback,))
+        comm_sim.start()
+
+
+
+    if autonomy.xbee is None:
+	comm_sim.join()

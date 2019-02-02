@@ -1,4 +1,4 @@
-0.5~{"type":"start", "searchArea":{"center":[1, 1], "rad1":0, "rad2":100}}
-1.0~{"type":"pause"}
-2.0~{"type":"resume"}
+0.5~{"type":"start"}
+1.0~{"type":"addMission","missionInfo":{"lat":34.917, "lon": 27.948}}
+2.0~{"type":"addMission","missionInfo":{"lat":5, "lon": 100.2345}}
 3.0~{"type":"stop"}
