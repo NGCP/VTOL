@@ -191,8 +191,7 @@ def quick_scan_autonomy(configs, autonomyToCV):
     quick_scan_adds_mission(vehicle, waypoints[1])
 
     # Takeoff
-    # TODO: flight mode arg necessary in takeoff??
-    takeoff(configs["flight_mode"], vehicle, configs["altitude"])
+    takeoff(vehicle, configs["altitude"])
 
     vehicle.mode = VehicleMode(configs["flight_mode"])
 
