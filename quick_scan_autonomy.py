@@ -40,12 +40,12 @@ def xbee_callback(message):
         msg_type = msg["type"]
 
         if msg_type == "start":
-            autonomy.start_mission = True
             acknowledge(address, msg_type)
 
         elif msg_type == "addMission":
             area = msg["searchArea"]
             search_area = SearchArea(area["center"], area["rad1"], area["rad2"])
+            autonomy.start_mission = True
             acknowledge(address, msg_type)
 
         elif msg_type == "pause":
