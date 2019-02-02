@@ -1,10 +1,13 @@
+import sys
 from digi.xbee.devices import RemoteXBeeDevice
 from digi.xbee.models.address import XBee64BitAddress
-import sys
-sys.path.append('..')
-from quick_scan import setup_xbee
 
-DATA_TO_SEND = "Hello World!"
+sys.path.append('..')
+from VTOL.autonomy import setup_xbee
+
+# Insert the MAC Address of desired radio here
+MAC_ADDR = "0013A200409BD79C"
+DATA_TO_SEND = "Hello XBee!"
 
 
 def main():
@@ -12,8 +15,7 @@ def main():
     device = setup_xbee()
 
     try:
-        # Insert the MAC Address of desired radio here
-        remote_device = RemoteXBeeDevice(device, XBee64BitAddress.from_hex_string("0013A20040F8064D"))
+        remote_device = RemoteXBeeDevice(device, XBee64BitAddress.from_hex_string(MAC_ADDR))
 
         if remote_device is None:
             print("Invalid MAC Address")

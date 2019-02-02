@@ -1,6 +1,7 @@
 import sys
+
 sys.path.append('..')
-from quick_scan import setup_xbee
+from VTOL.autonomy import setup_xbee
 
 
 def main():
