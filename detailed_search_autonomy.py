@@ -59,3 +59,7 @@ def detailed_search_autonomy():
     if autonomy.xbee is None:
         comm_sim = Thread(target=comm_simulation, args=(configs["comms_simulated"]["comm_sim_file"], xbee_callback,))
         comm_sim.start()
+
+	
+    if autonomy.xbee is None:
+	comm_sim.join()
