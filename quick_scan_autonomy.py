@@ -10,7 +10,7 @@ from pymavlink import mavutil
 # second import is for functions
 import autonomy
 from autonomy import (comm_simulation, acknowledge, bad_msg, takeoff, land,
-					  poll_callback)
+					  poll_callback, cb_timestamp)
 
 search_area = None  # search area object, populated by callback on start
 
