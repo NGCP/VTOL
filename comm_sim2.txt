@@ -1,0 +1,5 @@
+0.5~{"type":"start", "jobType" : "quickScan"}
+0.75~{"type":"addMission", "searchArea":{"center":[1, 1], "rad1":0, "rad2":100}}
+10.0~{"type":"pause"}
+20.0~{"type":"resume"}
+30.0~{"type":"stop"}
