@@ -1,17 +1,7 @@
 import sys
-<<<<<<< HEAD
-import subprocess
-import time
-from threading import Thread, Lock
-from serial import SerialException
-from quick_scan_autonomy import quick_scan_autonomy
-from quick_scan_cv import quick_scan_cv
-from autonomy import setup_xbee
-=======
 from threading import Thread, Lock
 from quick_scan_autonomy import quick_scan_autonomy
 from quick_scan_cv import quick_scan_cv
->>>>>>> 7b3611ab4ab774a58c97f2bfff65a9dbad4370ee
 from util import parse_configs
 
 
