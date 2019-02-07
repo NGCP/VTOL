@@ -51,4 +51,4 @@ def quick_scan(filename = ""):
 
 
 if __name__ == "__main__":
-quick_scan()
+    quick_scan()
