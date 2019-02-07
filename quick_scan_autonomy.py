@@ -230,3 +230,4 @@ def quick_scan_autonomy(configs, autonomyToCV):
     # Wait for callback poll thread to end
     if poll_cb:
         poll_cb.join()
+        

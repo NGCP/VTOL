@@ -103,6 +103,15 @@ def hover(vehicle):
     vehicle.mode = VehicleMode("BRAKE")
 
 
+<<<<<<< HEAD
+=======
+# Commands vehicle to hover
+def hover(vehicle):
+    print("Hovering vehicle")
+    vehicle.mode = VehicleMode("BRAKE")
+
+
+>>>>>>> e7b124c079f1d6769a651dc94073e8b2a70e92cf
 # Commands vehicle to land
 def land(vehicle):
     print("Returning to launch")
