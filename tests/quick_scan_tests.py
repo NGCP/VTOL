@@ -3,6 +3,7 @@
 # check if program reaches completion
 def test_reach_completion():
     quick_scan()
+    quick_scan("configs2.txt")
 
 if __name__ == "__main__":
     # TODO don't import at runtime
