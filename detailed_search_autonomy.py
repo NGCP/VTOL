@@ -29,10 +29,11 @@ def xbee_callback(message):
 
         elif msg_type == "addMission":
             acknowledge(address, msg_type)
+	#takes data from json and assigns variables to corresponding data values
 	    msg_lat = msg['missionInfo']['lat']
 	    msg_lon = msg['missionInfo']['lon']
+	#data from json is inserted into dronekit object, which is then placed intp a queue
 	    POI_queue.put(dronekit.LocationGlobalRelative(msg_lat, msg_lon, None))
-	    POI_queue.get()
 
         elif msg_type == "pause":
             pause_mission = True
@@ -53,12 +54,9 @@ def xbee_callback(message):
     except KeyError as e:
         bad_msg(address, "Missing \'" + e.args[0] + "\' key")
 
+
 def detailed_search_autonomy(configs, xbee):
+#comms simulation to test addMission conditional
     if autonomy.xbee is None:
         comm_sim = Thread(target=comm_simulation, args=(configs["comms_simulated"]["comm_sim_file"], xbee_callback,))
         comm_sim.start()
-
-
-
-    if autonomy.xbee is None:
-	comm_sim.join()
