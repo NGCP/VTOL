@@ -2,10 +2,6 @@
   "vehicle_type": "Quadcopter",
   "vehicle_name": "A",
   "vehicle_simulated": true,
-  "comms_simulated": {
-    "toggled_on": true,
-    "comm_sim_file": "comm_sim.txt"
-  },
   "cv_simulated": {
     "toggled_on": true,
     "directory": "some/path/for/now/i/will/add/in/later/when/testing"
@@ -13,5 +9,17 @@
   "mission_control_MAC": "0013A200409BD79C",
   "altitude": 25,
   "d_theta_rad": 0.392699,
-  "flight_mode": "AUTO"
+  "flight_mode": "AUTO",
+  "quick_scan_specific":{
+    "comms_simulated": {
+      "toggled_on": true,
+      "comm_sim_file": "comm_sim.txt"
+    }
+  },
+  "detailed_search_specific":{
+    "comms_simulated": {
+      "toggled_on": true,
+      "comm_sim_file": "comm_sim_detailed_search.txt"
+    }
+  }
 }
