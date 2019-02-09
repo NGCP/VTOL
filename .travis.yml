@@ -15,3 +15,5 @@ install:
   
 script:
   - python2 tests/quick_scan_tests.py
+  - python2 tests/detailed_search_tests.py
+

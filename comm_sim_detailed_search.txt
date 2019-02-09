@@ -1,0 +1,6 @@
+0.5~{"type":"start"}
+1.0~{"type":"addMission","missionInfo":{"lat":34.917, "lon": 27.948}}
+2.0~{"type":"addMission","missionInfo":{"lat":5, "lon": 100.23}}
+3.0~{"type":"pause"}
+4.0~{"type":"resume"}
+5.0~{"type":"stop"}

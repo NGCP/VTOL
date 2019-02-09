@@ -5,9 +5,10 @@ from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
 import autonomy
-from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, setup_xbee
-
-# queue of points of interests
+from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land
+import dronekit
+from threading import Thread
+import json
 POI_queue = queue.Queue()
 
 # Callback function for messages from GCS, parses JSON message and sets globals
@@ -24,8 +25,12 @@ def xbee_callback(message):
             acknowledge(address, msg_type)
 
         elif msg_type == "addMission":
-            # handle for detailed_search
-            pass
+            #takes data from json and assigns variables to corresponding data values
+                msg_lat = msg['missionInfo']['lat']
+                msg_lon = msg['missionInfo']['lon']
+            #data from json is inserted into dronekit object, which is then placed intp a queue
+                POI_queue.put(dronekit.LocationGlobalRelative(msg_lat, msg_lon, None))
+                acknowledge(address, msg_type)
 
         elif msg_type == "pause":
             autonomy.pause_mission = True
@@ -54,11 +59,16 @@ def orbit_poi(vehicle, poi, configs):
 def detailed_search_autonomy(configs):
 
     global POI_queue
-    comm_sim = None
+    #comms simulation to test addMission conditional
+    if autonomy.xbee is None:
+        comm_sim = Thread(target=comm_simulation, args=(configs["detailed_search_specific"]["comms_simulated"]["comm_sim_file"], xbee_callback,))
+        comm_sim.start()
+    else:
+        comm_sim = None
 
     # If comms is simulated, start comm simulation thread
-    if configs["comms_simulated"]["toggled_on"]:
-        comm_sim = Thread(target=comm_simulation, args=(configs["comms_simulated"]["comm_sim_file"], xbee_callback,))
+    if configs["detailed_search_specific"]["comms_simulated"]["toggled_on"]:
+        comm_sim = Thread(target=comm_simulation, args=(configs["detailed_search_specific"]["comms_simulated"]["comm_sim_file"], xbee_callback,))
         comm_sim.start()
     # Otherwise, set up XBee device and add callback
     else:
