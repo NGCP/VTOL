@@ -11,6 +11,10 @@ pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
 xbee = None  # XBee radio object
 
+# Global Status, updated by various functions
+status = "ready"
+heading = None
+mission_completed = False
 
 # Dummy message class for comm simulation thread to be compatible with xbee_callback function
 class DummyMessage:
@@ -154,3 +158,46 @@ def comm_simulation(comm_file, xbee_callback):
 
         line = f.readline().strip()
         prev_time = curr_time
+
+# :param new_status: new vehicle status to change to (refer to GCS formatting)
+def change_status(new_status):
+    global status
+    if new_status != "ready" and new_status != "running" and new_status != "waiting" and new_status != "error":
+        raise Exception("Error: Unsupported status for vehicle")
+    else:
+        status = new_status
+
+def include_heading():
+    global heading
+    heading = True
+
+# :param vehicle: vehicle object that represents drone
+# :param vehicle_type: vehicle type from configs file
+def update_thread(vehicle, vehicle_type, address):
+    global status
+    global heading
+    global mission_completed
+
+    print("Starting update thread\n")
+    while True:
+        location = vehicle.location.global_frame
+        battery_level = vehicle.battery.level/100.0     # To comply with format of 0 - 1
+        if mission_completed:
+            status = "ready"
+        update_message = {
+            "type": "update",
+            "vehicleType": vehicle_type,
+            "lat": location.lat,
+            "lon": location.lon,
+            "status": status,
+            "battery": battery_level
+        }
+
+        if heading:
+            update_message["heading"] = vehicle.heading
+
+        if xbee:
+            # Instantiate a remote XBee device object to send data.
+            send_xbee = RemoteXBeeDevice(xbee, address)
+            xbee.send_data(send_xbee, json.dumps(update_message))
+        time.sleep(1)
