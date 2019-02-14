@@ -51,7 +51,7 @@ def orbit_poi(vehicle, poi, configs):
     # TODO see orbit poi issue
     pass
 
-def detailed_search_autonomy(configs):
+def detailed_search_autonomy(configs, autonomyToCV):
 
     global POI_queue
     comm_sim = None
