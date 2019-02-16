@@ -58,7 +58,8 @@ def orbit_poi(vehicle, poi, configs):
     pass
 
 
-def detailed_search_autonomy(configs):
+def detailed_search_autonomy(configs, vehicle=None):
+    print("\n######################## STARTING DETAILED SEARCH ########################")
     global POI_queue
     comm_sim = None
 
@@ -84,10 +85,12 @@ def detailed_search_autonomy(configs):
     else:
         connection_string = "/dev/serial0"
 
-    # Connect to vehicle
-    vehicle = connect(connection_string, wait_ready=True)
-    takeoff(vehicle, configs["altitude"])
-    vehicle.mode = VehicleMode("GUIDED")
+    # If detailed search was not role-switched from quick scan, create new vehicle
+    if not vehicle:
+        # Connect to vehicle
+        vehicle = connect(connection_string, wait_ready=True)
+        takeoff(vehicle, configs["altitude"])
+        vehicle.mode = VehicleMode("GUIDED")
 
     # Continuously fly to POIs
     while not autonomy.stop_mission:
@@ -105,6 +108,8 @@ def detailed_search_autonomy(configs):
             vehicle.mode = VehicleMode("GUIDED")
 
     land(vehicle)
+    print("Closing vehicle object")
+    vehicle.close()
 
     # Wait for comm simulation thread to end
     if comm_sim:

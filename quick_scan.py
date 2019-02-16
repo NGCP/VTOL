@@ -1,4 +1,5 @@
 import sys
+import autonomy
 from threading import Thread, Lock
 from quick_scan_autonomy import quick_scan_autonomy
 from quick_scan_cv import quick_scan_cv
@@ -43,6 +44,10 @@ def quick_scan():
     # Wait for the threads to finish
     autonomy_thread.join()
     cv_thread.join()
+
+    # Close XBee device
+    if autonomy.xbee:
+        autonomy.xbee.close()
 
 
 if __name__ == "__main__":

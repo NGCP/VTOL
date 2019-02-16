@@ -11,6 +11,7 @@
   "d_theta_rad": 0.392699,
   "flight_mode": "AUTO",
   "quick_scan_specific": {
+    "role_switching": true,
     "comms_simulated": {
       "toggled_on": true,
       "comm_sim_file": "comm_sim.txt"

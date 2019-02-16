@@ -107,9 +107,6 @@ def land(vehicle):
     print("Returning to launch")
     vehicle.mode = VehicleMode("RTL")
 
-    print("Closing vehicle object")
-    vehicle.close()
-
 
 # Sends message received acknowledgement to GCS
 # :param address: address of GCS
@@ -178,16 +175,10 @@ def include_heading():
 # :param vehicle: vehicle object that represents drone
 # :param vehicle_type: vehicle type from configs file
 def update_thread(vehicle, vehicle_type, address):
-    global status
-    global heading
-    global mission_completed
-
     print("Starting update thread\n")
-    while True:
+    while not mission_completed:
         location = vehicle.location.global_frame
         battery_level = vehicle.battery.level / 100.0  # To comply with format of 0 - 1
-        if mission_completed:
-            status = "ready"
         update_message = {
             "type": "update",
             "vehicleType": vehicle_type,
@@ -205,3 +196,5 @@ def update_thread(vehicle, vehicle_type, address):
             send_xbee = RemoteXBeeDevice(xbee, address)
             xbee.send_data(send_xbee, json.dumps(update_message))
         time.sleep(1)
+
+    change_status("ready")

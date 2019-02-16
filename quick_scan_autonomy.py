@@ -5,6 +5,7 @@ from conversions import *
 from threading import Thread
 from pymavlink import mavutil
 from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
+from detailed_search_autonomy import detailed_search_autonomy
 
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
@@ -231,5 +232,15 @@ def quick_scan_autonomy(configs, autonomyToCV):
     if comm_sim:
         comm_sim.join()
 
-    # Ends update thread
+    # Wait for update thread to end
     update.join()
+
+    # Switch to detailed search
+    if configs["quick_scan_specific"]["role_switching"]:
+        detailed_search = Thread(target=detailed_search_autonomy, args=(configs, vehicle))
+        detailed_search.start()
+
+        detailed_search.join()
+    else:
+        print("Closing vehicle object")
+        vehicle.close()
