@@ -213,6 +213,8 @@ def quick_scan_autonomy(configs, autonomyToCV):
             # Lands the vehicle if receives stop mission
             elif autonomy.stop_mission:
                 land(vehicle)
+                print("Closing vehicle object")
+                vehicle.close()
                 return
             # Continues path
             else:
@@ -239,7 +241,6 @@ def quick_scan_autonomy(configs, autonomyToCV):
     if configs["quick_scan_specific"]["role_switching"]:
         detailed_search = Thread(target=detailed_search_autonomy, args=(configs, vehicle))
         detailed_search.start()
-
         detailed_search.join()
     else:
         print("Closing vehicle object")
