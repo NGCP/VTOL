@@ -5,6 +5,7 @@ from conversions import *
 from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
 from threading import Thread
 from pymavlink import mavutil
+from detailed_search_autonomy import detailed_search_autonomy
 
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
@@ -213,8 +214,13 @@ def quick_scan_autonomy(configs, autonomyToCV):
     else:
         raise Exception("Guided mode not supported")
 
-    land(vehicle)
-
-    # Wait for comm simulation thread to end
-    if comm_sim:
-        comm_sim.join()
+    if configs["role_switching"]:
+        # Wait for comm simulation thread to end
+        if comm_sim:
+            comm_sim.join()
+        detailed_search_autonomy(configs)
+    else:
+        land(vehicle)
+        # Wait for comm simulation thread to end
+        if comm_sim:
+            comm_sim.join()
