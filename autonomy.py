@@ -1,11 +1,11 @@
 import json
-import subprocess
 import sys
+import subprocess
 import time
 from dronekit import VehicleMode
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
 
-# Globals, updated by xBee callback function
+# Globals, updated by XBee callback function
 start_mission = False  # takeoff
 pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
