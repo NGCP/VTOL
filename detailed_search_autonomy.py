@@ -77,16 +77,16 @@ def detailed_search_autonomy(configs, vehicle=None):
     while not autonomy.start_mission:
         pass
 
-    # Start SITL if vehicle is being simulated
-    if (configs["vehicle_simulated"]):
-        import dronekit_sitl
-        sitl = dronekit_sitl.start_default(lat=1, lon=1)
-        connection_string = sitl.connection_string()
-    else:
-        connection_string = "/dev/serial0"
-
-    # If detailed search was not role-switched from quick scan, create new vehicle
+    # If detailed search was not role-switched from quick scan, connect to new vehicle
     if not vehicle:
+        # Start SITL if vehicle is being simulated
+        if (configs["vehicle_simulated"]):
+            import dronekit_sitl
+            sitl = dronekit_sitl.start_default(lat=1, lon=1)
+            connection_string = sitl.connection_string()
+        else:
+            connection_string = "/dev/serial0"
+
         # Connect to vehicle
         vehicle = connect(connection_string, wait_ready=True)
         takeoff(vehicle, configs["altitude"])
@@ -108,8 +108,6 @@ def detailed_search_autonomy(configs, vehicle=None):
             vehicle.mode = VehicleMode("GUIDED")
 
     land(vehicle)
-    print("Closing vehicle object")
-    vehicle.close()
 
     # Wait for comm simulation thread to end
     if comm_sim:

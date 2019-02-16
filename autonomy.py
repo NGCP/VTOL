@@ -107,6 +107,9 @@ def land(vehicle):
     print("Returning to launch")
     vehicle.mode = VehicleMode("RTL")
 
+    print("Closing vehicle object")
+    vehicle.close()
+
 
 # Sends message received acknowledgement to GCS
 # :param address: address of GCS
