@@ -2,15 +2,14 @@ import json
 import math
 import time
 from conversions import *
-from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
 from threading import Thread
 from pymavlink import mavutil
-from detailed_search_autonomy import detailed_search_autonomy
+from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
 
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
 import autonomy
-from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, setup_xbee
+from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, update_thread, change_status, setup_xbee
 
 search_area = None  # search area object, populated by callback on start
 
@@ -156,13 +155,12 @@ def quick_scan_adds_mission(vehicle, lla_waypoint_list):
 
 # Main autonomous flight thread
 # :param configs: dict from configs file
-# :param radio: XBee radio object
 def quick_scan_autonomy(configs, autonomyToCV):
     comm_sim = None
 
     # If comms is simulated, start comm simulation thread
-    if configs["comms_simulated"]["toggled_on"]:
-        comm_sim = Thread(target=comm_simulation, args=(configs["comms_simulated"]["comm_sim_file"], xbee_callback,))
+    if configs["quick_scan_specific"]["comms_simulated"]["toggled_on"]:
+        comm_sim = Thread(target=comm_simulation, args=(configs["quick_scan_specific"]["comms_simulated"]["comm_sim_file"], xbee_callback,))
         comm_sim.start()
 
     # Otherwise, set up XBee device and add callback
@@ -188,11 +186,18 @@ def quick_scan_autonomy(configs, autonomyToCV):
     # Connect to vehicle
     vehicle = connect(connection_string, wait_ready=True)
 
+    # Starts the update thread
+    update = Thread(target=update_thread, args=(vehicle, configs["vehicle_type"], configs["mission_control_MAC"]))
+    update.start()
+
     # Send mission to vehicle
     quick_scan_adds_mission(vehicle, waypoints[1])
 
     # Takeoff
     takeoff(vehicle, configs["altitude"])
+
+    # Change vehicle status to running
+    change_status("running")
 
     vehicle.mode = VehicleMode(configs["flight_mode"])
 
@@ -214,13 +219,17 @@ def quick_scan_autonomy(configs, autonomyToCV):
     else:
         raise Exception("Guided mode not supported")
 
-    if configs["role_switching"]:
-        # Wait for comm simulation thread to end
-        if comm_sim:
-            comm_sim.join()
-        detailed_search_autonomy(configs)
-    else:
-        land(vehicle)
-        # Wait for comm simulation thread to end
-        if comm_sim:
-            comm_sim.join()
+    land(vehicle)
+
+    # Vehicle has no more active tasks
+    change_status("waiting")
+
+    # Ready for a new mission
+    autonomy.mission_completed = True
+
+    # Wait for comm simulation thread to end
+    if comm_sim:
+        comm_sim.join()
+
+    # Ends update thread
+    update.join()

@@ -1,5 +1,6 @@
 import sys
 from threading import Thread, Lock
+
 from quick_scan_autonomy import quick_scan_autonomy
 from quick_scan_cv import quick_scan_cv
 from util import parse_configs
@@ -32,11 +33,11 @@ def quick_scan():
 
     # Start autonomy and CV threads
     autonomyToCV = AutonomyToCV()
-    autonomy_thread = Thread(target = quick_scan_autonomy, args = (configs, autonomyToCV))
+    autonomy_thread = Thread(target=quick_scan_autonomy, args=(configs, autonomyToCV))
     autonomy_thread.daemon = True
     autonomy_thread.start()
 
-    cv_thread = Thread(target = quick_scan_cv, args = (configs, autonomyToCV))
+    cv_thread = Thread(target=quick_scan_cv, args=(configs, autonomyToCV))
     cv_thread.daemon = True
     cv_thread.start()
 
