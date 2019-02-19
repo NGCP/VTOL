@@ -2,4 +2,3 @@
 0.75~{"type":"addMission", "searchArea":{"center":[1, 1], "rad1":0, "rad2":100}}
 50.0~{"type":"pause"}
 60.0~{"type":"resume"}
-70.0~{"type":"stop"}
