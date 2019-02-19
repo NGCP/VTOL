@@ -188,7 +188,7 @@ def quick_scan_autonomy(configs, autonomyToCV):
     vehicle = connect(connection_string, wait_ready=True)
 
     # Starts the update thread
-    update = Thread(target=update_thread, args=(vehicle, configs["vehicle_type"], configs["mission_control_MAC"]))
+    update = Thread(target=update_thread, args=(vehicle, configs["vehicle_type"], configs["mission_control_MAC"],))
     update.start()
 
     # Send mission to vehicle

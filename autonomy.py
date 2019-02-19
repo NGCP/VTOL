@@ -164,7 +164,8 @@ def comm_simulation(comm_file, xbee_callback):
 # :param new_status: new vehicle status to change to (refer to GCS formatting)
 def change_status(new_status):
     global status
-    if new_status != "ready" and new_status != "running" and new_status != "waiting" and new_status != "error":
+    if new_status != "ready" and new_status != "running" and new_status != "waiting" and new_status != "paused" \
+        and new_status != "error":
         raise Exception("Error: Unsupported status for vehicle")
     else:
         status = new_status

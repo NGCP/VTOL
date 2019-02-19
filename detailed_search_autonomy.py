@@ -6,7 +6,7 @@ from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
 import autonomy
-from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, setup_xbee
+from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, setup_xbee, change_status, update_thread
 
 # queue of points of interest
 POI_queue = queue.Queue()
@@ -89,8 +89,19 @@ def detailed_search_autonomy(configs, vehicle=None):
 
         # Connect to vehicle
         vehicle = connect(connection_string, wait_ready=True)
+
+    # Starts update thread
+    update = Thread(target=update_thread, args=(vehicle, configs["vehicle_type"], configs["mission_control_MAC"],))
+    update.start()
+
+    # Only take off if this wasn't running quick scan previously via role-switching
+    if not configs["quick_scan_specific"]["role_switching"]:
         takeoff(vehicle, configs["altitude"])
-        vehicle.mode = VehicleMode("GUIDED")
+
+    vehicle.mode = VehicleMode("GUIDED")
+    
+    # Change vehicle status to running
+    change_status("running")
 
     # Continuously fly to POIs
     while not autonomy.stop_mission:
@@ -99,16 +110,25 @@ def detailed_search_autonomy(configs, vehicle=None):
             # TODO start CV scanning
             orbit_poi(vehicle, poi, configs)
             # TODO stop CV scanning
+        else:
+            change_status("waiting")    
 
         # Holds the copter in place if receives pause
         if autonomy.pause_mission:
             vehicle.mode = VehicleMode("ALT_HOLD")
+            change_status("paused")
         # Otherwise continue
         else:
             vehicle.mode = VehicleMode("GUIDED")
 
     land(vehicle)
 
+    # Sets vehicle status to "ready"
+    change_status("ready")
+    autonomy.mission_completed = True
+
     # Wait for comm simulation thread to end
     if comm_sim:
         comm_sim.join()
+
+    update.join()
