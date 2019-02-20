@@ -2,6 +2,8 @@ import json
 import sys
 import subprocess
 import time
+import cv2
+
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
 from dronekit import VehicleMode
 
@@ -72,6 +74,42 @@ def mac_xbee_port_name():
 
     except ValueError:
         raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
+
+
+def send_image(image, address):
+    image = cv2.imencode('.jpg', image)[1].tostring()
+    remote_device = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(MAC_ADDR))
+    
+    for ch in image:
+        xbee.send_data(remote_device, ch)
+    return image
+
+def receive_image():
+    image_string = ""
+    try:
+        xbee.flush_queues()
+        print("Waiting for data...\n")
+        while True:
+            xbee_message = xbee.read_data()
+            if xbee_message is not None:
+                message = xbee_message.data.decode()
+                if message == "image finished":
+                    print("Image fully received")
+                    break
+                else:
+                    image_string += message
+                    print("Received '%s' from %s" %
+                        (message, xbee_message.remote_device.get_64bit_addr()))
+    finally:
+        if xbee is not None and device.is_open():
+            xbee.close() 
+        decoded_image = numpy.fromstring(image_string, numpy.uint8)
+        decoded_image = cv2.imdecode(decoded_image, cv2.IMREAD_COLOR)
+        return decoded_image
+
+# Reads through comm simulation file from configs and calls xbee_callback to simulate radio messages.
+def comm_simulation(comm_file, xbee_callback):
+   pass 
 
 
 # Commands drone to take off by arming vehicle and flying to altitude
