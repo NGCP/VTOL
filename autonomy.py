@@ -3,8 +3,10 @@ import sys
 import subprocess
 import time
 import cv2
+import numpy
 from dronekit import VehicleMode
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
+from digi.xbee.models.address import XBee64BitAddress
 
 # Globals, updated by XBee callback function
 start_mission = False  # takeoff
@@ -77,22 +79,23 @@ def mac_xbee_port_name():
 
 
 def send_image(image, address):
-    image = cv2.imencode('.jpg', image)[1].tostring()
-    remote_device = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(MAC_ADDR))
+    image = cv2.imencode('.jpg', image)
+    image = bytearray(image[1])
     
-    for ch in image:
-        xbee.send_data(remote_device, ch)
+    remote_device = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
+    
+    xbee.send_data(remote_device, image[:16])
     return image
 
 def receive_image():
-    image_string = ""
+    image_string = bytearray()
     try:
         xbee.flush_queues()
         print("Waiting for data...\n")
         while True:
             xbee_message = xbee.read_data()
             if xbee_message is not None:
-                message = xbee_message.data.decode()
+                message = xbee_message.data
                 if message == "image finished":
                     print("Image fully received")
                     break
@@ -103,9 +106,11 @@ def receive_image():
     finally:
         if xbee is not None and device.is_open():
             xbee.close() 
-        decoded_image = numpy.fromstring(image_string, numpy.uint8)
-        decoded_image = cv2.imdecode(decoded_image, cv2.IMREAD_COLOR)
-        return decoded_image
+        print(image_string)
+        #if image_string is not None:
+         #   decoded_image = numpy.frombuffer(image_string, numpy.uint8)
+          #  decoded_image = cv2.imdecode(decoded_image, cv2.IMREAD_COLOR)
+        #return decoded_image
 
 # Reads through comm simulation file from configs and calls xbee_callback to simulate radio messages.
 def comm_simulation(comm_file, xbee_callback):
