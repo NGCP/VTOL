@@ -1,5 +1,6 @@
 import json
 
+
 def parse_configs(argv):
     """Parses the .json file given as the first command line argument.
     If no .json file is specified, defaults to "configs.json".

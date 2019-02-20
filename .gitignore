@@ -126,5 +126,6 @@ dmypy.json
 *.swp
 *.idea
 .DS_STORE
+my_project
 
 # End of https://www.gitignore.io/api/python

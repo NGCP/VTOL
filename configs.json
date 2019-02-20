@@ -10,13 +10,14 @@
   "altitude": 25,
   "d_theta_rad": 0.392699,
   "flight_mode": "AUTO",
-  "quick_scan_specific":{
+  "quick_scan_specific": {
+    "role_switching": true,
     "comms_simulated": {
       "toggled_on": true,
       "comm_sim_file": "comm_sim.txt"
     }
   },
-  "detailed_search_specific":{
+  "detailed_search_specific": {
     "comms_simulated": {
       "toggled_on": true,
       "comm_sim_file": "comm_sim_detailed_search.txt"
