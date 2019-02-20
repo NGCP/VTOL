@@ -58,7 +58,7 @@ def orbit_poi(vehicle, poi, configs):
     pass
 
 
-def detailed_search_autonomy(configs, vehicle=None):
+def detailed_search_autonomy(configs, autonomyToCV, vehicle=None):
     print("\n######################## STARTING DETAILED SEARCH ########################")
     global POI_queue
     comm_sim = None
