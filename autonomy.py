@@ -77,41 +77,42 @@ def mac_xbee_port_name():
     except ValueError:
         raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
 
-
+# Takes in a cv2 image object and sends it over the XBee radio to a given MAC address
 def send_image(image, address):
+    # converts the cv2 image object into a byte array so it can be sent over the radio
     image = bytearray(cv2.imencode('.jpg', image)[1])
     remote_device = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
     
-    while len(image) > 64:
-        xbee.send_data(remote_device, image[:64])
-        image = image[64:]
-        
+    # Sends packets of 256 bytes in a loop until the whole image is sent
+    # Maximum payload size is 256 bytes
+    while len(image) > 256:
+        xbee.send_data(remote_device, image[:256])
+        image = image[256:]
     xbee.send_data(remote_device, image)
+
+    # Sends the final message to tell the image has finished sending
     xbee.send_data(remote_device, "image finished")
 
 def receive_image():
-    image_string = bytearray()
-    try:
-        xbee.flush_queues()
-        print("Waiting for data...\n")
-        while True:
-            xbee_message = xbee.read_data()
-            if xbee_message is not None:
-                message = xbee_message.data
-                if message == "image finished":
-                    print("Image fully received")
-                    break
-                else:
-                    image_string += message
-                    print(image_string)
-                    print("Received '%s' from %s" %
-                        (message, xbee_message.remote_device.get_64bit_addr()))
-    finally:
-        if xbee is not None and xbee.is_open():
-            xbee.close() 
-            decoded_image = numpy.frombuffer(image_string, numpy.uint8)
-            decoded_image = cv2.imdecode(decoded_image, cv2.IMREAD_COLOR)
-        return decoded_image
+    image_buf = bytearray()
+    xbee.flush_queues()
+
+    # Polls for messages until the full image is received
+    while True:
+        xbee_message = xbee.read_data()
+        if xbee_message is not None:
+            message = xbee_message.data
+            # Checks if the data is the ending message
+            if message == "image finished":
+                print("Image fully received")
+                break
+            # Concatenates the data to the current image buffer
+            else:
+                image_buf += message
+    # Decodes the image buffer back into the cv2 image object
+    decoded_image = numpy.frombuffer(image_buf, numpy.uint8)
+    decoded_image = cv2.imdecode(decoded_image, cv2.IMREAD_COLOR)
+    return decoded_image
 
 # Reads through comm simulation file from configs and calls xbee_callback to simulate radio messages.
 def comm_simulation(comm_file, xbee_callback):
