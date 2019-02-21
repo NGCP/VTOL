@@ -18,6 +18,7 @@ def main():
     xbee = setup_xbee()
     image = cv2.imread('images/download.jpg')
     image = send_image(image, MAC_ADDR)
+    return
     
 if __name__ == '__main__':
     main()

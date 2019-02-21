@@ -79,13 +79,15 @@ def mac_xbee_port_name():
 
 
 def send_image(image, address):
-    image = cv2.imencode('.jpg', image)
-    image = bytearray(image[1])
-    
+    image = bytearray(cv2.imencode('.jpg', image)[1])
     remote_device = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
     
-    xbee.send_data(remote_device, image[:16])
-    return image
+    while len(image) > 64:
+        xbee.send_data(remote_device, image[:64])
+        image = image[64:]
+        
+    xbee.send_data(remote_device, image)
+    xbee.send_data(remote_device, "image finished")
 
 def receive_image():
     image_string = bytearray()
@@ -101,16 +103,15 @@ def receive_image():
                     break
                 else:
                     image_string += message
+                    print(image_string)
                     print("Received '%s' from %s" %
                         (message, xbee_message.remote_device.get_64bit_addr()))
     finally:
-        if xbee is not None and device.is_open():
+        if xbee is not None and xbee.is_open():
             xbee.close() 
-        print(image_string)
-        #if image_string is not None:
-         #   decoded_image = numpy.frombuffer(image_string, numpy.uint8)
-          #  decoded_image = cv2.imdecode(decoded_image, cv2.IMREAD_COLOR)
-        #return decoded_image
+            decoded_image = numpy.frombuffer(image_string, numpy.uint8)
+            decoded_image = cv2.imdecode(decoded_image, cv2.IMREAD_COLOR)
+        return decoded_image
 
 # Reads through comm simulation file from configs and calls xbee_callback to simulate radio messages.
 def comm_simulation(comm_file, xbee_callback):

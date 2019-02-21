@@ -17,7 +17,7 @@ def main():
     # Instantiate XBee device
     xbee = setup_xbee()
     image = receive_image()
-    cv2.imshow('received image', img)
+    cv2.imshow('received image', image)
     cv2.waitKey(0) 
     cv2.destroyAllWindows()
     
