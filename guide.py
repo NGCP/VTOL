@@ -1,19 +1,21 @@
 from dronekit import connect, VehicleMode, LocationGlobalRelative
 from threading import Thread
 # from digi.xbee.devices import RemoteXBeeDevice
-from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import math
 import json
 import dronekit_sitl
 import sys
 import time
 from autonomy import start_dummy_server, comm_simulation, land, takeoff
-from conversions import *
+from conversions import geodetic2ecef, ecef2geodetic
 
 start_mission = False
 destination = None
 continue_path = False
 stop_mission = False
+backtrack = False
+
 
 def parse_configs(argv):
     """Parses the .json file given as the first command line argument.
@@ -37,6 +39,7 @@ def xbee_callback(message):
     global destination
     global continue_path
     global stop_mission
+    global backtrack
 
     address = message.remote_device.get_64bit_addr()
     msg = json.loads(message.data.decode("utf8"))
@@ -54,6 +57,8 @@ def xbee_callback(message):
         continue_path = True
     elif msg_type == "stop":
         stop_mission = True
+    elif msg_type == "backtrack":
+        backtrack = True
     else:
         print("uknown type" + msg_type)
     # except KeyError as e:
@@ -78,6 +83,7 @@ def get_distance_metres(aLocation1, aLocation2):
 def guide(configs, radio):
     global xbee
     global continue_path
+    global backtrack
     xbee = radio
 
     # Add the callback.
@@ -98,8 +104,10 @@ def guide(configs, radio):
 
     vehicle.groundspeed = configs['ground_speed']
     home = vehicle.location.global_relative_frame
-    (home_x, home_y, _) = geodetic2ecef(home.lat, home.lon, configs['altitude'])
-    (dest_x, dest_y, _)  = geodetic2ecef(destination.lat, destination.lon, configs['altitude'])
+    (home_x, home_y, _) = geodetic2ecef(
+        home.lat, home.lon, configs['altitude'])
+    (dest_x, dest_y, _) = geodetic2ecef(
+        destination.lat, destination.lon, configs['altitude'])
     theta = math.atan((dest_y - home_y) /
                       (dest_x - home_x))
     dy = math.cos(theta) * configs['distance_meters']
@@ -109,28 +117,37 @@ def guide(configs, radio):
 
     while get_distance_metres(vehicle.location.global_relative_frame, destination) > 1:
         current = vehicle.location.global_relative_frame
-        (current_x, current_y, current_z) = geodetic2ecef(current.lat, current.lon, current.alt)
+        (current_x, current_y, current_z) = geodetic2ecef(
+            current.lat, current.lon, current.alt)
         (lat, lon, alt) = ecef2geodetic(current_x+dx, current_y+dy, current_z)
         loc = LocationGlobalRelative(lat, lon, alt)
         vehicle.simple_goto(loc)
-        while(get_distance_metres(vehicle.location.global_relative_frame, loc) > 1):
-            print("flying :)")
-            time.sleep(.05)
-        while not continue_path:
+        while(get_distance_metres(vehicle.location.global_relative_frame, loc) > 1
+              and get_distance_metres(vehicle.location.global_relative_frame, destination) > 1):
+            print("flying")
+            time.sleep(.1)
+        while not continue_path or stop_mission or backtrack:
             print("awaiting continue path")
             time.sleep(1)
+            if stop_mission:
+                land(vehicle)
+                break
+            if backtrack:
+                vehicle.simple_goto(current)
+                while(get_distance_metres(vehicle.location.global_relative_frame, current) > 1):
+                    pass
+                dx = dx / 1.5
+                dy = dy / 1.5
+                backtrack = False
+                break
         continue_path = False
-        if stop_mission:
-            land()
-            break
     vehicle.groundspeed = 0
     while not continue_path:
         print("awaiting continue path")
         time.sleep(1)
     print("waiting")
 
-    # Land vehicle procedure ??
-    vehicle.close()
+    land(vehicle)
 
     # Shut down simulator
     if(configs['vehicle_simulated']):
@@ -146,8 +163,9 @@ if(configs['comms_simulated']['file_simulated']):
         configs["comms_simulated"]["comm_sim_file"],))
     comm_sim.start()
 elif(configs['comms_simulated']['http_simulated']):
-    comm_sim = Thread(target=start_dummy_server, args=(configs['comms_simulated']['http_port'], xbee_callback))
-    comm_sim.daemon=True
+    comm_sim = Thread(target=start_dummy_server, args=(
+        configs['comms_simulated']['http_port'], xbee_callback))
+    comm_sim.daemon = True
     comm_sim.start()
 
 
