@@ -78,9 +78,10 @@ def mac_xbee_port_name():
         raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
 
 # Takes in a cv2 image object and sends it over the XBee radio to a given MAC address
-def send_image(image, address):
+
+def send_image(image, address, compression):
     # converts the cv2 image object into a byte array so it can be sent over the radio
-    image = bytearray(cv2.imencode('.jpg', image)[1])
+    image = bytearray(cv2.imencode(compression, image)[1])
     image_size = len(image)
     remote_device = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
     
@@ -91,21 +92,18 @@ def send_image(image, address):
         "size": image_size
     }
     xbee.send_data(remote_device, json.dumps(image_info))
-    try:
-        xbee.flush_queues()
-        print("Waiting for target to start receiving")
-        while True:
-            xbee_message = xbee.read_data()
-            if xbee_message is not None:
-                if xbee_message.data == "started receiving":
-                    break
-    finally: 
-        print("Starting to send image")
+    print("Waiting for target to start receiving")
+    while True:
+        xbee_message = xbee.read_data()
+        if xbee_message is not None:
+            if xbee_message.data == "started receiving":
+                break
+    print("Starting to send image")
     byteCounter = 0
     while byteCounter + 256 < image_size:
         xbee.send_data(remote_device, image[byteCounter:byteCounter + 256])
         byteCounter += 256
-        print("Sent %d/%d bytes" % (byteCounter, image_size))
+        print "Sent %d/%d bytes" % (byteCounter, image_size)
     xbee.send_data(remote_device, image[byteCounter:])
 
     # Sends the final message to tell the image has finished sending
@@ -114,11 +112,11 @@ def send_image(image, address):
 def receive_image(address, size):
     print("Receiving image of size %d from %s" % (size, address))
     remote_device = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
-    image_buf = bytearray()
-    xbee.flush_queues()
-     
     xbee.send_data(remote_device, "started receiving")
+
+    image_buf = bytearray()
     # Polls for messages until the full image is received
+    xbee.flush_queues()
     received = 0
     while received <= size:
         xbee_message = xbee.read_data()
