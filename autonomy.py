@@ -81,34 +81,38 @@ def mac_xbee_port_name():
 def send_image(image, address):
     # converts the cv2 image object into a byte array so it can be sent over the radio
     image = bytearray(cv2.imencode('.jpg', image)[1])
+    image_size = len(image)
     remote_device = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
     
     # Sends packets of 256 bytes in a loop until the whole image is sent
     # Maximum payload size is 256 bytes
-    print(len(image))
-    image = {
+    image_info = {
         "type": "image",
-        "size": len(image)
+        "size": image_size
     }
-    xbee.send_data(remote_device, json.dumps(image))
-    print("Waiting for target to start receiving")
-    while True:
-        xbee_message = xbee.read_data()
-        if xbee_message is not None:
-            if xbee_message.data == "started receiving":
-                break
+    xbee.send_data(remote_device, json.dumps(image_info))
+    try:
+        xbee.flush_queues()
+        print("Waiting for target to start receiving")
+        while True:
+            xbee_message = xbee.read_data()
+            if xbee_message is not None:
+                if xbee_message.data == "started receiving":
+                    break
+    finally: 
+        print("Starting to send image")
     byteCounter = 0
-    while byteCounter + 256 < len(image):
+    while byteCounter + 256 < image_size:
         xbee.send_data(remote_device, image[byteCounter:byteCounter + 256])
         byteCounter += 256
-        print(byteCounter)
+        print("Sent %d/%d bytes" % (byteCounter, image_size))
     xbee.send_data(remote_device, image[byteCounter:])
 
     # Sends the final message to tell the image has finished sending
     xbee.send_data(remote_device, "image finished")
 
 def receive_image(address, size):
-    print("Receiving image of size %d from %d" % (size, address))
+    print("Receiving image of size %d from %s" % (size, address))
     remote_device = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
     image_buf = bytearray()
     xbee.flush_queues()
