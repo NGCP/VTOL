@@ -99,7 +99,6 @@ def send_image(image, address, compression):
             if xbee_message.data == "started receiving":
                 break
 
-    print("Starting to send image")
     byteCounter = 0
     while byteCounter + 256 < image_size:
         xbee.send_data(remote_device, image[byteCounter:byteCounter + 256])
@@ -107,7 +106,7 @@ def send_image(image, address, compression):
         print("\rSent %d/%d bytes" % (byteCounter, image_size)),
         sys.stdout.flush()
     xbee.send_data(remote_device, image[byteCounter:])
-    print("\rImage transmission completed")
+    print("\rImage transmission completed                     ")
 
     # Sends the final message to tell the image has finished sending
     xbee.send_data(remote_device, "image finished")
@@ -126,12 +125,14 @@ def receive_image(address, size):
         if xbee_message is not None:
             # Concatenates the data to the current image buffer
             sender_address = xbee_message.remote_device.get_64bit_addr()
-            if str(sender_address) != address:
+            if str(sender_address) != str(address):
                 bad_msg(sender_address, "Currently receiving image. Cannot process other messages")
             else:
                 image_buf += xbee_message.data
                 received += 256
-
+                print("\rReceived %d/%d bytes" % (received, size)),
+                sys.stdout.flush()
+    print("\rImage fully received                            ")
     # Decodes the image buffer back into the cv2 image object
     decoded_image = numpy.frombuffer(image_buf, numpy.uint8)
     decoded_image = cv2.imdecode(decoded_image, cv2.IMREAD_COLOR)

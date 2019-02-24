@@ -44,6 +44,11 @@ def xbee_callback(message):
         elif msg_type == "stop":
             autonomy.stop_mission = True
             acknowledge(address, msg_type)
+        
+        elif msg_type == "image":
+            autonomy.xbee.del_data_received_callback(xbee_callback)
+            image = receive_image(address, msg["size"])
+            autonomy.xbee.add_data_received_callback(xbee_callback)
 
         else:
             bad_msg(address, "Unknown message type: \'" + msg_type + "\'")

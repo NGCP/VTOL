@@ -1,8 +1,8 @@
 import sys
 import cv2
 sys.path.append('..')
-from autonomy import setup_xbee
-from autonomy import send_image
+from digi.xbee.models.address import XBee64BitAddress
+from autonomy import setup_xbee, send_image
 
 # Insert the MAC Address of desired radio here
 MAC_ADDR = "0013A20040F8064D"

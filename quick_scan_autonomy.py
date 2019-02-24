@@ -10,7 +10,7 @@ from detailed_search_autonomy import detailed_search_autonomy
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
 import autonomy
-from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, update_thread, change_status, setup_xbee
+from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, update_thread, change_status, setup_xbee, receive_image
 
 search_area = None  # search area object, populated by callback on start
 
@@ -60,7 +60,10 @@ def xbee_callback(message):
         elif msg_type == "stop":
             autonomy.stop_mission = True
             acknowledge(address, msg_type)
-
+        elif msg_type == "image":
+            autonomy.xbee.del_data_received_callback(xbee_callback)
+            image = receive_image(address, msg["size"])
+            autonomy.xbee.add_data_received_callback(xbee_callback)
         else:
             bad_msg(address, "Unknown message type: \'" + msg_type + "\'")
 
