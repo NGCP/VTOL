@@ -85,40 +85,48 @@ def send_image(image, address):
     
     # Sends packets of 256 bytes in a loop until the whole image is sent
     # Maximum payload size is 256 bytes
-    int byteCounter = 0
+    print(len(image))
+    image = {
+        "type": "image",
+        "size": len(image)
+    }
+    xbee.send_data(remote_device, json.dumps(image))
+    print("Waiting for target to start receiving")
+    while True:
+        xbee_message = xbee.read_data()
+        if xbee_message is not None:
+            if xbee_message.data == "started receiving":
+                break
+    byteCounter = 0
     while byteCounter + 256 < len(image):
         xbee.send_data(remote_device, image[byteCounter:byteCounter + 256])
         byteCounter += 256
-    xbee.send_data(remote_device, image)
+        print(byteCounter)
+    xbee.send_data(remote_device, image[byteCounter:])
 
     # Sends the final message to tell the image has finished sending
     xbee.send_data(remote_device, "image finished")
 
-def receive_image():
+def receive_image(address, size):
+    print("Receiving image of size %d from %d" % (size, address))
+    remote_device = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
     image_buf = bytearray()
     xbee.flush_queues()
-
+     
+    xbee.send_data(remote_device, "started receiving")
     # Polls for messages until the full image is received
-    while True:
+    received = 0
+    while received <= size:
         xbee_message = xbee.read_data()
         if xbee_message is not None:
-            message = xbee_message.data
-            # Checks if the data is the ending message
-            if message == "image finished":
-                print("Image fully received")
-                break
             # Concatenates the data to the current image buffer
-            else:
-                image_buf += message
+            image_buf += xbee_message.data
+            received += 256
+
     # Decodes the image buffer back into the cv2 image object
     decoded_image = numpy.frombuffer(image_buf, numpy.uint8)
     decoded_image = cv2.imdecode(decoded_image, cv2.IMREAD_COLOR)
     return decoded_image
-
-# Reads through comm simulation file from configs and calls xbee_callback to simulate radio messages.
-def comm_simulation(comm_file, xbee_callback):
-   pass 
-
 
 # Commands drone to take off by arming vehicle and flying to altitude
 def takeoff(vehicle, altitude):

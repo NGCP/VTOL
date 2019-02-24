@@ -7,7 +7,7 @@ from autonomy import send_image
 
 # Insert the MAC Address of desired radio here
 MAC_ADDR = "0013A20040F8064D"
-PATH_TO_IMAGE = "path/to/image"
+PATH_TO_IMAGE = "images/medium.jpg"
 
 def main():
     # Instantiate XBee device
