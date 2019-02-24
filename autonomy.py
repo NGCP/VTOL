@@ -85,9 +85,10 @@ def send_image(image, address):
     
     # Sends packets of 256 bytes in a loop until the whole image is sent
     # Maximum payload size is 256 bytes
-    while len(image) > 256:
-        xbee.send_data(remote_device, image[:256])
-        image = image[256:]
+    int byteCounter = 0
+    while byteCounter + 256 < len(image):
+        xbee.send_data(remote_device, image[byteCounter:byteCounter + 256])
+        byteCounter += 256
     xbee.send_data(remote_device, image)
 
     # Sends the final message to tell the image has finished sending
