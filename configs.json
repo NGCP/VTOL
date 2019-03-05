@@ -1,7 +1,8 @@
 {
   "vehicle_type": "Quadcopter",
-  "vehicle_name": "A",
+  "vehicle_id": 1,
   "vehicle_simulated": true,
+  "3dr_solo": false,
   "cv_simulated": {
     "toggled_on": true,
     "directory": "some/path/for/now/i/will/add/in/later/when/testing"
@@ -11,10 +12,10 @@
   "d_theta_rad": 0.392699,
   "flight_mode": "AUTO",
   "quick_scan_specific": {
-    "role_switching": true,
+    "role_switching": false,
     "comms_simulated": {
       "toggled_on": true,
-      "comm_sim_file": "comm_sim.txt"
+      "comm_sim_file": "comm_sim_quick_scan.txt"
     }
   },
   "detailed_search_specific": {

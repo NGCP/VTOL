@@ -36,13 +36,14 @@ class QuickScanAutonomyToCV:
         self.acknowledgementMutex = False
 
 
-def quick_scan():
+def quick_scan(gcs_timestamp = 0, connection_timestamp = 0):
     # Parse configs file
     configs = parse_configs(sys.argv)
 
     # Start autonomy and CV threads
     autonomyToCV = QuickScanAutonomyToCV()
-    autonomy_thread = Thread(target=quick_scan_autonomy, args=(configs, autonomyToCV))
+    autonomy_thread = Thread(target=quick_scan_autonomy,
+                             args=(configs, autonomyToCV, gcs_timestamp, connection_timestamp))
     autonomy_thread.daemon = True
     autonomy_thread.start()
 

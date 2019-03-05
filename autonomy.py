@@ -11,6 +11,12 @@ pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
 xbee = None  # XBee radio object
 
+# Timestamps to keep track of the time field in messages to GCS
+gcs_timestamp = 0
+connection_timestamp = 0
+# The global config dictionary
+configs = None
+
 # Global status, updated by various functions
 status = "ready"
 heading = None
@@ -113,10 +119,15 @@ def land(vehicle):
 
 # Sends message received acknowledgement to GCS
 # :param address: address of GCS
-def acknowledge(address, received_type):
+def acknowledge(address, ackid):
     ack = {
         "type": "ack",
-        "received": received_type
+        "time": round(time.clock() - connection_timestamp) + gcs_timestamp,
+        "sid": configs['vehicle_id'],
+        "tid": 0, # The ID of GCS
+        "id": 0, # TODO
+
+        "ackid": ackid
     }
     # xbee is None if comms is simulated
     if xbee:
@@ -132,6 +143,11 @@ def acknowledge(address, received_type):
 def bad_msg(address, problem):
     msg = {
         "type": "badMessage",
+        "time": round(time.clock() - connection_timestamp) + gcs_timestamp,
+        "sid": configs['vehicle_id'],
+        "tid": 0, # The ID of GCS
+        "id": 0, # TODO
+
         "error": problem
     }
     # xbee is None if comms is simulated
@@ -178,17 +194,23 @@ def include_heading():
 
 # :param vehicle: vehicle object that represents drone
 # :param vehicle_type: vehicle type from configs file
-def update_thread(vehicle, vehicle_type, address):
+def update_thread(vehicle, address):
     print("Starting update thread\n")
     while not mission_completed:
         location = vehicle.location.global_frame
         battery_level = vehicle.battery.level / 100.0  # To comply with format of 0 - 1
         update_message = {
             "type": "update",
-            "vehicleType": vehicle_type,
+            "time": round(time.clock() - connection_timestamp) + gcs_timestamp,
+            "sid": configs["vehicle_id"],
+            "tid": 0, # the ID of the GCS is 0
+            "id": 0, # TODO make the IDs unique for acknowledgements
+
+            "vehicleType": "VTOL",
             "lat": location.lat,
             "lon": location.lon,
             "status": status,
+            # TODO heading
             "battery": battery_level
         }
 

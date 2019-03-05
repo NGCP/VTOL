@@ -34,14 +34,14 @@ class DetailedSearchAutonomyToCV:
         self.acknowledgementMutex = Lock()
         self.acknowledgementMutex = False
 
-def detailed_search(vehicle = None):
+def detailed_search(vehicle = None, gcs_timestamp = 0, connection_timestamp = 0):
     # Parse configs file
     configs = parse_configs(sys.argv)
 
     # Start autonomy and CV threads
     autonomyToCV = DetailedSearchAutonomyToCV()
     autonomy_thread = Thread(target = detailed_search_autonomy,
-                             args = (configs, autonomyToCV, vehicle))
+                             args = (configs, autonomyToCV, gcs_timestamp, connection_timestamp, vehicle))
     autonomy_thread.daemon = True
     autonomy_thread.start()
 
@@ -56,7 +56,6 @@ def detailed_search(vehicle = None):
     # Close XBee device
     if autonomy.xbee:
         autonomy.xbee.close()
-
 
 if __name__ == "__main__":
     detailed_search()

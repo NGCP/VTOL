@@ -40,26 +40,27 @@ def xbee_callback(message):
     try:
         msg_type = msg["type"]
 
-        if msg_type == "start":
-            acknowledge(address, msg_type)
-
-        elif msg_type == "addMission":
+        if msg_type == "addMission":
             area = msg["searchArea"]
             search_area = SearchArea(area["center"], area["rad1"], area["rad2"])
             autonomy.start_mission = True
-            acknowledge(address, msg_type)
+            acknowledge(address, msg["id"])
 
         elif msg_type == "pause":
             autonomy.pause_mission = True
-            acknowledge(address, msg_type)
+            acknowledge(address, msg["id"])
 
         elif msg_type == "resume":
             autonomy.pause_mission = False
-            acknowledge(address, msg_type)
+            acknowledge(address, msg["id"])
 
         elif msg_type == "stop":
             autonomy.stop_mission = True
-            acknowledge(address, msg_type)
+            acknowledge(address, msg["id"])
+
+        elif msg_type == "acknowledge":
+            # TODO check the ID
+            pass
 
         else:
             bad_msg(address, "Unknown message type: \'" + msg_type + "\'")
@@ -156,17 +157,20 @@ def quick_scan_adds_mission(vehicle, lla_waypoint_list):
 
 # Main autonomous flight thread
 # :param configs: dict from configs file
-def quick_scan_autonomy(configs, autonomyToCV):
-    comm_sim = None
+def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
+    print("\n######################## STARTING QUICK SCAN AUTONOMY ########################")
+    autonomy.configs = configs
 
     # If comms is simulated, start comm simulation thread
     if configs["quick_scan_specific"]["comms_simulated"]["toggled_on"]:
         comm_sim = Thread(target=comm_simulation, args=(configs["quick_scan_specific"]["comms_simulated"]["comm_sim_file"], xbee_callback,))
         comm_sim.start()
-
     # Otherwise, set up XBee device and add callback
     else:
+        comm_sim = None
         autonomy.xbee = setup_xbee()
+        autonomy.gcs_timestamp = gcs_timestamp
+        autonomy.connection_timestamp = connection_timestamp
         autonomy.xbee.add_data_received_callback(xbee_callback)
 
     # Generate waypoints after start_mission = True
@@ -182,13 +186,16 @@ def quick_scan_autonomy(configs, autonomyToCV):
         sitl = dronekit_sitl.start_default(lat=1, lon=1)
         connection_string = sitl.connection_string()
     else:
-        connection_string = "/dev/serial0"
+        if (configs["3dr_solo"]):
+            connection_string = "udpin:0.0.0.0:14550"
+        else:
+            connection_string = "/dev/serial0"
 
     # Connect to vehicle
     vehicle = connect(connection_string, wait_ready=True)
 
     # Starts the update thread
-    update = Thread(target=update_thread, args=(vehicle, configs["vehicle_type"], configs["mission_control_MAC"],))
+    update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"]))
     update.start()
 
     # Send mission to vehicle
@@ -237,3 +244,5 @@ def quick_scan_autonomy(configs, autonomyToCV):
     # Wait for comm simulation thread to end
     if comm_sim:
         comm_sim.join()
+    else:
+        autonomy.xbee.close()

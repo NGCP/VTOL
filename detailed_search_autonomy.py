@@ -21,29 +21,29 @@ def xbee_callback(message):
     try:
         msg_type = msg["type"]
 
-        if msg_type == "start":
-            autonomy.start_mission = True
-            acknowledge(address, msg_type)
-
-        elif msg_type == "addMission":
+        if msg_type == "addMission":
             msg_lat = msg['missionInfo']['lat']
             msg_lon = msg['missionInfo']['lon']
 
             # convert mission coordinates to dronekit object, and add to POI queue
             POI_queue.put(LocationGlobalRelative(msg_lat, msg_lon, None))
-            acknowledge(address, msg_type)
+            acknowledge(address, msg["id"])
 
         elif msg_type == "pause":
             autonomy.pause_mission = True
-            acknowledge(address, msg_type)
+            acknowledge(address, msg["id"])
 
         elif msg_type == "resume":
             autonomy.pause_mission = False
-            acknowledge(address, msg_type)
+            acknowledge(address, msg["id"])
 
         elif msg_type == "stop":
             autonomy.stop_mission = True
-            acknowledge(address, msg_type)
+            acknowledge(address, msg["id"])
+
+        elif msg_type == "acknowledge":
+            # TODO check the ID
+            pass
 
         else:
             bad_msg(address, "Unknown message type: \'" + msg_type + "\'")
@@ -58,26 +58,23 @@ def orbit_poi(vehicle, poi, configs):
     pass
 
 
-def detailed_search_autonomy(configs, autonomyToCV, vehicle=None):
-    print("\n######################## STARTING DETAILED SEARCH ########################")
-    global POI_queue
-    comm_sim = None
+def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timestamp, vehicle=None):
+    print("\n######################## STARTING DETAILED SEARCH AUTONOMY ########################")
+    autonomy.configs = configs
 
     # If comms is simulated, start comm simulation thread
     if configs["detailed_search_specific"]["comms_simulated"]["toggled_on"]:
         comm_sim = Thread(target=comm_simulation, args=(configs["detailed_search_specific"]["comms_simulated"]["comm_sim_file"], xbee_callback,))
         comm_sim.start()
-
     # Otherwise, set up XBee device and add callback
     else:
+        comm_sim = None
         autonomy.xbee = setup_xbee()
+        autonomy.gcs_timestamp = gcs_timestamp
+        autonomy.connection_timestamp = connection_timestamp
         autonomy.xbee.add_data_received_callback(xbee_callback)
 
-    # Takeoff when the mission is started
-    while not autonomy.start_mission:
-        pass
-
-    # If detailed search was not role-switched from quick scan, connect to new vehicle
+    # If detailed search was not role-switched from quick scan, connect to new vehicle and takeoff
     if not vehicle:
         # Start SITL if vehicle is being simulated
         if (configs["vehicle_simulated"]):
@@ -85,18 +82,23 @@ def detailed_search_autonomy(configs, autonomyToCV, vehicle=None):
             sitl = dronekit_sitl.start_default(lat=1, lon=1)
             connection_string = sitl.connection_string()
         else:
-            connection_string = "/dev/serial0"
+            if (configs["3dr_solo"]):
+                connection_string = "udpin:0.0.0.0:14550"
+            else:
+                connection_string = "/dev/serial0"
 
         # Connect to vehicle
         vehicle = connect(connection_string, wait_ready=True)
 
-    # Starts update thread
-    update = Thread(target=update_thread, args=(vehicle, configs["vehicle_type"], configs["mission_control_MAC"],))
-    update.start()
+        # Starts the update thread
+        update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"]))
+        update.start()
 
-    # Only take off if this wasn't running quick scan previously via role-switching
-    if not configs["quick_scan_specific"]["role_switching"]:
         takeoff(vehicle, configs["altitude"])
+    else:
+        # Starts the update thread
+        update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"]))
+        update.start()
 
     vehicle.mode = VehicleMode("GUIDED")
     
@@ -107,6 +109,7 @@ def detailed_search_autonomy(configs, autonomyToCV, vehicle=None):
     while not autonomy.stop_mission:
         if not POI_queue.empty() and not autonomy.pause_mission:
             poi = POI_queue.get()
+            vehicle.simple_goto(poi)
             # TODO start CV scanning
             orbit_poi(vehicle, poi, configs)
             # TODO stop CV scanning
@@ -127,8 +130,10 @@ def detailed_search_autonomy(configs, autonomyToCV, vehicle=None):
     change_status("ready")
     autonomy.mission_completed = True
 
+    update.join()
+
     # Wait for comm simulation thread to end
     if comm_sim:
         comm_sim.join()
-
-    update.join()
+    else:
+        autonomy.xbee.close()
