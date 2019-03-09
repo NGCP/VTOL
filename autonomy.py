@@ -164,7 +164,7 @@ def comm_simulation(comm_file, xbee_callback):
     f = open(comm_file, "r")
 
     line = f.readline().strip()
-    prev_time = float(line[:line.index("~")])
+    prev_time = 0
     while line != "":
         delim = line.index("~")
         curr_time = float(line[:delim])
@@ -198,7 +198,8 @@ def update_thread(vehicle, address):
     print("Starting update thread\n")
     while not mission_completed:
         location = vehicle.location.global_frame
-        battery_level = vehicle.battery.level / 100.0  # To comply with format of 0 - 1
+        # Comply with format of 0 - 1 and check that battery level is not null
+        battery_level = vehicle.battery.level / 100.0 if vehicle.battery.level else 0.0
         update_message = {
             "type": "update",
             "time": round(time.clock() - connection_timestamp) + gcs_timestamp,

@@ -2,6 +2,10 @@ import queue
 import json
 from threading import Thread
 from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
+import math
+import conversions
+import time
+from pymavlink import mavutil
 
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
@@ -54,8 +58,33 @@ def xbee_callback(message):
 
 
 def orbit_poi(vehicle, poi, configs):
-    # TODO see orbit poi issue
-    pass
+    waypoints = []  # waypoints in LLA
+    original_altitude = configs["altitude"]  # given altitude
+    radius = configs["radius"]  # radius of circle travelled
+    orbit_number = configs["orbit_number"]  # how many times we repeat orbit
+    x, y, z = conversions.geodetic2ecef(poi.lat, poi.lon, original_altitude)  # LLA -> ECEF
+    cmds = vehicle.commands
+    cmds.clear()
+
+    # add circle of waypoints around the poi
+    c = math.sqrt(2) / 2
+    point_list = [[1, 0], [c, c], [0, 1], [-c, c], [-1, 0], [-c, -c], [0, -1], [c, -c], [1, 0]]
+    for orbit in range(orbit_number):
+        for point in point_list:
+            a = (radius * point[0]) + x
+            b = (radius * point[1]) + y
+            lat, lon, alt = conversions.ecef2geodetic(a, b, z)
+            waypoints.append(LocationGlobalRelative(lat, lon, original_altitude))
+
+    # Define the MAV_CMD_NAV_WAYPOINT locations and add the commands
+    for point in waypoints:
+        cmds.add(
+            Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                    0, 0, 0, 0, 0, 0, point.lat, point.lon, point.alt))
+        print(point.lat, point.lon, point.alt)
+
+    print("Upload new commands to vehicle")
+    cmds.upload()
 
 
 def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timestamp, vehicle=None):
@@ -99,8 +128,6 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
         # Starts the update thread
         update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"]))
         update.start()
-
-    vehicle.mode = VehicleMode("GUIDED")
     
     # Change vehicle status to running
     change_status("running")
@@ -109,10 +136,24 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
     while not autonomy.stop_mission:
         if not POI_queue.empty() and not autonomy.pause_mission:
             poi = POI_queue.get()
+            poi.alt = configs["altitude"]
             vehicle.simple_goto(poi)
+
+            print("At POI, now orbiting")
             # TODO start CV scanning
             orbit_poi(vehicle, poi, configs)
+            # Change flight mode to AUTO to start auto mission
+            vehicle.mode = VehicleMode("AUTO")
+            # print location while orbiting
+            while vehicle.commands.next != vehicle.commands.count:
+                print(vehicle.location.global_frame)
+                print(vehicle.commands.next)
+                print(vehicle.commands.count)
+                time.sleep(1)
             # TODO stop CV scanning
+
+            # Change flight mode back
+            vehicle.mode = VehicleMode("GUIDED")
         else:
             change_status("waiting")    
 

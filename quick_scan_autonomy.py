@@ -70,7 +70,7 @@ def xbee_callback(message):
         bad_msg(address, "Missing \'" + e.args[0] + "\' key")
 
 
-# Generate waypoints for VTOL
+# Generate NED and LLA waypoints in spiral pattern
 def generate_waypoints(configs, search_area):
     print("Begin generating waypoints")
 
@@ -86,7 +86,7 @@ def generate_waypoints(configs, search_area):
     lon = origin[1]
     centerX, centerY, centerZ = geodetic2ecef(lat, lon, altitude)
     n, e, d = ecef2ned(centerX, centerY, centerZ, lat, lon, altitude)
-    waypointsLLA.append([lat, lon, altitude])
+    waypointsLLA.append(LocationGlobalRelative(lat, lon, altitude))
     waypointsNED.append([n, e, d])
 
     fovH = math.radians(62.2)  # raspicam horizontal FOV
@@ -112,7 +112,7 @@ def generate_waypoints(configs, search_area):
         n, e, d = ecef2ned(x, y, centerZ, lat, lon, altitude)
         newLat, newLon, newAlt = ned2geodetic(n, e, d, lat, lon, altitude)
         waypointsNED.append([n, e, d])
-        waypointsLLA.append([newLat, newLon, newAlt])
+        waypointsLLA.append(LocationGlobalRelative(newLat, newLon, altitude))
 
         # generate a waypoint every pi/8 radian
         theta += configs["d_theta_rad"]
@@ -134,23 +134,14 @@ def quick_scan_adds_mission(vehicle, lla_waypoint_list):
     cmds.clear()
 
     print(" Define/add new commands.")
-
-    # Add MAV_CMD_NAV_TAKEOFF command. This is ignored if the vehicle is already in the air.
-    # This command is there when vehicle is in AUTO mode, where it takes off through command list
-    # In guided mode, the actual takeoff function is needed, in which case this command is ignored
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, 10))
-
-
     # Define the four MAV_CMD_NAV_WAYPOINT locations and add the commands
     for point in lla_waypoint_list:
-        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point[0], point[1], 12))
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point.lat, point.lon, point.alt))
 
     # Adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination.
     cmds.add(
         Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0,
-                0, 0, 0, lla_waypoint_list[-1][0], lla_waypoint_list[-1][1], 12))
-    # adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, lla_waypoint_list[-1][0], lla_waypoint_list[-1][1], 12))
+                0, 0, 0, lla_waypoint_list[-1].lat, lla_waypoint_list[-1].lon, lla_waypoint_list[-1].alt))
     print("Upload new commands to vehicle")
     cmds.upload()
 

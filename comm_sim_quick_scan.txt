@@ -1,3 +1,1 @@
-0.75~{"type":"addMission", "searchArea":{"center":[35.328423, -120.752505], "rad1":0, "rad2":100}, "id":0}
-50.0~{"type":"pause", "id":0}
-60.0~{"type":"resume", "id":0}
+0.75~{"type":"addMission", "searchArea":{"center":[35.328375, -120.752615], "rad1":0, "rad2":20}, "id":0}

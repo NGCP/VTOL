@@ -1,4 +1,4 @@
-1.0~{"type":"addMission","missionInfo":{"lat":35.325, "lon": -120.758505}, "id":0}
-3.0~{"type":"pause", "id":0}
-4.0~{"type":"resume", "id":0}
-5.0~{"type":"stop", "id":0}
+55.0~{"type":"addMission","missionInfo":{"lat":35.32848, "lon": -120.75259}, "id":0}
+80.0~{"type":"pause", "id":0}
+81.0~{"type":"resume", "id":0}
+100.0~{"type":"stop", "id":0}
