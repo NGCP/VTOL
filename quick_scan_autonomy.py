@@ -10,7 +10,8 @@ from detailed_search import detailed_search
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
 import autonomy
-from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, update_thread, change_status, setup_xbee
+from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, update_thread, \
+    change_status, setup_xbee, start_auto_mission
 
 search_area = None  # search area object, populated by callback on start
 
@@ -120,7 +121,7 @@ def generate_waypoints(configs, search_area):
     return (waypointsNED, waypointsLLA)
 
 
-def quick_scan_adds_mission(vehicle, lla_waypoint_list):
+def quick_scan_adds_mission(vehicle, lla_waypoint_list, altitude):
     """
     Adds a takeoff command and four waypoint commands to the current mission. 
     The waypoints are positioned to form a square of side length 2*aSize around the specified LocationGlobal (aLocation).
@@ -132,6 +133,16 @@ def quick_scan_adds_mission(vehicle, lla_waypoint_list):
 
     print(" Clear any existing commands")
     cmds.clear()
+
+    # Add MAV_CMD_NAV_TAKEOFF command. This is ignored if the vehicle is already in the air.
+    # This command is there when vehicle is in AUTO mode, where it takes off through command list
+    # In guided mode, the actual takeoff function is needed, in which case this command is ignored
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
+
+    # Add point directly above vehicle for takeoff
+    cmds.add(
+        Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0,
+                0, 0, 0, vehicle.location.global_frame.lat, vehicle.location.global_frame.lon, altitude))
 
     print(" Define/add new commands.")
     # Define the four MAV_CMD_NAV_WAYPOINT locations and add the commands
@@ -190,33 +201,28 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
     update.start()
 
     # Send mission to vehicle
-    quick_scan_adds_mission(vehicle, waypoints[1])
+    quick_scan_adds_mission(vehicle, waypoints[1], configs["altitude"])
 
-    # Takeoff
-    takeoff(vehicle, configs["altitude"])
+    # Start the mission
+    start_auto_mission(vehicle)
 
     # Change vehicle status to running
     change_status("running")
 
-    vehicle.mode = VehicleMode(configs["flight_mode"])
-
     # Fly about spiral pattern
-    if configs["flight_mode"] == "AUTO":
-        while vehicle.commands.next != vehicle.commands.count:
-            print(vehicle.location.global_frame)
-            time.sleep(1)
-            # Holds the copter in place if receives pause
-            if autonomy.pause_mission:
-                vehicle.mode = VehicleMode("ALT_HOLD")
-            # Lands the vehicle if receives stop mission
-            elif autonomy.stop_mission:
-                land(vehicle)
-                return
-            # Continues path
-            else:
-                vehicle.mode = VehicleMode("AUTO")
-    else:
-        raise Exception("Guided mode not supported")
+    while vehicle.commands.next != vehicle.commands.count:
+        print(vehicle.location.global_frame)
+        time.sleep(1)
+        # Holds the copter in place if receives pause
+        if autonomy.pause_mission:
+            vehicle.mode = VehicleMode("ALT_HOLD")
+        # Lands the vehicle if receives stop mission
+        elif autonomy.stop_mission:
+            land(vehicle)
+            return
+        # Continues path
+        else:
+            vehicle.mode = VehicleMode("AUTO")
 
     # Switch to detailed search if role switching is enabled
     if configs["quick_scan_specific"]["role_switching"]:

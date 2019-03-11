@@ -10,7 +10,8 @@ from pymavlink import mavutil
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
 import autonomy
-from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, setup_xbee, change_status, update_thread
+from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, setup_xbee, \
+    change_status, update_thread, start_auto_mission
 
 # queue of points of interest
 POI_queue = queue.Queue()
@@ -86,6 +87,26 @@ def orbit_poi(vehicle, poi, configs):
     print("Upload new commands to vehicle")
     cmds.upload()
 
+def detailed_search_adds_mission(vehicle, altitude):
+    """
+    Only adds a takeoff command for AUTO mission
+    """
+    cmds = vehicle.commands
+
+    print(" Clear any existing commands")
+    cmds.clear()
+
+    # Add MAV_CMD_NAV_TAKEOFF command. This is ignored if the vehicle is already in the air.
+    # This command is there when vehicle is in AUTO mode, where it takes off through command list
+    # In guided mode, the actual takeoff function is needed, in which case this command is ignored
+    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
+
+    # Add point directly above vehicle for takeoff
+    cmds.add(
+        Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0,
+                0, 0, 0, vehicle.location.global_frame.lat, vehicle.location.global_frame.lon, altitude))
+
+    cmds.upload()
 
 def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timestamp, vehicle=None):
     print("\n######################## STARTING DETAILED SEARCH AUTONOMY ########################")
@@ -122,8 +143,15 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
         # Starts the update thread
         update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"]))
         update.start()
+        
+        # Add the takeoff command and start the takeoff mission
+        detailed_search_adds_mission(vehicle, configs["altitude"])
+        start_auto_mission(vehicle)
 
-        takeoff(vehicle, configs["altitude"])
+        # Wait until vehicle reaches minimum altitude
+        while vehicle.location.global_relative_frame.alt < configs["altitude"] * 0.8:
+            print("Altitude: ", vehicle.location.global_relative_frame.alt)
+            time.sleep(1)
     else:
         # Starts the update thread
         update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"]))
@@ -136,16 +164,18 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
     while not autonomy.stop_mission:
         if not POI_queue.empty() and not autonomy.pause_mission:
             poi = POI_queue.get()
+            # Set the POI's altitude
             poi.alt = configs["altitude"]
-            vehicle.simple_goto(poi)
 
             print("At POI, now orbiting")
-            # TODO start CV scanning
             orbit_poi(vehicle, poi, configs)
             # Change flight mode to AUTO to start auto mission
             vehicle.mode = VehicleMode("AUTO")
             # print location while orbiting
             while vehicle.commands.next != vehicle.commands.count:
+                if vehicle.commands.next > 1:
+                    # TODO start CV scanning
+                    pass
                 print(vehicle.location.global_frame)
                 print(vehicle.commands.next)
                 print(vehicle.commands.count)

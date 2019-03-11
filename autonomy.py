@@ -3,6 +3,7 @@ import sys
 import subprocess
 import time
 from dronekit import VehicleMode
+from pymavlink import mavutil
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
 
 # Globals, updated by XBee callback function
@@ -80,6 +81,31 @@ def mac_xbee_port_name():
     except ValueError:
         raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
 
+# Arms and starts an AUTO mission loaded onto the vehicle
+def start_auto_mission(vehicle):
+    while not vehicle.is_armable:
+        print " Waiting for vehicle to initialise..."
+        time.sleep(1)
+        
+    vehicle.mode = VehicleMode("GUIDED")
+    vehicle.armed = True
+
+    while not vehicle.armed:      
+        print " Waiting for arming..."
+        time.sleep(1)
+
+    vehicle.commands.next = 0
+    vehicle.mode = VehicleMode("AUTO")
+    
+    msg = vehicle.message_factory.command_long_encode(
+        0, 0,    # target_system, target_component
+        mavutil.mavlink.MAV_CMD_MISSION_START, #command
+        0, #confirmation
+        0, 0, 0, 0, 0, 0, 0)    # param 1 ~ 7 not used
+    # send command to vehicle
+    vehicle.send_mavlink(msg)
+
+    vehicle.commands.next = 0
 
 # Commands drone to take off by arming vehicle and flying to altitude
 def takeoff(vehicle, altitude):
