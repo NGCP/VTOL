@@ -15,7 +15,6 @@ import time
 xbee = None
 gcs_timestamp = 0
 connection_timestamp = 0
-ack_id = None
 
 def xbee_callback(message):
     global gcs_timestamp
