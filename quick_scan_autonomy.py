@@ -40,7 +40,6 @@ def xbee_callback(message):
 
     try:
         msg_type = msg["type"]
-        print(msg_type)
 
         if msg_type == "addMission":
             area = msg["searchArea"]
