@@ -258,6 +258,7 @@ def update_thread(vehicle, address):
     change_status("ready")
 
 
+# Continuously sends message to given address until acknowledgement message is recieved with the corresponding ackid.
 def send_till_ack(address, msg, msg_id):
     # Instantiate a remote XBee device object to send data.
     send_xbee = RemoteXBeeDevice(xbee, address)
