@@ -47,8 +47,7 @@ def xbee_callback(message):
             acknowledge(address, msg["id"])
 
         elif msg_type == "acknowledge":
-            # TODO check the ID
-            pass
+            ack_id = msg["ackid"]
 
         else:
             bad_msg(address, "Unknown message type: \'" + msg_type + "\'")
@@ -87,6 +86,7 @@ def orbit_poi(vehicle, poi, configs):
     print("Upload new commands to vehicle")
     cmds.upload()
 
+
 def detailed_search_adds_mission(vehicle, altitude):
     """
     Only adds a takeoff command for AUTO mission
@@ -107,6 +107,7 @@ def detailed_search_adds_mission(vehicle, altitude):
                 0, 0, 0, vehicle.location.global_frame.lat, vehicle.location.global_frame.lon, altitude))
 
     cmds.upload()
+
 
 def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timestamp, vehicle=None):
     print("\n######################## STARTING DETAILED SEARCH AUTONOMY ########################")

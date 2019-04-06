@@ -10,6 +10,7 @@ from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
 start_mission = False  # takeoff
 pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
+ack_id = None
 xbee = None  # XBee radio object
 
 # Timestamps to keep track of the time field in messages to GCS
@@ -81,6 +82,7 @@ def mac_xbee_port_name():
     except ValueError:
         raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
 
+
 # Arms and starts an AUTO mission loaded onto the vehicle
 def start_auto_mission(vehicle):
     while not vehicle.is_armable:
@@ -106,6 +108,7 @@ def start_auto_mission(vehicle):
     vehicle.send_mavlink(msg)
 
     vehicle.commands.next = 0
+
 
 # Commands drone to take off by arming vehicle and flying to altitude
 def takeoff(vehicle, altitude):
@@ -222,6 +225,8 @@ def include_heading():
 # :param vehicle_type: vehicle type from configs file
 def update_thread(vehicle, address):
     print("Starting update thread\n")
+
+    msg_id = 0
     while not mission_completed:
         location = vehicle.location.global_frame
         # Comply with format of 0 - 1 and check that battery level is not null
@@ -231,7 +236,7 @@ def update_thread(vehicle, address):
             "time": round(time.clock() - connection_timestamp) + gcs_timestamp,
             "sid": configs["vehicle_id"],
             "tid": 0, # the ID of the GCS is 0
-            "id": 0, # TODO make the IDs unique for acknowledgements
+            "id": msg_id, # unique ID increments for each message
 
             "vehicleType": "VTOL",
             "lat": location.lat,
@@ -245,9 +250,17 @@ def update_thread(vehicle, address):
             update_message["heading"] = vehicle.heading
 
         if xbee:
-            # Instantiate a remote XBee device object to send data.
-            send_xbee = RemoteXBeeDevice(xbee, address)
-            xbee.send_data(send_xbee, json.dumps(update_message))
+            send_till_ack(address, update_message, msg_id)
+
+        msg_id += 1
         time.sleep(1)
 
     change_status("ready")
+
+
+def send_till_ack(address, msg, msg_id):
+    # Instantiate a remote XBee device object to send data.
+    send_xbee = RemoteXBeeDevice(xbee, address)
+    while ack_id != msg_id:
+        xbee.send_data(send_xbee, json.dumps(msg))
+        time.sleep(1)

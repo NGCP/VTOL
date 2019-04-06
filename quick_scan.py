@@ -5,7 +5,6 @@ from quick_scan_autonomy import quick_scan_autonomy
 from quick_scan_cv import quick_scan_cv
 from util import parse_configs
 
-
 class QuickScanAutonomyToCV:
     def __init__(self):
         self.startMutex = Lock()

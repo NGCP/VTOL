@@ -35,7 +35,7 @@ def xbee_callback(message):
     global search_area
 
     address = message.remote_device.get_64bit_addr()
-    msg = json.loads(message.data)
+    msg = json.loads(message.data.decode("utf8"))
     print("Received data from %s: %s" % (address, msg))
 
     try:
@@ -60,8 +60,7 @@ def xbee_callback(message):
             acknowledge(address, msg["id"])
 
         elif msg_type == "acknowledge":
-            # TODO check the ID
-            pass
+            ack_id = msg["ackid"]
 
         else:
             bad_msg(address, "Unknown message type: \'" + msg_type + "\'")

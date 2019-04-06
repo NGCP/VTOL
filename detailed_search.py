@@ -34,6 +34,7 @@ class DetailedSearchAutonomyToCV:
         self.acknowledgementMutex = Lock()
         self.acknowledgementMutex = False
 
+
 def detailed_search(vehicle = None, gcs_timestamp = 0, connection_timestamp = 0):
     # Parse configs file
     configs = parse_configs(sys.argv)
