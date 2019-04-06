@@ -10,7 +10,7 @@ from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
 start_mission = False  # takeoff
 pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
-msg_id = -1  # unique ID increments for each message sent
+msg_id = 0  # unique ID increments for each message sent
 ack_id = None
 xbee = None  # XBee radio object
 
@@ -162,9 +162,7 @@ def acknowledge(address, ackid):
     }
     # xbee is None if comms is simulated
     if xbee:
-        # Instantiate a remote XBee device object to send data.
-        send_xbee = RemoteXBeeDevice(xbee, address)
-        xbee.send_data(send_xbee, json.dumps(ack))
+        send_msg(address, ack)
 
 
 # Sends "bad message" to GCS if message received was poorly formatted/unreadable
@@ -183,9 +181,7 @@ def bad_msg(address, problem):
     }
     # xbee is None if comms is simulated
     if xbee:
-        # Instantiate a remote XBee device object to send data.
-        send_xbee = RemoteXBeeDevice(xbee, address)
-        xbee.send_data(send_xbee, json.dumps(msg))
+        send_msg(address, msg)
     else:
         print("Error:", problem)
 
@@ -195,6 +191,12 @@ def new_msg_id():
     global msg_id
     msg_id += 1
     return msg_id
+
+
+def send_msg(address, msg):
+    # Instantiate a remote XBee device object to send data.
+    send_xbee = RemoteXBeeDevice(xbee, address)
+    xbee.send_data(send_xbee, json.dumps(msg))
 
 
 # Reads through comm simulation file from configs and calls xbee_callback to simulate radio messages.
