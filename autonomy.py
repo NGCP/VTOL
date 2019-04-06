@@ -10,13 +10,15 @@ from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
 start_mission = False  # takeoff
 pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
+msg_id = -1  # unique ID increments for each message sent
 ack_id = None
 xbee = None  # XBee radio object
 
 # Timestamps to keep track of the time field in messages to GCS
 gcs_timestamp = 0
 connection_timestamp = 0
-# The global config dictionary
+
+# Global config dictionary
 configs = None
 
 # Global status, updated by various functions
@@ -77,9 +79,7 @@ def mac_xbee_port_name():
         port_name = subprocess.check_output(["ls", "/dev/"])
 
         i = port_name.index("tty.usbserial-")  # index in dev directory of port name
-        # return "/dev/" + port_name[i: i + 22]  # 22 is length of "tty.usbserial-" + 8-char port name
-        return "/dev/tty.usbserial-DA01QW1R"  # 22 is length of "tty.usbserial-" + 8-char port name
-        # return "/dev/tty.usbserial-DA01R50T"  # 22 is length of "tty.usbserial-" + 8-char port name
+        return "/dev/" + port_name[i: i + 22]  # 22 is length of "tty.usbserial-" + 8-char port name
 
     except ValueError:
         raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
@@ -156,7 +156,7 @@ def acknowledge(address, ackid):
         "time": round(time.clock() - connection_timestamp) + gcs_timestamp,
         "sid": configs['vehicle_id'],
         "tid": 0, # The ID of GCS
-        "id": 0, # TODO
+        "id": new_msg_id(),
 
         "ackid": ackid
     }
@@ -177,7 +177,7 @@ def bad_msg(address, problem):
         "time": round(time.clock() - connection_timestamp) + gcs_timestamp,
         "sid": configs['vehicle_id'],
         "tid": 0, # The ID of GCS
-        "id": 0, # TODO
+        "id": new_msg_id(),
 
         "error": problem
     }
@@ -188,6 +188,13 @@ def bad_msg(address, problem):
         xbee.send_data(send_xbee, json.dumps(msg))
     else:
         print("Error:", problem)
+
+
+# Increments global msg_id and returns unique id for new message
+def new_msg_id():
+    global msg_id
+    msg_id += 1
+    return msg_id
 
 
 # Reads through comm simulation file from configs and calls xbee_callback to simulate radio messages.
@@ -228,7 +235,6 @@ def include_heading():
 def update_thread(vehicle, address):
     print("Starting update thread\n")
 
-    msg_id = 0
     while not mission_completed:
         location = vehicle.location.global_frame
         # Comply with format of 0 - 1 and check that battery level is not null
@@ -238,7 +244,7 @@ def update_thread(vehicle, address):
             "time": round(time.clock() - connection_timestamp) + gcs_timestamp,
             "sid": configs["vehicle_id"],
             "tid": 0, # the ID of the GCS is 0
-            "id": msg_id, # unique ID increments for each message
+            "id": new_msg_id(),
 
             "vehicleType": "VTOL",
             "lat": location.lat,
@@ -264,6 +270,5 @@ def send_till_ack(address, msg, msg_id):
     # Instantiate a remote XBee device object to send data.
     send_xbee = RemoteXBeeDevice(xbee, address)
     while ack_id != msg_id:
-        print("Checking for ack...")
         xbee.send_data(send_xbee, json.dumps(msg))
         time.sleep(1)
