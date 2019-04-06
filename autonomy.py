@@ -261,8 +261,7 @@ def update_thread(vehicle, address):
 
         if xbee:
             send_till_ack(address, update_message, msg_id)
-
-        msg_id += 1
+            
         time.sleep(1)
 
     change_status("ready")
