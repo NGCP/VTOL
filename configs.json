@@ -16,13 +16,13 @@
   "quick_scan_specific": {
     "role_switching": false,
     "comms_simulated": {
-      "toggled_on": false,
+      "toggled_on": true,
       "comm_sim_file": "comm_sim_quick_scan.txt"
     }
   },
   "detailed_search_specific": {
     "comms_simulated": {
-      "toggled_on": false,
+      "toggled_on": true,
       "comm_sim_file": "comm_sim_detailed_search.txt"
     }
   }
