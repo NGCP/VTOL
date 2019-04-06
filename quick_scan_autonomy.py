@@ -60,7 +60,7 @@ def xbee_callback(message):
             acknowledge(address, msg["id"])
 
         elif msg_type == "acknowledge":
-            ack_id = msg["ackid"]
+            autonomy.ack_id = msg["ackid"]
 
         else:
             bad_msg(address, "Unknown message type: \'" + msg_type + "\'")

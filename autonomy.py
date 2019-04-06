@@ -77,7 +77,9 @@ def mac_xbee_port_name():
         port_name = subprocess.check_output(["ls", "/dev/"])
 
         i = port_name.index("tty.usbserial-")  # index in dev directory of port name
-        return "/dev/" + port_name[i: i + 22]  # 22 is length of "tty.usbserial-" + 8-char port name
+        # return "/dev/" + port_name[i: i + 22]  # 22 is length of "tty.usbserial-" + 8-char port name
+        return "/dev/tty.usbserial-DA01QW1R"  # 22 is length of "tty.usbserial-" + 8-char port name
+        # return "/dev/tty.usbserial-DA01R50T"  # 22 is length of "tty.usbserial-" + 8-char port name
 
     except ValueError:
         raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
@@ -262,5 +264,6 @@ def send_till_ack(address, msg, msg_id):
     # Instantiate a remote XBee device object to send data.
     send_xbee = RemoteXBeeDevice(xbee, address)
     while ack_id != msg_id:
+        print("Checking for ack...")
         xbee.send_data(send_xbee, json.dumps(msg))
         time.sleep(1)
