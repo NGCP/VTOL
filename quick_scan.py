@@ -35,6 +35,9 @@ class QuickScanAutonomyToCV:
         self.acknowledgementMutex = Lock()
         self.acknowledgementMutex = False
 
+        self.vehicleMutex = Lock()
+        self.vehicle = None
+
 
 def quick_scan(gcs_timestamp = 0, connection_timestamp = 0):
     # Parse configs file

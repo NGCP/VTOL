@@ -123,10 +123,10 @@ def generate_waypoints(configs, search_area):
 
 def quick_scan_adds_mission(vehicle, lla_waypoint_list, altitude):
     """
-    Adds a takeoff command and four waypoint commands to the current mission. 
+    Adds a takeoff command and four waypoint commands to the current mission.
     The waypoints are positioned to form a square of side length 2*aSize around the specified LocationGlobal (aLocation).
 
-    The function assumes vehicle.commands matches the vehicle mission state 
+    The function assumes vehicle.commands matches the vehicle mission state
     (you must have called download at least once in the session and after clearing the mission)
     """
     cmds = vehicle.commands
@@ -195,6 +195,9 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
 
     # Connect to vehicle
     vehicle = connect(connection_string, wait_ready=True)
+    autonomyToCV.vehicleMutex.acquire()
+    autonomyToCV.vehicle = vehicle
+    autonomyToCV.vehicleMutex.release()
 
     # Starts the update thread
     update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"]))
@@ -210,6 +213,7 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
     change_status("running")
 
     # Fly about spiral pattern
+    set_autonomytocv_start(autonomyToCV, True)
     while vehicle.commands.next != vehicle.commands.count:
         print(vehicle.location.global_frame)
         time.sleep(1)
@@ -218,11 +222,14 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
             vehicle.mode = VehicleMode("ALT_HOLD")
         # Lands the vehicle if receives stop mission
         elif autonomy.stop_mission:
+            set_autonomytocv_stop(autonomyToCV, True)
             land(vehicle)
             return
         # Continues path
         else:
             vehicle.mode = VehicleMode("AUTO")
+
+    set_autonomytocv_stop(autonomyToCV, True)
 
     # Switch to detailed search if role switching is enabled
     if configs["quick_scan_specific"]["role_switching"]:
@@ -243,3 +250,13 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
         comm_sim.join()
     else:
         autonomy.xbee.close()
+
+def set_autonomytocv_stop(autonomyToCV, stop):
+    autonomyToCV.stopMutex.acquire()
+    autonomyToCV.stop = stop
+    autonomyToCV.stopMutex.release()
+
+def set_autonomytocv_start(autonomyToCV, start):
+    autonomyToCV.startMutex.acquire()
+    autonomyToCV.start = start
+    autonomyToCV.startMutex.release()
