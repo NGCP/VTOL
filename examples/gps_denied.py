@@ -5,28 +5,31 @@ import math
 import numpy as np
 from os import listdir
 import cProfile, pstats, StringIO
+from conversions import geodetic2ecef, ecef2enu, ecef2ned
 
 def main():
     sitl = dronekit_sitl.start_default(lat=35.328423, lon=-120.752505) # EFR location
     vehicle = connect(sitl.connection_string())
 
     map_origin = LocationGlobalRelative(1.0, 1.0, 30)
-    keys, descs = initializeMap()
+    keys, descs, length, width = initializeMap()
 
     # takeoff currently uses GPS
     takeoff(vehicle, 30)
     vehicle.mode = VehicleMode("GUIDED_NOGPS")
 
-    gps_denied_move(vehicle, LocationGlobalRelative(1.005, 1.0, 30), keys, descs, map_origin)
+    gps_denied_move(vehicle, LocationGlobalRelative(0.99995, 1.0, 30), keys, descs, map_origin, length, width)
 
     land(vehicle)
 
 # how many pixels the drone can be off from the target before being in acceptance state
 EPSILON = 100
 
-def gps_denied_move(vehicle, location, map_keys, map_descs, map_origin):
+def gps_denied_move(vehicle, location, map_keys, map_descs, map_origin, map_length, map_width):
     # convert location to pixels
-    target_pixel_location = gpsToPixels(location, map_origin)
+    target_pixel_location = gpsToPixels(location, map_origin, map_length, map_width)
+    print("target")
+    print(target_pixel_location)
 
     current_pixel_location, current_orientation = calculatePixelLocation(map_keys, map_descs)
     print(current_pixel_location)
@@ -40,15 +43,46 @@ def gps_denied_move(vehicle, location, map_keys, map_descs, map_origin):
         change_yaw(delta_direction)
         move_forward()
         # Wait a second for the image to stabilize
-        time.sleep(1)
+        time.sleep(1) #6:00-8:00pm
         current_pixel_location, current_orientation = calculatePixelLocation(map_keys, map_descs)
         print(current_pixel_location)
         print(current_orientation)
 
 # returns tuple of location (tuple) and orientation
-def gpsToPixels(location, map_origin):
-    # TODO Samay Nathani
-    return (906, 1210)
+#Assumes map is oriented North
+def gpsToPixels(location, map_origin, map_length, map_width, HEADING = 0):
+    altitude = location.alt
+    SCALE = 0.5
+    print("len {} and width {}".format(map_length, map_width))
+
+    HORIZONTAL_RESOLUTION = 3280 * SCALE
+    HORIZONTAL_ANGLE = 62.2 * SCALE
+
+    VERTICAL_RESOLUTION = 2464 * SCALE
+    VERTICAL_ANGLE = 48.8 * SCALE
+
+    ALT_PIXEL_X_Lon = HORIZONTAL_RESOLUTION / math.tan(math.radians(HORIZONTAL_ANGLE))
+    ALT_PIXEL_Y_Lat = VERTICAL_RESOLUTION / math.tan(math.radians(VERTICAL_ANGLE))
+
+    originPixel = (map_length//2, map_width//2)
+    
+    met_1640 = (altitude/ ALT_PIXEL_X_Lon)
+    met_1232 = (altitude/ ALT_PIXEL_Y_Lat)
+    originLat, originLon = map_origin.lat, map_origin.lon
+    POI_Lat, POI_Lon = location.lat, location.lon
+    cn, ce, cd = geodetic2ecef(POI_Lat, POI_Lon, altitude)
+    delta_Lat, delta_Lon, d = ecef2ned(cn, ce, cd, originLat, originLon, altitude)
+    delta_lat_pixel = delta_Lat / met_1232
+    delta_lon_pixel = delta_Lon / met_1640
+
+    angled_lon = (delta_lon_pixel*(math.cos(math.radians(HEADING)))) + (delta_lat_pixel*(math.sin(math.radians(HEADING))))
+    angled_lat = (delta_lat_pixel*(math.cos(math.radians(HEADING)))) - (delta_lon_pixel*(math.sin(math.radians(HEADING))))
+
+    originX, originY = originPixel
+    print("xOrigin {}, yOrigin {}".format(originX, originY))
+    POIX, POIY = originX + angled_lon, originY + angled_lat
+    print("xPixel {}, yPixel {}".format(POIX, POIY))
+    return POIX, POIY
 
 CV_SIMULATION = True
 imgCounter = 0
@@ -56,13 +90,15 @@ orb = cv2.ORB_create(nfeatures=100000, scoreType=cv2.ORB_FAST_SCORE)
 
 def initializeMap():
     areaMap = cv2.imread("images/Map1.jpg")
+    map_length, map_width, color_Channels = areaMap.shape
+    print("len {}, wid{}".format(map_length, map_width))
     areaMap = cv2.resize(areaMap, (0, 0), fx = 0.5, fy = 0.5)
     areaMap = cv2.cvtColor(areaMap, cv2.COLOR_BGR2GRAY)
 
     # find the keypoints and descriptors with ORB
     kp, des = orb.detectAndCompute(areaMap, None)
 
-    return (kp, des)
+    return (kp, des, map_length, map_width)
 
 def calculatePixelLocation(map_keys, map_descs):
     # TODO create test case in Paint.net
@@ -169,4 +205,4 @@ if __name__ == "__main__":
     sortby = 'cumulative'
     ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
     ps.print_stats()
-    print s.getvalue()
+    print(s.getvalue())
