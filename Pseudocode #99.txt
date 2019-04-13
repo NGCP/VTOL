@@ -1,8 +1,0 @@
-Pseudocode for GPS denied functions
-
-while delta x is > 1640:
-    perform calculations...
-    get new lat lon, coordinates
-    repeat with these coordinates at origin
- of delta x is <= 1640:
-    perform calculations 
