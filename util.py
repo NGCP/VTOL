@@ -19,7 +19,7 @@ def parse_configs(argv):
 # and creates an output file for all console output in the directory.
 def new_output_file():
     curr_time = str(datetime.datetime.today()).split()
-    date = curr_time[0]
+    date = "logs/" + curr_time[0]
     time = curr_time[1]
 
     try:
