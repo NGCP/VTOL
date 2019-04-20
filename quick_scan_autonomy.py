@@ -40,7 +40,6 @@ def xbee_callback(message):
 
     try:
         msg_type = msg["type"]
-        print(msg_type)
 
         if msg_type == "addMission":
             area = msg["searchArea"]
@@ -153,14 +152,14 @@ def quick_scan_adds_mission(vehicle, lla_waypoint_list, altitude):
     cmds.add(
         Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0,
                 0, 0, 0, lla_waypoint_list[-1].lat, lla_waypoint_list[-1].lon, lla_waypoint_list[-1].alt))
-    print("Upload new commands to vehicle")
+    print("Upload new commands to vehicle.")
     cmds.upload()
 
 
 # Main autonomous flight thread
 # :param configs: dict from configs file
 def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
-    print("\n######################## STARTING QUICK SCAN AUTONOMY ########################")
+    print("\n################ STARTING QUICK SCAN AUTONOMY ################")
     autonomy.configs = configs
 
     # If comms is simulated, start comm simulation thread

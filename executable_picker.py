@@ -7,7 +7,7 @@ import autonomy
 from autonomy import setup_xbee, bad_msg, send_till_ack
 from quick_scan import quick_scan
 from detailed_search import detailed_search
-from util import parse_configs
+from util import parse_configs, new_output_file
 import sys
 import json
 import time
@@ -58,6 +58,9 @@ def xbee_callback(message):
 def main():
     configs = parse_configs(sys.argv)
 
+    # create output file for all console output
+    autonomy.outfile = new_output_file()
+
     # no comms simulation; that wouldn't be useful as this program is supposed to interact w/ GCS
     global xbee
     xbee = setup_xbee()
@@ -77,6 +80,10 @@ def main():
     xbee.add_data_received_callback(xbee_callback)
 
     send_till_ack(configs["mission_control_MAC"], connection_message, 0)
+
+    if not autonomy.outfile.closed:
+        autonomy.outfile.close()
+
 
 if __name__ == "__main__":
     main()

@@ -1,13 +1,49 @@
 import cv2
-from os import listdir
+from os import listdir, environ
+from threading import Thread
+import time
+import subprocess
 
-#Globals
-imgCounter = 0
+img_counter = 0
 
 def cv_simulation(configs):
-    global imgCounter
-    files = listdir(configs["cv_simulated"]["directory"])
-    path = configs["cv_simulated"]["directory"] + "/" + files[imgCounter % len(files)]
-    img = cv2.imread(path, 1)
-    imgCounter += 1
-    return img
+   global img_counter
+   files = listdir(configs["cv_simulated"]["directory"])
+   path = configs["cv_simulated"]["directory"] + "/" + files[img_counter % len(files)]
+   img = cv2.imread(path, 1)
+   img_counter += 1
+   return img
+
+
+def connect_solo_wifi():
+   # execute the shell script (does not terminate)
+   subprocess.check_output(["nc", "10.1.1.1", "5502"])
+
+
+def init_camera(configs):
+   # initialize camera for 3DR Solo
+   if configs["3dr_solo"]:
+       solo_connect_thread = Thread(target=connect_solo_wifi)
+       solo_connect_thread.daemon = True
+       solo_connect_thread.start()
+       time.sleep(1)
+       environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'protocol_whitelist;file,rtp,udp'
+       cam = cv2.VideoCapture("./sololink.sdp")
+       return cam
+   # initialize camera for Raspberry PI
+   else:
+       from picamera import PiCamera
+       cam = PiCamera()
+       return cam
+
+
+def take_picture(camera, configs):
+   if configs["3dr_solo"]:
+       return camera.read()
+   else:
+       from picamera.array import PiRGBArray
+       raw_capture = PiRGBArray(camera)
+       camera.capture(raw_capture, format="bgr")
+       return raw_capture.array
+
+

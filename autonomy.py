@@ -13,6 +13,7 @@ stop_mission = False  # return to start and land
 msg_id = 0  # unique ID increments for each message sent
 ack_id = None
 xbee = None  # XBee radio object
+outfile = None
 
 # Timestamps to keep track of the time field in messages to GCS
 gcs_timestamp = 0
@@ -25,6 +26,20 @@ configs = None
 status = "ready"
 heading = None
 mission_completed = False
+
+# Writes to all file objects
+class Tee(object):
+    def __init__(self, *files):
+        self.files = files
+
+    def write(self, obj):
+        for f in self.files:
+            f.write(obj)
+            f.flush() # If you want the output to be visible immediately
+
+    def flush(self) :
+        for f in self.files:
+            f.flush()
 
 
 # Dummy message class for comm simulation thread to be compatible with xbee_callback function
