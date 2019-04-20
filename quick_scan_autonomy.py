@@ -42,7 +42,7 @@ def xbee_callback(message):
         msg_type = msg["type"]
 
         if msg_type == "addMission":
-            area = msg["searchArea"]
+            area = msg["missionInfo"]["searchArea"]
             search_area = SearchArea(area["center"], area["rad1"], area["rad2"])
             autonomy.start_mission = True
             acknowledge(address, msg["id"])
@@ -59,7 +59,7 @@ def xbee_callback(message):
             autonomy.stop_mission = True
             acknowledge(address, msg["id"])
 
-        elif msg_type == "acknowledge":
+        elif msg_type == "ack":
             autonomy.ack_id = msg["ackid"]
 
         else:

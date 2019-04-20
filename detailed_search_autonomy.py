@@ -28,10 +28,10 @@ def xbee_callback(message):
 
         if msg_type == "addMission":
             msg_lat = msg['missionInfo']['lat']
-            msg_lon = msg['missionInfo']['lon']
+            msg_lng = msg['missionInfo']['lng']
 
             # convert mission coordinates to dronekit object, and add to POI queue
-            POI_queue.put(LocationGlobalRelative(msg_lat, msg_lon, None))
+            POI_queue.put(LocationGlobalRelative(msg_lat, msg_lng, None))
             acknowledge(address, msg["id"])
 
         elif msg_type == "pause":
@@ -46,7 +46,7 @@ def xbee_callback(message):
             autonomy.stop_mission = True
             acknowledge(address, msg["id"])
 
-        elif msg_type == "acknowledge":
+        elif msg_type == "ack":
             autonomy.ack_id = msg["ackid"]
 
         else:
@@ -62,7 +62,7 @@ def orbit_poi(vehicle, poi, configs):
     original_altitude = configs["altitude"]  # given altitude
     radius = configs["radius"]  # radius of circle travelled
     orbit_number = configs["orbit_number"]  # how many times we repeat orbit
-    x, y, z = conversions.geodetic2ecef(poi.lat, poi.lon, original_altitude)  # LLA -> ECEF
+    x, y, z = conversions.geodetic2ecef(poi.lat, poi.lng, original_altitude)  # LLA -> ECEF
     cmds = vehicle.commands
     cmds.clear()
 
@@ -73,15 +73,15 @@ def orbit_poi(vehicle, poi, configs):
         for point in point_list:
             a = (radius * point[0]) + x
             b = (radius * point[1]) + y
-            lat, lon, alt = conversions.ecef2geodetic(a, b, z)
-            waypoints.append(LocationGlobalRelative(lat, lon, original_altitude))
+            lat, lng, alt = conversions.ecef2geodetic(a, b, z)
+            waypoints.append(LocationGlobalRelative(lat, lng, original_altitude))
 
     # Define the MAV_CMD_NAV_WAYPOINT locations and add the commands
     for point in waypoints:
         cmds.add(
             Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
-                    0, 0, 0, 0, 0, 0, point.lat, point.lon, point.alt))
-        print(point.lat, point.lon, point.alt)
+                    0, 0, 0, 0, 0, 0, point.lat, point.lng, point.alt))
+        print(point.lat, point.lng, point.alt)
 
     print("Upload new commands to vehicle")
     cmds.upload()
@@ -104,7 +104,7 @@ def detailed_search_adds_mission(vehicle, altitude):
     # Add point directly above vehicle for takeoff
     cmds.add(
         Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0,
-                0, 0, 0, vehicle.location.global_frame.lat, vehicle.location.global_frame.lon, altitude))
+                0, 0, 0, vehicle.location.global_frame.lat, vehicle.location.global_frame.lng, altitude))
 
     cmds.upload()
 
@@ -130,7 +130,7 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
         # Start SITL if vehicle is being simulated
         if (configs["vehicle_simulated"]):
             import dronekit_sitl
-            sitl = dronekit_sitl.start_default(lat=35.328423, lon=-120.752505)
+            sitl = dronekit_sitl.start_default(lat=35.328423, lng=-120.752505)
             connection_string = sitl.connection_string()
         else:
             if (configs["3dr_solo"]):
