@@ -178,8 +178,6 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
                     # TODO start CV scanning
                     pass
                 print(vehicle.location.global_frame)
-                print(vehicle.commands.next)
-                print(vehicle.commands.count)
                 time.sleep(1)
             # TODO stop CV scanning
 

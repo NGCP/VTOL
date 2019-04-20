@@ -159,7 +159,7 @@ def quick_scan_adds_mission(vehicle, lla_waypoint_list, altitude):
 # Main autonomous flight thread
 # :param configs: dict from configs file
 def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
-    print("\n################ STARTING QUICK SCAN AUTONOMY ################")
+    print("\n######################## STARTING QUICK SCAN AUTONOMY ########################")
     autonomy.configs = configs
 
     # If comms is simulated, start comm simulation thread
