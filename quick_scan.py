@@ -50,7 +50,7 @@ def quick_scan(gcs_timestamp = 0, connection_timestamp = 0):
     autonomy_thread.daemon = True
     autonomy_thread.start()
 
-    cv_thread = Thread(target=quick_scan_cv, args=(configs, autonomyToCV))
+    cv_thread = Thread(target=quick_scan_cv, args=(configs, autonomyToCV, gcs_timestamp, connection_timestamp))
     cv_thread.daemon = True
     cv_thread.start()
 
@@ -60,7 +60,10 @@ def quick_scan(gcs_timestamp = 0, connection_timestamp = 0):
 
     # Close XBee device
     if autonomy.xbee:
+        autonomyToCV.xbeeMutex.release()
         autonomy.xbee.close()
+        autonomyToCV.xbeeMutex.release()
+
 
 
 if __name__ == "__main__":

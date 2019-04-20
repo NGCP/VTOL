@@ -64,11 +64,11 @@ def xbee_callback(message):
             pass
 
         else:
-            bad_msg(address, "Unknown message type: \'" + msg_type + "\'")
+            bad_msg(address, "Unknown message type: \'" + msg_type + "\'", autonomyToCV)
 
     # KeyError if message was missing an expected key
     except KeyError as e:
-        bad_msg(address, "Missing \'" + e.args[0] + "\' key")
+        bad_msg(address, "Missing \'" + e.args[0] + "\' key", autonomyToCV)
 
 
 # Generate NED and LLA waypoints in spiral pattern
@@ -171,9 +171,19 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
     else:
         comm_sim = None
         autonomy.xbee = setup_xbee()
+
+        #store xbee to autonomyToCV
+        autonomyToCV.xbeeMutex.acquire()
+        autonomyToCV.xbee = autonomy.xbee
+        autonomyToCV.xbeeMutex.release()
+
         autonomy.gcs_timestamp = gcs_timestamp
         autonomy.connection_timestamp = connection_timestamp
+
+
+        autonomyToCV.xbeeMutex.acquire()
         autonomy.xbee.add_data_received_callback(xbee_callback)
+        autonomyToCV.xbeeMutex.release()
 
     # Generate waypoints after start_mission = True
     while not autonomy.start_mission:
@@ -200,7 +210,7 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
     autonomyToCV.vehicleMutex.release()
 
     # Starts the update thread
-    update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"]))
+    update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"], autonomyToCV))
     update.start()
 
     # Send mission to vehicle
@@ -249,7 +259,9 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
     if comm_sim:
         comm_sim.join()
     else:
+        autonomyToCV.xbeeMutex.acquire()
         autonomy.xbee.close()
+        autonomyToCV.xbeeMutex.release()
 
 def set_autonomytocv_stop(autonomyToCV, stop):
     autonomyToCV.stopMutex.acquire()

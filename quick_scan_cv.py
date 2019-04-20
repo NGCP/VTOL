@@ -1,14 +1,16 @@
 import cv
 import cv2
 import numpy as np
+import math
+import time
 from os import listdir
 
-def quick_scan_cv(configs, autonomyToCV):
+def quick_scan_cv(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
     print("Starting Quickscan CV")
 
     #Set output image folder based on simulation attribute in configs
     out_imagef_path = configs["quick_scan_specific"]["quick_scan_images"]
-    if configs['cv_simulated']['toggled_on'] == True:
+    if configs['cv_simulated']['toggled_on']:
         out_imagef_path = configs['cv_simulated']["directory"]
 
     rad_threshold = configs["quick_scan_specific"]["rad_threshold"] # between 2 and 3 degrees
@@ -25,15 +27,44 @@ def quick_scan_cv(configs, autonomyToCV):
     #Retreive images and store onto disk
     print("\nBeginning to take and store images")
     while (get_autonomy_start_and_stop(autonomyToCV) == (True, False)):
+        #Get image via simulation; TODO: get image via vehicle
         img = cv.cv_simulation(configs) #get image function
         pitch, roll = get_autonomytoCV_vehicle_angle(autonomyToCV)
+
+        isBall, isTarget = isBallorTarget(img)
+        print("POI: "  + str(isBall) + ", " + str(isTarget))
+
+        autonomyToCV.xbeeMutex.acquire()
+        if autonomyToCV.xbee:
+            if (isBall or isTarget):
+                lat, lon = get_autonomyToCV_location(autonomyToCV)
+                print("POI @ " + str(lat) + ", " + str(lon))
+                poi_message = {
+                          "type": "poi",
+                          "id": 0,
+                          "sid":  configs["vehicle_id"],
+                          "tid": 0,
+                          "time": round(time.clock() - connection_timestamp) + gcs_timestamp,
+
+                          "lat": lat,                   # Latitude of point of interest
+                          "lng": lon,                   # Longitude of point of interest
+                        }
+
+                # Instantiate a remote XBee device object to send data.
+                address = configs["mission_control_MAC"]
+                xbee = autonomyToCV.xbee
+                send_xbee = RemoteXBeeDevice(xbee, address)
+                xbee.send_data(send_xbee, json.dumps(poi_message))
+        autonomyToCV.xbeeMutex.release()
+
 
         #determines whether to save image to output folder based on angle of vehicle or simulation
         if (abs(pitch) < rad_threshold and
                 abs(roll)  < rad_threshold and
                 configs['cv_simulated']['toggled_on'] == False):
 
-            cv2.imwrite(out_imagef_path + str(i) + ".jpg", img)
+            image_out =  out_imagef_path + str(image_ctr) + ".jpg"
+            cv2.imwrite(image_out, img)
             image_ctr += 1
 
     #Get keypoints and discriptors of all images
@@ -69,6 +100,16 @@ def get_autonomytoCV_vehicle_angle(autonomyToCV):
     roll = vehicle.attitude.roll
     autonomyToCV.vehicleMutex.release()
     return pitch, roll
+
+def get_autonomytoCV_location(autonomyToCV):
+    autonomyToCV.vehicleMutex.acquire()
+    location = autonomyToCV.vehicle.location.global_frame
+    lat = location.lat
+    lon = location.lon
+    autonomyToCV.vehicleMutex.release()
+    return lat, lon
+
+
 
 
 def feature_keypts(img):
@@ -159,7 +200,165 @@ def stitch_image(img_list):
     if status == 0:
         cv2.imwrite("cv_stitched_map.jpg", stitched)
 
+def isBallorTarget(img_rgb, see_results=False):
+
+    img_rgb = cv2.GaussianBlur(img_rgb, (15, 15), 10)
+    hsv = cv2.cvtColor(img_rgb, cv2.COLOR_BGR2HSV)
+    lower_red = np.array([0,50,50])
+    upper_red = np.array([5,255,255])
+    mask0 = cv2.inRange(hsv, lower_red, upper_red)
+    lower_red = np.array([165,100,100])
+    upper_red = np.array([180,255,255])
+    mask1 = cv2.inRange(hsv, lower_red, upper_red)
+    mask = mask0 + mask1
+    output_img = img_rgb.copy()
+    output_img[np.where(mask==0)] = 0
+    output_img[np.where(mask!=0)] = 255
+
+
+    output_gray = cv2.cvtColor(output_img, cv2.COLOR_BGR2GRAY)
+    target_circles = cv2.HoughCircles(output_gray,cv2.HOUGH_GRADIENT,1.2,.01,
+                            param1=100,param2=50,minRadius=0,maxRadius=0)
+
+    ball_circles = cv2.HoughCircles(output_gray,cv2.HOUGH_GRADIENT,1.3,10,
+                            param1=30,param2=43,minRadius=0,maxRadius=0)
+
+    #for smaller ball images, let restrictions be smaller
+    if ball_circles is None:
+        ball_circles = cv2.HoughCircles(output_gray,cv2.HOUGH_GRADIENT,1.3,10,
+                            param1=30,param2=25,minRadius=0,maxRadius=0)
+
+    isBall = False
+    isTarget = False
+    center_buffer = 8
+    rbuffer = 1
+    target_pair = None
+    ball_pair = None
+
+    if target_circles is not None:
+        circles = np.uint16(np.around(target_circles))
+        #Looks for a target
+        for i, c1 in enumerate(circles[0,:]):
+            for c2 in circles[0, i:]:
+                if ( (( c1[0] - center_buffer) <= c2[0] <= (c1[0]) + center_buffer) and
+                    (( c1[1] - center_buffer) <= c2[1] <= (c1[1]) + center_buffer) and
+                    (((1.5 - rbuffer) * c1[2]) <= c2[2] <= ((1.5 + rbuffer) * c1[2]))
+                    ):
+                    isTarget = True
+                    target_pair = (c1, c2)
+                if isTarget:
+                    break
+            if isTarget:
+                break
+
+    if ball_circles is not None:
+        if len(ball_circles[0]) == 1 or not isTarget:
+            isBall = True
+            ball_pair = (ball_circles[0][0],)
+        elif len(ball_circles[0]) != 1:
+            circles = np.uint16(np.around(ball_circles))
+            for i, c1 in enumerate(circles[0,:]):
+                for c2 in circles[0, i:]:
+                    if (( 0 < xy_distance(c1[0], c2[0], c1[1], c2[1]) > (c1[2] + c2[2]) and
+                        not isBall) or not isTarget
+                        ):
+                        isBall = True
+                        ball_pair = (c1, c2)
+
+                    if isBall:
+                        break
+                if isBall:
+                    break
+
+    if see_results:
+        print(ball_pair)
+        print(target_pair)
+        print(ball_circles)
+        print(target_circles)
+
+        if target_pair is not None:
+            # draw circles for Target Pair
+            c1 = target_pair[0]
+            cv2.circle(output_img,(c1[0],c1[1]),c1[2],(0,100,100),2)
+            # draw the center of the circle
+            cv2.circle(output_img,(c1[0],c1[1]),2,(0,100,100),3)
+
+            # draw the outer circle
+            c2 = target_pair[1]
+            cv2.circle(output_img,(c2[0],c2[1]),c2[2],(0,100,100),2)
+            # draw the center of the circle
+            cv2.circle(output_img,(c2[0],c2[1]),2,(0,100,100),3)
+
+
+        if target_circles is not None:
+            circles = np.uint16(np.around(target_circles))
+            #Looks for a target
+            for i, c1 in enumerate(circles[0,:]):
+                cv2.circle(output_img,(c1[0],c1[1]),c1[2],(255,0,0),2)
+                # draw the center of the circle
+                cv2.circle(output_img,(c1[0],c1[1]),2,(255,0,0),3)
+
+
+        if ball_pair is not None:
+            # draw circles for Ball Pair
+            c1 = ball_pair[0]
+            cv2.circle(output_img,(c1[0],c1[1]),c1[2],(255,0,0),2)
+            # draw the center of the circle
+            cv2.circle(output_img,(c1[0],c1[1]),2,(255,0,0),3)
+            if len(ball_pair) > 1:
+                # draw the outer circle
+                c2 = ball_pair[1]
+                cv2.circle(output_img,(c2[0],c2[1]),c2[2],(0,0,255),2)
+                # draw the center of the circle
+                cv2.circle(output_img,(c2[0],c2[1]),2,(0,0,255),3)
+
+        if ball_circles is not None:
+            circles = np.uint16(np.around(ball_circles))
+            #Looks for a target
+            for i, c1 in enumerate(circles[0,:]):
+                cv2.circle(output_img,(c1[0],c1[1]),c1[2],(100,100,0),2)
+                # draw the center of the circle
+                cv2.circle(output_img,(c1[0],c1[1]),2,(100,100,0),3)
+
+        cv2.imshow("output2", output_img)
+        cv2.waitKey(0)
+
+
+    return isBall, isTarget
+
+def xy_distance(x1, x2, y1, y2):
+    return (((x1 - x2) ** 2) + ((y1 - y2) ** 2)) ** 0.5
+
+
 if __name__ == '__main__':
-    import sys
-    from quick_scan import *
-    quick_scan_cv(parse_configs(sys.argv), QuickScanAutonomyToCV())
+    #import sys
+    #from quick_scan import *
+    #quick_scan_cv(parse_configs(sys.argv), QuickScanAutonomyToCV())
+    print('just target')
+    isaBall, isaTarget =isBallorTarget("target.jpg")
+    print("Ball: " + str(isaBall))
+    print("Target: " + str(isaTarget))
+    print('\n')
+
+    print('just ball')
+    isaBall, isaTarget =isBallorTarget("ball.jpg")
+    print("Ball: " + str(isaBall))
+    print("Target: " + str(isaTarget))
+    print('\n')
+
+    print('target and ball')
+    isaBall, isaTarget = isBallorTarget("ball2.jpg")
+    print("Ball: " + str(isaBall))
+    print("Target: " + str(isaTarget))
+    print('\n')
+
+    print('small ball and target')
+    isaBall, isaTarget = isBallorTarget("smolball.jpg")
+    print("Ball: " + str(isaBall))
+    print("Target: " + str(isaTarget))
+    print('\n')
+
+    print('small ball')
+    isaBall, isaTarget = isBallorTarget("smolballonly.jpg")
+    print("Ball: " + str(isaBall))
+    print("Target: " + str(isaTarget))
