@@ -42,7 +42,9 @@ def quick_scan(gcs_timestamp = 0, connection_timestamp = 0):
     # Create output file if not already created
     if autonomy.outfile is None:
         autonomy.outfile = new_output_file()
-        sys.stdout = autonomy.Tee(sys.stdout, autonomy.outfile)
+        tee = autonomy.Tee(sys.stdout, autonomy.outfile)
+        sys.stdout = tee
+        sys.stderr = tee
 
     # Start autonomy and CV threads
     autonomyToCV = QuickScanAutonomyToCV()

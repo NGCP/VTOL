@@ -1,7 +1,7 @@
 '''
 The GCS allocates roles to vehicles. The purpose of this program is to connect to the GCS and then
 read a start message from the GCS, which contains a certain job_type. It then runs the
-corresponding VTOL program (quick scan, detailed search, guide) based on the start message
+corresponding VTOL program (quick scan, detailed search, guide) based on the start message.
 '''
 import autonomy
 from autonomy import setup_xbee, bad_msg, send_till_ack
@@ -22,6 +22,7 @@ def xbee_callback(message):
 
     address = message.remote_device.get_64bit_addr()
     msg = json.loads(message.data)
+    print("Received data from %s: %s" % (address, msg))
 
     try:
         msg_type = msg["type"]
@@ -54,11 +55,15 @@ def xbee_callback(message):
     except KeyError as e:
         bad_msg(address, "Missing \'" + e.args[0] + "\' key")
 
+
 def main():
     configs = parse_configs(sys.argv)
 
     # create output file for all console output
     autonomy.outfile = new_output_file()
+    tee = autonomy.Tee(sys.stdout, autonomy.outfile)
+    sys.stdout = tee
+    sys.stderr = tee
 
     # no comms simulation; that wouldn't be useful as this program is supposed to interact w/ GCS
     global xbee
