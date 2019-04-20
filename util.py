@@ -19,12 +19,20 @@ def parse_configs(argv):
 # and creates an output file for all console output in the directory.
 def new_output_file():
     curr_time = str(datetime.datetime.today()).split()
-    date = "logs/" + curr_time[0]
+    date = curr_time[0]
     time = curr_time[1]
 
+    # makes logs folder if not existing already
     try:
-        subprocess.check_output(["ls", date], stderr=subprocess.STDOUT)
+        subprocess.check_output(["ls", "logs/"], stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError:
-        subprocess.call(["mkdir", date])
+        subprocess.call(["mkdir", "logs/"])
 
-    return open(date + "/" + time.replace(":", ".") + ".txt", "w")
+    # makes folder for the current date in logs folder if not existing already
+    try:
+        subprocess.check_output(["ls", "logs/" + date], stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError:
+        subprocess.call(["mkdir", "logs/" + date])
+
+    # open file for current time
+    return open("logs/" + date + "/" + time.replace(":", ".") + ".txt", "w")
