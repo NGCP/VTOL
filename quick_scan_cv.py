@@ -32,8 +32,7 @@ def quick_scan_cv(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
         pitch, roll = get_autonomytoCV_vehicle_angle(autonomyToCV)
 
         isBall, isTarget = isBallorTarget(img)
-        print("POI: "  + str(isBall) + ", " + str(isTarget))
-
+        
         autonomyToCV.xbeeMutex.acquire()
         if autonomyToCV.xbee:
             if (isBall or isTarget):
