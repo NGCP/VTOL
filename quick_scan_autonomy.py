@@ -6,6 +6,7 @@ from threading import Thread
 from pymavlink import mavutil
 from dronekit import connect, Command, VehicleMode, LocationGlobalRelative
 from detailed_search import detailed_search
+import msgpack
 
 # first import gives access to global variables in "autonomy" namespace
 # second import is for functions
@@ -14,7 +15,7 @@ from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, updat
     change_status, setup_xbee, start_auto_mission
 
 search_area = None  # search area object, populated by callback on start
-
+comm_sim_on = False
 
 # Represents a search area for quick scan aerial vehicles
 class SearchArea:
@@ -31,9 +32,13 @@ class SearchArea:
 
 
 # Callback function for messages from GCS, parses JSON message and sets globals
-def xbee_callback(message):
+def xbee_callback(Compressed_message):
     global search_area
-
+    global comm_sim_on
+    if (comm_sim_on):
+        message = Compressed_message
+    else:
+        message = msgpack.unpackb(Compressed_message)
     address = message.remote_device.get_64bit_addr()
     msg = json.loads(message.data)
     print("Received data from %s: %s" % (address, msg))
@@ -165,6 +170,8 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
 
     # If comms is simulated, start comm simulation thread
     if configs["quick_scan_specific"]["comms_simulated"]["toggled_on"]:
+        global comm_sim_on
+        comm_sim_on = True
         comm_sim = Thread(target=comm_simulation, args=(configs["quick_scan_specific"]["comms_simulated"]["comm_sim_file"], xbee_callback,))
         comm_sim.start()
     # Otherwise, set up XBee device and add callback

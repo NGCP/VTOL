@@ -146,6 +146,7 @@ def land(vehicle):
 # Sends message received acknowledgement to GCS
 # :param address: address of GCS
 def acknowledge(address, ackid):
+    #pack this  (compress it) look at msgpack doc and xbee documentation api is same as digixbee (goodgle)
     ack = {
         "type": "ack",
         "time": round(time.clock() - connection_timestamp) + gcs_timestamp,
@@ -159,7 +160,8 @@ def acknowledge(address, ackid):
     if xbee:
         # Instantiate a remote XBee device object to send data.
         send_xbee = RemoteXBeeDevice(xbee, address)
-        xbee.send_data(send_xbee, json.dumps(ack))
+        packed_Data = packb(json.dumps(ack), use_bin_type = True)
+        xbee.send_data(send_xbee, packed_Data)
 
 
 # Sends "bad message" to GCS if message received was poorly formatted/unreadable
@@ -167,6 +169,7 @@ def acknowledge(address, ackid):
 # :param address: address of GCS
 # :param problem: string describing error from parsing original message
 def bad_msg(address, problem):
+    #add Samay TODO
     msg = {
         "type": "badMessage",
         "time": round(time.clock() - connection_timestamp) + gcs_timestamp,
@@ -180,7 +183,8 @@ def bad_msg(address, problem):
     if xbee:
         # Instantiate a remote XBee device object to send data.
         send_xbee = RemoteXBeeDevice(xbee, address)
-        xbee.send_data(send_xbee, json.dumps(msg))
+        packed_Data = packb(json.dumps(msg), use_bin_type = True)
+        xbee.send_data(send_xbee, packed_Data)
     else:
         print("Error:", problem)
 
@@ -221,6 +225,7 @@ def include_heading():
 # :param vehicle: vehicle object that represents drone
 # :param vehicle_type: vehicle type from configs file
 def update_thread(vehicle, address):
+    #TODO Compress
     print("Starting update thread\n")
     while not mission_completed:
         location = vehicle.location.global_frame
@@ -247,7 +252,8 @@ def update_thread(vehicle, address):
         if xbee:
             # Instantiate a remote XBee device object to send data.
             send_xbee = RemoteXBeeDevice(xbee, address)
-            xbee.send_data(send_xbee, json.dumps(update_message))
+            packed_Data = packb(json.dumps(update_message), use_bin_type = True)
+            xbee.send_data(send_xbee, packed_Data)
         time.sleep(1)
 
     change_status("ready")
