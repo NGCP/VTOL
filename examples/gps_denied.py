@@ -10,7 +10,7 @@ from time import time, sleep
 from pickle import dump, load, HIGHEST_PROTOCOL
 
 def main():
-    sitl = dronekit_sitl.start_default(lat=35.328423, lon=-120.752505) # EFR location
+    sitl = start_default(lat=35.328423, lon=-120.752505) # EFR location
     vehicle = connect(sitl.connection_string())
 
     map_origin = LocationGlobalRelative(1.0, 1.0, 30)
@@ -40,9 +40,9 @@ def gps_denied_move(vehicle, location, map_keys, map_descs, map_origin):
                                (target_pixel_location[0] - current_pixel_location[0])) - current_orientation
         print(delta_direction)
         change_yaw(vehicle, delta_direction)
-        move_forward(vehicle, 1)
+        move_forward(vehicle, 5)
         # Wait a second for the image to stabilize
-        time.sleep(1)
+        sleep(1)
         current_pixel_location, current_orientation = calculatePixelLocation(map_keys, map_descs)
         print(current_pixel_location)
         print(current_orientation)
@@ -87,7 +87,7 @@ def calculatePixelLocation(map_keys, map_descs):
 
     src_pts = np.float32([ keys[m.queryIdx].pt for m in good_matches ]).reshape(-1,1,2)
     dst_pts = np.float32([ map_keys[m.trainIdx].pt for m in good_matches ]).reshape(-1,1,2)
-    
+
     M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
     h,w = img.shape
     pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
@@ -225,12 +225,10 @@ def set_attitude(vehicle, roll_angle = 0.0, pitch_angle = 0.0,
 
 
 def read_from_file():
-    with open('keys', 'rb') as read:
+    with open('map.bin', 'rb') as read:
         data = load(read)
-        keys_reconstructed = map(lambda x: cv2.KeyPoint(x['pt'][0], x['pt'][1], x['size'], x['angle'], x['response'], x['octave'], x['class_id']), data)
-    with open('descs', 'rb') as read:
-        descs = load(read)
-    return (keys_reconstructed, descs)
+        keys_reconstructed = map(lambda x: cv2.KeyPoint(x['pt'][0], x['pt'][1], x['size'], x['angle'], x['response'], x['octave'], x['class_id']), data['keys'])
+    return (keys_reconstructed, data['descs'])
 
 
 if __name__ == "__main__":

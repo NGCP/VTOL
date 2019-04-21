@@ -12,13 +12,9 @@ areaMap = cv2.cvtColor(areaMap, cv2.COLOR_BGR2GRAY)
 # find the keypoints and descriptors with ORB
 keys, descs = orb.detectAndCompute(areaMap, None)
 
-with open('keys', 'wb') as output:  # Overwrites any existing file.
+with open('map.bin', 'wb') as output:  # Overwrites any existing file.
     ob = (map(lambda x: {'pt': x.pt, 'size': x.size, 'angle': x.angle, 'response': x.response, 'octave': x.octave, 'class_id': x.class_id}, keys))
-    dump(ob, output, HIGHEST_PROTOCOL)
-    print('dumped keys to \'keys\'')
+    dump({'descs': descs, 'keys': ob}, output, HIGHEST_PROTOCOL)
+
+    print('dumped keys and descs to \'map.bin\'')
     output.close()
-
-with open('descs', 'wb') as output:  # Overwrites any existing file.
-    dump(descs, output, HIGHEST_PROTOCOL)
-
-    print('dumped keys to \'descs\'')
