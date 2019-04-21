@@ -1,20 +1,20 @@
 from dronekit import *
-import dronekit_sitl
+from dronekit_sitl import start_default
 import cv2
-import math
+from math import atan, sqrt, pi, acos
 import numpy as np
 from os import listdir
 import cProfile, pstats, StringIO
 from math import cos, sin, radians
 from time import time, sleep
+from pickle import dump, load, HIGHEST_PROTOCOL
 
 def main():
     sitl = dronekit_sitl.start_default(lat=35.328423, lon=-120.752505) # EFR location
     vehicle = connect(sitl.connection_string())
 
     map_origin = LocationGlobalRelative(1.0, 1.0, 30)
-    keys, descs = initializeMap()
-
+    keys, descs = read_from_file()
     # takeoff currently uses GPS
     takeoff(vehicle, 30)
     vehicle.mode = VehicleMode("GUIDED_NOGPS")
@@ -36,11 +36,11 @@ def gps_denied_move(vehicle, location, map_keys, map_descs, map_origin):
     while (euclidean_distance(current_pixel_location[0], current_pixel_location[1],
                               target_pixel_location[0], target_pixel_location[1]) >= EPSILON):
         # trigonometry to calculate how much yaw must change
-        delta_direction = math.atan((target_pixel_location[1] - current_pixel_location[1]) /
+        delta_direction = atan((target_pixel_location[1] - current_pixel_location[1]) /
                                (target_pixel_location[0] - current_pixel_location[0])) - current_orientation
         print(delta_direction)
-        change_yaw(delta_direction)
-        move_forward()
+        change_yaw(vehicle, delta_direction)
+        move_forward(vehicle, 1)
         # Wait a second for the image to stabilize
         time.sleep(1)
         current_pixel_location, current_orientation = calculatePixelLocation(map_keys, map_descs)
@@ -56,15 +56,6 @@ CV_SIMULATION = True
 imgCounter = 0
 orb = cv2.ORB_create(nfeatures=100000, scoreType=cv2.ORB_FAST_SCORE)
 
-def initializeMap():
-    areaMap = cv2.imread("images/Map1.jpg")
-    areaMap = cv2.resize(areaMap, (0, 0), fx = 0.5, fy = 0.5)
-    areaMap = cv2.cvtColor(areaMap, cv2.COLOR_BGR2GRAY)
-
-    # find the keypoints and descriptors with ORB
-    kp, des = orb.detectAndCompute(areaMap, None)
-
-    return (kp, des)
 
 def calculatePixelLocation(map_keys, map_descs):
     # TODO create test case in Paint.net
@@ -106,7 +97,7 @@ def calculatePixelLocation(map_keys, map_descs):
     # Vector of the upper edge
     vec = dst[3][0] - dst[0][0]
     # Angle of upper edge to x axis in degrees
-    angle = math.acos(np.dot(vec, np.array([1, 0])) / (math.sqrt(vec[0]**2 + vec[1]**2))) * 180 / math.pi
+    angle = acos(np.dot(vec, np.array([1, 0])) / (sqrt(vec[0]**2 + vec[1]**2))) * 180 / pi
     return ((mp[0], mp[1]), angle)
 
 def cv_simulation():
@@ -118,20 +109,20 @@ def cv_simulation():
     return img
 
 def euclidean_distance(x1, y1, x2, y2):
-    return math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+    return sqrt((x1 - x2)**2 + (y1 - y2)**2)
 
 def change_yaw(vehicle, theta):
     set_attitude(vehicle, yaw_angle=theta + vehicle.heading, duration=3)
 
 def move_forward(vehicle, durration):
-    set_attitude(vehicle, pitch_angle=-15, yaw_rate=0, use_yaw_rate=True, duration=durration)
+    set_attitude(vehicle, pitch_angle=-12, yaw_rate=0, use_yaw_rate=True, duration=durration)
 
 # Commands drone to take off by arming vehicle and flying to altitude
 def takeoff(vehicle, altitude):
     print("Pre-arm checks")
     while not vehicle.is_armable:
         print("Waiting for vehicle to initialize")
-        time.sleep(1)
+        sleep(1)
 
     print("Arming motors")
     # Vehicle should arm in GUIDED mode
@@ -140,7 +131,7 @@ def takeoff(vehicle, altitude):
 
     while not vehicle.armed:
         print("Waiting to arm vehicle")
-        time.sleep(1)
+        sleep(1)
 
     print("Taking off")
     vehicle.simple_takeoff(altitude)  # take off to altitude
@@ -148,7 +139,7 @@ def takeoff(vehicle, altitude):
     # Wait until vehicle reaches minimum altitude
     while vehicle.location.global_relative_frame.alt < altitude * 0.95:
         print("Altitude: ", vehicle.location.global_relative_frame.alt)
-        time.sleep(1)
+        sleep(1)
 
     print("Reached target altitude")
 
@@ -231,6 +222,16 @@ def set_attitude(vehicle, roll_angle = 0.0, pitch_angle = 0.0,
     send_attitude_target(vehicle, 0, 0,
                          0, 0, True,
                          thrust)
+
+
+def read_from_file():
+    with open('keys', 'rb') as read:
+        data = load(read)
+        keys_reconstructed = map(lambda x: cv2.KeyPoint(x['pt'][0], x['pt'][1], x['size'], x['angle'], x['response'], x['octave'], x['class_id']), data)
+    with open('descs', 'rb') as read:
+        descs = load(read)
+    return (keys_reconstructed, descs)
+
 
 if __name__ == "__main__":
     pr = cProfile.Profile()
