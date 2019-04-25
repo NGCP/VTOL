@@ -20,7 +20,7 @@ POI_queue = queue.Queue()
 # Callback function for messages from GCS, parses JSON message and sets globals
 def xbee_callback(message):
     address = message.remote_device.get_64bit_addr()
-    msg = json.loads(message.data)
+    msg = json.loads(message.data.decode("utf8"))
     print("Received data from %s: %s" % (address, msg))
 
     try:
@@ -46,9 +46,8 @@ def xbee_callback(message):
             autonomy.stop_mission = True
             acknowledge(address, msg["id"])
 
-        elif msg_type == "acknowledge":
-            # TODO check the ID
-            pass
+        elif msg_type == "ack":
+            autonomy.ack_id = msg["ackid"]
 
         else:
             bad_msg(address, "Unknown message type: \'" + msg_type + "\'")
@@ -120,6 +119,7 @@ def orbit_poi(vehicle, poi, configs):
     print("Upload new commands to vehicle")
     cmds.upload()
 
+
 def detailed_search_adds_mission(configs, vehicle):
     """
     Only adds a takeoff command for AUTO mission
@@ -145,6 +145,7 @@ def detailed_search_adds_mission(configs, vehicle):
                      0, configs["air_speed"], -1, 0, 0, 0, 0))
 
     cmds.upload()
+
 
 def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timestamp, vehicle=None):
     print("\n######################## STARTING DETAILED SEARCH AUTONOMY ########################")
@@ -203,9 +204,11 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
                 if vehicle.commands.next > 1:
                     # TODO start CV scanning
                     pass
+
                 print(vehicle.location.global_relative_frame)
                 print(vehicle.commands.next)
                 print(vehicle.commands.count)
+
                 time.sleep(1)
             # TODO stop CV scanning
 

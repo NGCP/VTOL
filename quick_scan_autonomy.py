@@ -35,14 +35,14 @@ def xbee_callback(message):
     global search_area
 
     address = message.remote_device.get_64bit_addr()
-    msg = json.loads(message.data)
+    msg = json.loads(message.data.decode("utf8"))
     print("Received data from %s: %s" % (address, msg))
 
     try:
         msg_type = msg["type"]
 
         if msg_type == "addMission":
-            area = msg["searchArea"]
+            area = msg["missionInfo"]["searchArea"]
             search_area = SearchArea(area["center"], area["rad1"], area["rad2"])
             autonomy.start_mission = True
             acknowledge(address, msg["id"])
@@ -59,9 +59,8 @@ def xbee_callback(message):
             autonomy.stop_mission = True
             acknowledge(address, msg["id"])
 
-        elif msg_type == "acknowledge":
-            # TODO check the ID
-            pass
+        elif msg_type == "ack":
+            autonomy.ack_id = msg["ackid"]
 
         else:
             bad_msg(address, "Unknown message type: \'" + msg_type + "\'")
