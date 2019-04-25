@@ -2,7 +2,7 @@ import json
 import sys
 import subprocess
 import time
-from dronekit import VehicleMode
+from dronekit import connect, VehicleMode
 from pymavlink import mavutil
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
 
@@ -10,18 +10,35 @@ from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
 start_mission = False  # takeoff
 pause_mission = False  # vehicle will hover
 stop_mission = False  # return to start and land
+msg_id = 0  # unique ID increments for each message sent
+ack_id = None
 xbee = None  # XBee radio object
+outfile = None
 
 # Timestamps to keep track of the time field in messages to GCS
 gcs_timestamp = 0
 connection_timestamp = 0
-# The global config dictionary
+
+# Global config dictionary
 configs = None
 
 # Global status, updated by various functions
 status = "ready"
 heading = None
 mission_completed = False
+
+# Writes to all file objects
+class Tee(object):
+    def __init__(self, *files):
+        self.files = files
+
+    def write(self, obj):
+        for f in self.files:
+            f.write(obj)
+
+    def flush(self) :
+        for f in self.files:
+            f.flush()
 
 
 # Dummy message class for comm simulation thread to be compatible with xbee_callback function
@@ -39,6 +56,27 @@ class DummyRemoteDevice:
     def get_64bit_addr(self):
         return "comms simulation"
 
+def setup_vehicle(configs):
+    # Start SITL if vehicle is being simulated
+    if (configs["vehicle_simulated"]):
+        if (configs["vehicle_type"] == "VTOL"):
+            # If running a simulated VTOL on vagrant, connect to it via TCP
+            # Port 5763 must be forwarded on vagrant
+            connection_string = "tcp:127.0.0.1:5763"
+        elif (configs["vehicle_type"] == "Quadcopter"):
+            import dronekit_sitl
+            sitl = dronekit_sitl.start_default(lat=35.328423, lon=-120.752505)
+            connection_string = sitl.connection_string()
+    else:
+        if (configs["3dr_solo"]):
+            connection_string = "udpin:0.0.0.0:14550"
+        else:
+            connection_string = "/dev/serial0"
+
+    if (configs["vehicle_simulated"]):
+        return connect(connection_string, wait_ready=True)
+    else:
+        return connect(connection_string, baud=configs["baud_rate"], wait_ready=True)
 
 # Instantiates XBee device object
 def setup_xbee():
@@ -81,8 +119,9 @@ def mac_xbee_port_name():
     except ValueError:
         raise ValueError("Value Error: \'tty.usbserial-\' not found in /dev")
 
+
 # Arms and starts an AUTO mission loaded onto the vehicle
-def start_auto_mission(vehicle):
+def start_auto_mission(configs, vehicle):
     while not vehicle.is_armable:
         print " Waiting for vehicle to initialise..."
         time.sleep(1)
@@ -97,15 +136,17 @@ def start_auto_mission(vehicle):
     vehicle.commands.next = 0
     vehicle.mode = VehicleMode("AUTO")
     
-    msg = vehicle.message_factory.command_long_encode(
-        0, 0,    # target_system, target_component
-        mavutil.mavlink.MAV_CMD_MISSION_START, #command
-        0, #confirmation
-        0, 0, 0, 0, 0, 0, 0)    # param 1 ~ 7 not used
-    # send command to vehicle
-    vehicle.send_mavlink(msg)
+    if (configs["vehicle_type"] == "Quadcopter"):
+        msg = vehicle.message_factory.command_long_encode(
+            0, 0,    # target_system, target_component
+            mavutil.mavlink.MAV_CMD_MISSION_START, #command
+            0, #confirmation
+            0, 0, 0, 0, 0, 0, 0)    # param 1 ~ 7 not used
+        # send command to vehicle
+        vehicle.send_mavlink(msg)
 
     vehicle.commands.next = 0
+
 
 # Commands drone to take off by arming vehicle and flying to altitude
 def takeoff(vehicle, altitude):
@@ -128,18 +169,26 @@ def takeoff(vehicle, altitude):
 
     # Wait until vehicle reaches minimum altitude
     while vehicle.location.global_relative_frame.alt < altitude * 0.95:
-        print("Altitude: ", vehicle.location.global_relative_frame.alt)
+        print("Altitude: " + str(vehicle.location.global_relative_frame.alt))
         time.sleep(1)
 
     print("Reached target altitude")
 
 
 # Commands vehicle to land
-def land(vehicle):
+def land(configs, vehicle):
     print("Returning to launch")
-    vehicle.mode = VehicleMode("RTL")
+    if (configs["vehicle_type"] == "VTOL"):
+        vehicle.mode = VehicleMode("QRTL")
+    elif (configs["vehicle_type"] == "Quadcopter"):
+        vehicle.mode = VehicleMode("RTL")
 
-    print("Closing vehicle object")
+    # Wait until vehicle reaches ground
+    while not vehicle.location.global_relative_frame.alt < 1.0:
+        print("Altitude: " + str(vehicle.location.global_relative_frame.alt))
+        time.sleep(1)
+    
+    time.sleep(10)
     vehicle.close()
 
 
@@ -151,15 +200,13 @@ def acknowledge(address, ackid):
         "time": round(time.clock() - connection_timestamp) + gcs_timestamp,
         "sid": configs['vehicle_id'],
         "tid": 0, # The ID of GCS
-        "id": 0, # TODO
+        "id": new_msg_id(),
 
         "ackid": ackid
     }
     # xbee is None if comms is simulated
     if xbee:
-        # Instantiate a remote XBee device object to send data.
-        send_xbee = RemoteXBeeDevice(xbee, address)
-        xbee.send_data(send_xbee, json.dumps(ack))
+        send_msg(address, ack)
 
 
 # Sends "bad message" to GCS if message received was poorly formatted/unreadable
@@ -172,17 +219,28 @@ def bad_msg(address, problem):
         "time": round(time.clock() - connection_timestamp) + gcs_timestamp,
         "sid": configs['vehicle_id'],
         "tid": 0, # The ID of GCS
-        "id": 0, # TODO
+        "id": new_msg_id(),
 
         "error": problem
     }
     # xbee is None if comms is simulated
     if xbee:
-        # Instantiate a remote XBee device object to send data.
-        send_xbee = RemoteXBeeDevice(xbee, address)
-        xbee.send_data(send_xbee, json.dumps(msg))
+        send_msg(address, msg)
     else:
         print("Error:", problem)
+
+
+# Increments global msg_id and returns unique id for new message
+def new_msg_id():
+    global msg_id
+    msg_id += 1
+    return msg_id
+
+
+def send_msg(address, msg):
+    # Instantiate a remote XBee device object to send data.
+    send_xbee = RemoteXBeeDevice(xbee, address)
+    xbee.send_data(send_xbee, json.dumps(msg))
 
 
 # Reads through comm simulation file from configs and calls xbee_callback to simulate radio messages.
@@ -222,6 +280,7 @@ def include_heading():
 # :param vehicle_type: vehicle type from configs file
 def update_thread(vehicle, address):
     print("Starting update thread\n")
+
     while not mission_completed:
         location = vehicle.location.global_frame
         # Comply with format of 0 - 1 and check that battery level is not null
@@ -231,7 +290,7 @@ def update_thread(vehicle, address):
             "time": round(time.clock() - connection_timestamp) + gcs_timestamp,
             "sid": configs["vehicle_id"],
             "tid": 0, # the ID of the GCS is 0
-            "id": 0, # TODO make the IDs unique for acknowledgements
+            "id": new_msg_id(),
 
             "vehicleType": "VTOL",
             "lat": location.lat,
@@ -245,9 +304,17 @@ def update_thread(vehicle, address):
             update_message["heading"] = vehicle.heading
 
         if xbee:
-            # Instantiate a remote XBee device object to send data.
-            send_xbee = RemoteXBeeDevice(xbee, address)
-            xbee.send_data(send_xbee, json.dumps(update_message))
+            send_till_ack(address, update_message, msg_id)
+            
         time.sleep(1)
 
     change_status("ready")
+
+
+# Continuously sends message to given address until acknowledgement message is recieved with the corresponding ackid.
+def send_till_ack(address, msg, msg_id):
+    # Instantiate a remote XBee device object to send data.
+    send_xbee = RemoteXBeeDevice(xbee, address)
+    while ack_id != msg_id:
+        xbee.send_data(send_xbee, json.dumps(msg))
+        time.sleep(1)
