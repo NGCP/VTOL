@@ -8,11 +8,13 @@
     "directory": "some/path/for/now/i/will/add/in/later/when/testing"
   },
   "mission_control_MAC": "0013A200409BD79C",
-  "altitude": 25,
+  "baud_rate": 57600,
+  "altitude": 10,
+  "air_speed": 10,
+  "waypoint_tolerance": 3,
   "orbit_number": 1,
   "radius": 2,
   "d_theta_rad": 0.392699,
-  "flight_mode": "AUTO",
   "quick_scan_specific": {
     "role_switching": false,
     "comms_simulated": {
@@ -24,6 +26,7 @@
     "comms_simulated": {
       "toggled_on": true,
       "comm_sim_file": "comm_sim_detailed_search.txt"
-    }
+    },
+    "poi_scan_altitude": 5
   }
 }

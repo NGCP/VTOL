@@ -9,13 +9,14 @@ import cProfile, pstats, StringIO
 def main():
     sitl = dronekit_sitl.start_default(lat=35.328423, lon=-120.752505) # EFR location
     vehicle = connect(sitl.connection_string())
+    vehicle = None
 
     map_origin = LocationGlobalRelative(1.0, 1.0, 30)
     keys, descs = initializeMap()
 
     # takeoff currently uses GPS
     takeoff(vehicle, 30)
-    vehicle.mode = VehicleMode("GUIDED_NOGPS")
+    vehicle.mode = VehicleMode("GUIDED")
 
     gps_denied_move(vehicle, LocationGlobalRelative(1.005, 1.0, 30), keys, descs, map_origin)
 
@@ -52,7 +53,7 @@ def gpsToPixels(location, map_origin):
 
 CV_SIMULATION = True
 imgCounter = 0
-orb = cv2.ORB_create(nfeatures=100000, scoreType=cv2.ORB_FAST_SCORE)
+orb = cv2.ORB_create(nfeatures=1000, scoreType=cv2.ORB_FAST_SCORE)
 
 def initializeMap():
     areaMap = cv2.imread("images/Map1.jpg")

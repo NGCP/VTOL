@@ -11,7 +11,7 @@ from detailed_search import detailed_search
 # second import is for functions
 import autonomy
 from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, update_thread, \
-    change_status, setup_xbee, start_auto_mission
+    change_status, setup_xbee, start_auto_mission, setup_vehicle
 
 search_area = None  # search area object, populated by callback on start
 
@@ -120,8 +120,7 @@ def generate_waypoints(configs, search_area):
 
     return (waypointsNED, waypointsLLA)
 
-
-def quick_scan_adds_mission(vehicle, lla_waypoint_list, altitude):
+def quick_scan_adds_mission(configs, vehicle, lla_waypoint_list):
     """
     Adds a takeoff command and four waypoint commands to the current mission. 
     The waypoints are positioned to form a square of side length 2*aSize around the specified LocationGlobal (aLocation).
@@ -129,30 +128,46 @@ def quick_scan_adds_mission(vehicle, lla_waypoint_list, altitude):
     The function assumes vehicle.commands matches the vehicle mission state 
     (you must have called download at least once in the session and after clearing the mission)
     """
+    # Declare shorthands
+    altitude = configs["altitude"]
     cmds = vehicle.commands
 
     print(" Clear any existing commands")
     cmds.clear()
 
-    # Add MAV_CMD_NAV_TAKEOFF command. This is ignored if the vehicle is already in the air.
-    # This command is there when vehicle is in AUTO mode, where it takes off through command list
-    # In guided mode, the actual takeoff function is needed, in which case this command is ignored
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
-
-    # Add point directly above vehicle for takeoff
-    cmds.add(
-        Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0,
-                0, 0, 0, vehicle.location.global_frame.lat, vehicle.location.global_frame.lon, altitude))
-
     print(" Define/add new commands.")
-    # Define the four MAV_CMD_NAV_WAYPOINT locations and add the commands
-    for point in lla_waypoint_list:
-        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, point.lat, point.lon, point.alt))
 
-    # Adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination.
-    cmds.add(
-        Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0,
-                0, 0, 0, lla_waypoint_list[-1].lat, lla_waypoint_list[-1].lon, lla_waypoint_list[-1].alt))
+    # Due to a bug presumed to be the fault of DroneKit, the first command is ignored. Thus we have two takeoff commands
+    if (configs["vehicle_type"] == "VTOL"):
+        # Separate MAVlink message for a VTOL takeoff. This takes off to altitude and transitions
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
+
+    elif (configs["vehicle_type"] == "Quadcopter"):
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
+
+    # Set the target speed of vehicle
+    cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 0,
+                     0, configs["air_speed"], -1, 0, 0, 0, 0))
+
+    # Add waypoints to the auto mission
+    if (configs["vehicle_type"] == "VTOL"):
+        for point in lla_waypoint_list:
+            # Planes need a waypoint tolerance
+            cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
+                            0, configs["waypoint_tolerance"], 0, 0, point.lat, point.lon, point.alt))
+            # Adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination.
+            cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
+                             0, configs["waypoint_tolerance"], 0, 0, lla_waypoint_list[-1].lat, lla_waypoint_list[-1].lon, lla_waypoint_list[-1].alt))
+    elif (configs["vehicle_type"] == "Quadcopter"):
+        for point in lla_waypoint_list:
+            cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
+                             0, 0, 0, 0, point.lat, point.lon, point.alt))
+            # Adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination.
+            cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
+                             0, 0, 0, 0, lla_waypoint_list[-1].lat, lla_waypoint_list[-1].lon, lla_waypoint_list[-1].alt))
+                
     print("Upload new commands to vehicle")
     cmds.upload()
 
@@ -182,47 +197,36 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
     # Generate waypoints
     waypoints = generate_waypoints(configs, search_area)
 
-    # Start SITL if vehicle is being simulated
-    if (configs["vehicle_simulated"]):
-        import dronekit_sitl
-        sitl = dronekit_sitl.start_default(lat=35.328423, lon=-120.752505)
-        connection_string = sitl.connection_string()
-    else:
-        if (configs["3dr_solo"]):
-            connection_string = "udpin:0.0.0.0:14550"
-        else:
-            connection_string = "/dev/serial0"
-
     # Connect to vehicle
-    vehicle = connect(connection_string, wait_ready=True)
+    vehicle = setup_vehicle(configs)
 
     # Starts the update thread
     update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"]))
     update.start()
 
     # Send mission to vehicle
-    quick_scan_adds_mission(vehicle, waypoints[1], configs["altitude"])
+    quick_scan_adds_mission(configs, vehicle, waypoints[1])
 
     # Start the mission
-    start_auto_mission(vehicle)
+    start_auto_mission(configs, vehicle)
 
     # Change vehicle status to running
     change_status("running")
 
     # Fly about spiral pattern
     while vehicle.commands.next != vehicle.commands.count:
-        print(vehicle.location.global_frame)
+        print(vehicle.location.global_relative_frame)
         time.sleep(1)
         # Holds the copter in place if receives pause
         if autonomy.pause_mission:
-            vehicle.mode = VehicleMode("ALT_HOLD")
+            if (configs["vehicle_type"] == "VTOL"):
+                vehicle.mode = VehicleMode("QHOVER")
+            elif (configs["vehicle_type"] == "Quadcopter"):
+                vehicle.mode = VehicleMode("ALT_HOLD")
         # Lands the vehicle if receives stop mission
         elif autonomy.stop_mission:
-            land(vehicle)
+            land(configs, vehicle)
             return
-        # Continues path
-        else:
-            vehicle.mode = VehicleMode("AUTO")
 
     # Switch to detailed search if role switching is enabled
     if configs["quick_scan_specific"]["role_switching"]:
@@ -230,7 +234,7 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
         update.join()
         detailed_search(vehicle)
     else:
-        land(vehicle)
+        land(configs, vehicle)
 
         # Ready for a new mission
         autonomy.mission_completed = True
