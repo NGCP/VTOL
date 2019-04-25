@@ -11,7 +11,7 @@ from pymavlink import mavutil
 # second import is for functions
 import autonomy
 from autonomy import comm_simulation, acknowledge, bad_msg, takeoff, land, setup_xbee, \
-    change_status, update_thread, start_auto_mission
+    change_status, update_thread, start_auto_mission, setup_vehicle
 
 # queue of points of interest
 POI_queue = queue.Queue()
@@ -59,10 +59,11 @@ def xbee_callback(message):
 
 def orbit_poi(vehicle, poi, configs):
     waypoints = []  # waypoints in LLA
-    original_altitude = configs["altitude"]  # given altitude
+    poi_scan_altitude = configs["detailed_search_specific"]["poi_scan_altitude"]
+    waypoint_tolerance = configs["waypoint_tolerance"]
     radius = configs["radius"]  # radius of circle travelled
     orbit_number = configs["orbit_number"]  # how many times we repeat orbit
-    x, y, z = conversions.geodetic2ecef(poi.lat, poi.lon, original_altitude)  # LLA -> ECEF
+    x, y, z = conversions.geodetic2ecef(poi.lat, poi.lon, configs["altitude"])  # LLA -> ECEF
     cmds = vehicle.commands
     cmds.clear()
 
@@ -74,37 +75,74 @@ def orbit_poi(vehicle, poi, configs):
             a = (radius * point[0]) + x
             b = (radius * point[1]) + y
             lat, lon, alt = conversions.ecef2geodetic(a, b, z)
-            waypoints.append(LocationGlobalRelative(lat, lon, original_altitude))
-
-    # Define the MAV_CMD_NAV_WAYPOINT locations and add the commands
-    for point in waypoints:
+            waypoints.append(LocationGlobalRelative(lat, lon, poi_scan_altitude))
+    
+    # Go to center of POI
+    if (configs["vehicle_type"] == "VTOL"):
         cmds.add(
-            Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
-                    0, 0, 0, 0, 0, 0, point.lat, point.lon, point.alt))
-        print(point.lat, point.lon, point.alt)
+            Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
+                    0, waypoint_tolerance, 0, 0, poi.lat, poi.lon, poi_scan_altitude))
+    elif (configs["vehicle_type"] == "Quadcopter"):
+        cmds.add(
+            Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
+                    0, 0, 0, 0, poi.lat, poi.lon, poi_scan_altitude))
+
+    # Transition to quadcopter if applicable
+    if (configs["vehicle_type"] == "VTOL"):
+        cmds.add(
+            Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_VTOL_TRANSITION, 0, 0,
+                    mavutil.mavlink.MAV_VTOL_STATE_MC, 0, 0, 0, 0, 0, 0))
+    
+    # Circular waypoints
+    if (configs["vehicle_type"] == "VTOL"):
+        for point in waypoints:
+            cmds.add(
+                Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
+                        waypoint_tolerance, 0, 0, 0, point.lat, point.lon, poi_scan_altitude))
+    elif (configs["vehicle_type"] == "Quadcopter"):
+         for point in waypoints:
+            cmds.add(
+                Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
+                        0, 0, 0, 0, point.lat, point.lon, poi_scan_altitude))       
+
+    # Transition to forward flight if applicable
+    if (configs["vehicle_type"] == "VTOL"):
+        cmds.add(
+            Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_VTOL_TRANSITION, 0, 0,
+                    mavutil.mavlink.MAV_VTOL_STATE_MC, 0, 0, 0, 0, 0, 0))
+
+    # Add dummy endpoint
+    cmds.add(
+        Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
+                0, 0, 0, 0, poi.lat, poi.lon, poi_scan_altitude))
 
     print("Upload new commands to vehicle")
     cmds.upload()
 
 
-def detailed_search_adds_mission(vehicle, altitude):
+def detailed_search_adds_mission(configs, vehicle):
     """
     Only adds a takeoff command for AUTO mission
     """
+    # Declare shorthands
+    altitude = configs["altitude"]
     cmds = vehicle.commands
 
     print(" Clear any existing commands")
     cmds.clear()
 
-    # Add MAV_CMD_NAV_TAKEOFF command. This is ignored if the vehicle is already in the air.
-    # This command is there when vehicle is in AUTO mode, where it takes off through command list
-    # In guided mode, the actual takeoff function is needed, in which case this command is ignored
-    cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
+    # Due to a bug presumed to be the fault of DroneKit, the first command is ignored. Thus we have two takeoff commands
+    if (configs["vehicle_type"] == "VTOL"):
+        # Separate MAVlink message for a VTOL takeoff. This takes off to altitude and transitions
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
+    elif (configs["vehicle_type"] == "Quadcopter"):
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
 
-    # Add point directly above vehicle for takeoff
-    cmds.add(
-        Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0,
-                0, 0, 0, vehicle.location.global_frame.lat, vehicle.location.global_frame.lon, altitude))
+    # Set the target speed of vehicle
+    cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED, 0, 0,
+                     0, configs["air_speed"], -1, 0, 0, 0, 0))
 
     cmds.upload()
 
@@ -127,27 +165,15 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
 
     # If detailed search was not role-switched from quick scan, connect to new vehicle and takeoff
     if not vehicle:
-        # Start SITL if vehicle is being simulated
-        if (configs["vehicle_simulated"]):
-            import dronekit_sitl
-            sitl = dronekit_sitl.start_default(lat=35.328423, lon=-120.752505)
-            connection_string = sitl.connection_string()
-        else:
-            if (configs["3dr_solo"]):
-                connection_string = "udpin:0.0.0.0:14550"
-            else:
-                connection_string = "/dev/serial0"
-
-        # Connect to vehicle
-        vehicle = connect(connection_string, wait_ready=True)
+        vehicle = setup_vehicle(configs)
 
         # Starts the update thread
         update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"]))
         update.start()
         
         # Add the takeoff command and start the takeoff mission
-        detailed_search_adds_mission(vehicle, configs["altitude"])
-        start_auto_mission(vehicle)
+        detailed_search_adds_mission(configs, vehicle)
+        start_auto_mission(configs, vehicle)
 
         # Wait until vehicle reaches minimum altitude
         while vehicle.location.global_relative_frame.alt < configs["altitude"] * 0.8:
@@ -160,24 +186,29 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
     
     # Change vehicle status to running
     change_status("running")
+    vehicle.mode = VehicleMode("GUIDED")
 
     # Continuously fly to POIs
     while not autonomy.stop_mission:
         if not POI_queue.empty() and not autonomy.pause_mission:
             poi = POI_queue.get()
-            # Set the POI's altitude
-            poi.alt = configs["altitude"]
+            print("Orbiting POI")
 
-            print("At POI, now orbiting")
             orbit_poi(vehicle, poi, configs)
             # Change flight mode to AUTO to start auto mission
+            vehicle.commands.next = 0
             vehicle.mode = VehicleMode("AUTO")
+
             # print location while orbiting
             while vehicle.commands.next != vehicle.commands.count:
                 if vehicle.commands.next > 1:
                     # TODO start CV scanning
                     pass
-                print(vehicle.location.global_frame)
+
+                print(vehicle.location.global_relative_frame)
+                print(vehicle.commands.next)
+                print(vehicle.commands.count)
+
                 time.sleep(1)
             # TODO stop CV scanning
 
@@ -188,13 +219,13 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
 
         # Holds the copter in place if receives pause
         if autonomy.pause_mission:
-            vehicle.mode = VehicleMode("ALT_HOLD")
+            if (configs["vehicle_type"] == "VTOL"):
+                vehicle.mode = VehicleMode("QHOVER")
+            elif (configs["vehicle_type"] == "Quadcopter"):
+                vehicle.mode = VehicleMode("ALT_HOLD")
             change_status("paused")
-        # Otherwise continue
-        else:
-            vehicle.mode = VehicleMode("GUIDED")
 
-    land(vehicle)
+    land(configs, vehicle)
 
     # Sets vehicle status to "ready"
     change_status("ready")
