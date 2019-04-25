@@ -1,4 +1,5 @@
 import cv2
+import re
 from os import listdir, environ
 from threading import Thread
 import time
@@ -6,14 +7,18 @@ import subprocess
 
 img_counter = 0
 
-def cv_simulation(configs):
-   global img_counter
-   files = listdir(configs["cv_simulated"]["directory"])
-   path = configs["cv_simulated"]["directory"] + "/" + files[img_counter % len(files)]
-   img = cv2.imread(path, 1)
-   img_counter += 1
-   return img
+def sorted_aphanumeric(data):
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+    return sorted(data, key=alphanum_key)
 
+def cv_simulation(configs):
+    global imgCounter
+    files = sorted_aphanumeric(listdir(configs["cv_simulated"]["directory"]))
+    path = configs["cv_simulated"]["directory"] + "/" + files[imgCounter % len(files)]
+    img = cv2.imread(path, 1)
+    imgCounter += 1
+    return img
 
 def connect_solo_wifi():
    # execute the shell script (does not terminate)
@@ -45,5 +50,4 @@ def take_picture(camera, configs):
        raw_capture = PiRGBArray(camera)
        camera.capture(raw_capture, format="bgr")
        return raw_capture.array
-
-
+      
