@@ -194,19 +194,23 @@ def land(configs, vehicle):
 
 # Sends message received acknowledgement to GCS
 # :param address: address of GCS
-def acknowledge(address, ackid):
+def acknowledge(address, ackid, autonomyToCV):
     ack = {
         "type": "ack",
         "time": round(time.clock() - connection_timestamp) + gcs_timestamp,
         "sid": configs['vehicle_id'],
         "tid": 0, # The ID of GCS
         "id": new_msg_id(),
-
         "ackid": ackid
     }
     # xbee is None if comms is simulated
     if xbee:
-        send_msg(address, ack)
+        # Instantiate a remote XBee device object to send data.
+        send_xbee = RemoteXBeeDevice(xbee, address)
+        packed_data = packb(json.dumps(ack), use_bin_type = True)
+        autonomyToCv.xbeeMutex.acquire()
+        xbee.send_data(send_xbee, packed_data)
+        autonomyToCV.xbeeMutex.release()
 
 
 # Sends "bad message" to GCS if message received was poorly formatted/unreadable
@@ -226,8 +230,10 @@ def bad_msg(address, problem, autonomyToCV):
     # xbee is None if comms is simulated
     if xbee:
         # Instantiate a remote XBee device object to send data.
-        autonomyToCV.xbeeMutex.release()
-        send_msg(address, msg)
+        send_xbee = RemoteXBeeDevice(xbee, address)
+        packed_data = packb(json.dumps(msg, use_bin_type = True))
+        autonomyToCV.xbeeMutex.acquire()
+        xbee.send_data(send_xbee, packed_Data)
         autonomyToCV.xbeeMutex.release()
     else:
         print("Error:", problem)
@@ -321,6 +327,7 @@ def update_thread(vehicle, address, autonomyToCV):
 def send_till_ack(address, msg, msg_id):
     # Instantiate a remote XBee device object to send data.
     send_xbee = RemoteXBeeDevice(xbee, address)
+    packed_data = packb(json.dumps(ack), use_bin_type = True)
     while ack_id != msg_id:
-        xbee.send_data(send_xbee, json.dumps(msg))
+        xbee.send_data(send_xbee, packed_data)
         time.sleep(1)

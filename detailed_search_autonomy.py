@@ -32,19 +32,19 @@ def xbee_callback(message, autonomyToCV):
 
             # convert mission coordinates to dronekit object, and add to POI queue
             POI_queue.put(LocationGlobalRelative(msg_lat, msg_lon, None))
-            acknowledge(address, msg["id"])
+            acknowledge(address, msg["id"], autonomyToCV)
 
         elif msg_type == "pause":
             autonomy.pause_mission = True
-            acknowledge(address, msg["id"])
+            acknowledge(address, msg["id"], autonomyToCV)
 
         elif msg_type == "resume":
             autonomy.pause_mission = False
-            acknowledge(address, msg["id"])
+            acknowledge(address, msg["id"], autonomyToCV)
 
         elif msg_type == "stop":
             autonomy.stop_mission = True
-            acknowledge(address, msg["id"])
+            acknowledge(address, msg["id"], autonomyToCV)
 
         elif msg_type == "ack":
             autonomy.ack_id = msg["ackid"]
@@ -54,7 +54,7 @@ def xbee_callback(message, autonomyToCV):
 
     # KeyError if message was missing an expected key
     except KeyError as e:
-        bad_msg(address, "Missing \'" + e.args[0] + "\' key")
+        bad_msg(address, "Missing \'" + e.args[0] + "\' key", autonomyToCV)
 
 
 def orbit_poi(vehicle, poi, configs):

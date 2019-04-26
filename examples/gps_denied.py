@@ -10,6 +10,11 @@ from time import time, sleep
 from pickle import dump, load, HIGHEST_PROTOCOL
 from threading import Thread
 
+import sys
+sys.path.append('.')
+sys.path.append('..')
+from conversions import geodetic2ecef, ecef2enu, ecef2ned
+
 # Quick configs
 ALTITUDE = 10
 SOLO = False
@@ -25,22 +30,24 @@ def main():
     vehicle = connect(connection_string)
 
     map_origin = LocationGlobalRelative(1.0, 1.0, 30)
-    keys, descs = read_from_file()
+    keys, descs, length, width = read_from_file()
     # takeoff currently uses GPS
     takeoff(vehicle, ALTITUDE)
     vehicle.mode = VehicleMode("GUIDED")
 
     camera = init_camera()
-    gps_denied_move(vehicle, camera, LocationGlobalRelative(1.005, 1.0, 30), keys, descs, map_origin)
+    gps_denied_move(vehicle, camera, LocationGlobalRelative(0.99995, 1.0, 30), keys, descs, map_origin, length, width)
 
     land(vehicle)
 
 # how many pixels the drone can be off from the target before being in acceptance state
 EPSILON = 100
 
-def gps_denied_move(vehicle, camera, location, map_keys, map_descs, map_origin):
+def gps_denied_move(vehicle, camera, location, map_keys, map_descs, map_origin, map_length, map_width):
     # convert location to pixels
-    target_pixel_location = gpsToPixels(location, map_origin)
+    target_pixel_location = gpsToPixels(location, map_origin, map_length, map_width)
+    print("target")
+    print(target_pixel_location)
 
     current_pixel_location, current_orientation = calculatePixelLocation(camera, map_keys, map_descs)
     print(current_pixel_location)
@@ -66,9 +73,40 @@ def gps_denied_move(vehicle, camera, location, map_keys, map_descs, map_origin):
         print(current_orientation)
 
 # returns tuple of location (tuple) and orientation
-def gpsToPixels(location, map_origin):
-    # TODO Samay Nathani
-    return (906, 1210)
+#Assumes map is oriented North
+def gpsToPixels(location, map_origin, map_length, map_width, HEADING = 0):
+    altitude = location.alt
+    SCALE = 0.5
+    print("len {} and width {}".format(map_length, map_width))
+
+    HORIZONTAL_RESOLUTION = 3280 * SCALE
+    HORIZONTAL_ANGLE = 62.2 * SCALE
+
+    VERTICAL_RESOLUTION = 2464 * SCALE
+    VERTICAL_ANGLE = 48.8 * SCALE
+
+    ALT_PIXEL_X_Lon = HORIZONTAL_RESOLUTION / math.tan(math.radians(HORIZONTAL_ANGLE))
+    ALT_PIXEL_Y_Lat = VERTICAL_RESOLUTION / math.tan(math.radians(VERTICAL_ANGLE))
+
+    originPixel = (map_length//2, map_width//2)
+    
+    met_1640 = (altitude/ ALT_PIXEL_X_Lon)
+    met_1232 = (altitude/ ALT_PIXEL_Y_Lat)
+    originLat, originLon = map_origin.lat, map_origin.lon
+    POI_Lat, POI_Lon = location.lat, location.lon
+    cn, ce, cd = geodetic2ecef(POI_Lat, POI_Lon, altitude)
+    delta_Lat, delta_Lon, d = ecef2ned(cn, ce, cd, originLat, originLon, altitude)
+    delta_lat_pixel = delta_Lat / met_1232
+    delta_lon_pixel = delta_Lon / met_1640
+
+    angled_lon = (delta_lon_pixel*(math.cos(math.radians(HEADING)))) + (delta_lat_pixel*(math.sin(math.radians(HEADING))))
+    angled_lat = (delta_lat_pixel*(math.cos(math.radians(HEADING)))) - (delta_lon_pixel*(math.sin(math.radians(HEADING))))
+
+    originX, originY = originPixel
+    print("xOrigin {}, yOrigin {}".format(originX, originY))
+    POIX, POIY = originX + angled_lon, originY + angled_lat
+    print("xPixel {}, yPixel {}".format(POIX, POIY))
+    return POIX, POIY
 
 imgCounter = 0
 orb = cv2.ORB_create(nfeatures=1000, scoreType=cv2.ORB_FAST_SCORE)
@@ -265,7 +303,7 @@ def read_from_file():
     with open('map.bin', 'rb') as read:
         data = load(read)
         keys_reconstructed = map(lambda x: cv2.KeyPoint(x['pt'][0], x['pt'][1], x['size'], x['angle'], x['response'], x['octave'], x['class_id']), data['keys'])
-    return (keys_reconstructed, data['descs'])
+    return (keys_reconstructed, data['descs'], data['length'], data['width'])
 
 
 if __name__ == "__main__":
@@ -277,4 +315,4 @@ if __name__ == "__main__":
     sortby = 'cumulative'
     ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
     ps.print_stats()
-    print s.getvalue()
+    print(s.getvalue())
