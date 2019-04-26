@@ -31,7 +31,7 @@ class SearchArea:
 
 
 # Callback function for messages from GCS, parses JSON message and sets globals
-def xbee_callback(message):
+def xbee_callback(message, autonomyToCV):
     global search_area
 
     address = message.remote_device.get_64bit_addr()
