@@ -168,7 +168,7 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
         vehicle = setup_vehicle(configs)
 
         # Starts the update thread
-        update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"]))
+        update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"], autonomyToCV))
         update.start()
         
         # Add the takeoff command and start the takeoff mission
