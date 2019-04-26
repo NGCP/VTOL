@@ -1,0 +1,74 @@
+
+######################## STARTING QUICK SCAN AUTONOMY ########################
+Received data from comms simulation: {u'missionInfo': {u'searchArea': {u'center': [35.328375, -120.752615], u'rad1': 0, u'rad2': 20}, u'id': 0}, u'type': u'addMission'}
+('Error:', "Missing 'id' key")
+Begin generating waypoints
+Starting copter simulator (SITL)
+SITL already Downloaded and Extracted.
+Ready to boot.
+>>> APM:Copter V3.3 (d6053245)
+>>> Frame: QUAD
+>>> Calibrating barometer
+>>> Initialising APM...
+>>> barometer calibration complete
+>>> GROUND START
+ Clear any existing commandsStarting update thread
+
+ Define/add new commands.
+Upload new commands to vehicle.
+
+ Waiting for vehicle to initialise...
+>>> flight plan received
+ Waiting for vehicle to initialise...
+ Waiting for vehicle to initialise...
+ Waiting for vehicle to initialise...
+ Waiting for arming...
+ Waiting for arming...
+ Waiting for arming...
+ Waiting for arming...
+>>> ARMING MOTORS
+>>> GROUND START
+ Waiting for arming...
+>>> Link timeout, no heartbeat in last 5 seconds
+>>> ...link restored.
+>>> Initialising APM...
+LocationGlobal:lat=35.328423,lon=-120.7525055,alt=583.99
+LocationGlobal:lat=35.3284233,lon=-120.7525071,alt=584.16
+LocationGlobal:lat=35.328423,lon=-120.7525062,alt=584.89
+LocationGlobal:lat=35.3284231,lon=-120.752505,alt=586.33
+LocationGlobal:lat=35.3284231,lon=-120.7525045,alt=588.22
+LocationGlobal:lat=35.3284232,lon=-120.7525043,alt=590.3
+LocationGlobal:lat=35.3284234,lon=-120.752504,alt=592.5
+LocationGlobal:lat=35.3284235,lon=-120.7525037,alt=594.74
+LocationGlobal:lat=35.3284237,lon=-120.7525033,alt=596.98
+LocationGlobal:lat=35.3284239,lon=-120.7525028,alt=599.21
+LocationGlobal:lat=35.3284241,lon=-120.7525022,alt=601.44
+LocationGlobal:lat=35.3284241,lon=-120.7525017,alt=603.66
+>>> Reached Command #1
+LocationGlobal:lat=35.3284238,lon=-120.7525006,alt=606.42
+LocationGlobal:lat=35.3284234,lon=-120.7525007,alt=608.03
+LocationGlobal:lat=35.3284215,lon=-120.7525055,alt=608.67
+LocationGlobal:lat=35.3284172,lon=-120.7525177,alt=608.87
+LocationGlobal:lat=35.3284075,lon=-120.7525421,alt=608.93
+>>> Reached Command #2
+LocationGlobal:lat=35.3283958,lon=-120.7525674,alt=608.95
+LocationGlobal:lat=35.3283869,lon=-120.7525878,alt=608.91
+LocationGlobal:lat=35.3283809,lon=-120.752603,alt=608.89
+>>> Reached Command #3
+LocationGlobal:lat=35.3283773,lon=-120.7526126,alt=608.9
+LocationGlobal:lat=35.3283756,lon=-120.7526154,alt=608.91
+LocationGlobal:lat=35.3283726,lon=-120.7526105,alt=608.91
+>>> Reached Command #4
+LocationGlobal:lat=35.3283666,lon=-120.7525961,alt=608.92
+>>> Reached Command #5
+LocationGlobal:lat=35.3283645,lon=-120.7525802,alt=608.92
+LocationGlobal:lat=35.328366,lon=-120.7525599,alt=608.92
+>>> Reached Command #6
+LocationGlobal:lat=35.32837,lon=-120.752536,alt=608.92
+>>> Reached Command #7
+LocationGlobal:lat=35.3283797,lon=-120.7525121,alt=608.93
+LocationGlobal:lat=35.3283978,lon=-120.7524879,alt=608.94
+LocationGlobal:lat=35.3284131,lon=-120.7524789,alt=608.95
+>>> Reached Command #8
+Returning to launch
+Closing vehicle object
