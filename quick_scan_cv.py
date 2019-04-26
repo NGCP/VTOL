@@ -182,7 +182,7 @@ def stitch_keypoints(kpts_list, descs_list):
 
         h, mast = cv2.findHomography(points1, points2, cv2.RANSAC)
         points2 = np.array([points2])
-        result_coordinates = cv2.perspectiveTransform(points2, h)
+        #result_coordinates = cv2.perspectiveTransform(points2, h)
         #print("original ")
         #print(points2)
         #print("transformed " )
