@@ -153,7 +153,7 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
 
     # If comms is simulated, start comm simulation thread
     if configs["detailed_search_specific"]["comms_simulated"]["toggled_on"]:
-        comm_sim = Thread(target=comm_simulation, args=(configs["detailed_search_specific"]["comms_simulated"]["comm_sim_file"], xbee_callback,))
+        comm_sim = Thread(target=comm_simulation, args=(configs["detailed_search_specific"]["comms_simulated"]["comm_sim_file"], xbee_callback, autonomyToCV))
         comm_sim.start()
     # Otherwise, set up XBee device and add callback
     else:
