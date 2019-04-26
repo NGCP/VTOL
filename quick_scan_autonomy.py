@@ -63,11 +63,11 @@ def xbee_callback(message):
             autonomy.ack_id = msg["ackid"]
 
         else:
-            bad_msg(address, "Unknown message type: \'" + msg_type + "\'")
+            bad_msg(address, "Unknown message type: \'" + msg_type + "\'", autonomyToCV)
 
     # KeyError if message was missing an expected key
     except KeyError as e:
-        bad_msg(address, "Missing \'" + e.args[0] + "\' key")
+        bad_msg(address, "Missing \'" + e.args[0] + "\' key", autonomyToCV)
 
 
 # Generate NED and LLA waypoints in spiral pattern
@@ -121,10 +121,10 @@ def generate_waypoints(configs, search_area):
 
 def quick_scan_adds_mission(configs, vehicle, lla_waypoint_list):
     """
-    Adds a takeoff command and four waypoint commands to the current mission. 
+    Adds a takeoff command and four waypoint commands to the current mission.
     The waypoints are positioned to form a square of side length 2*aSize around the specified LocationGlobal (aLocation).
 
-    The function assumes vehicle.commands matches the vehicle mission state 
+    The function assumes vehicle.commands matches the vehicle mission state
     (you must have called download at least once in the session and after clearing the mission)
     """
     # Declare shorthands
@@ -185,9 +185,19 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
     else:
         comm_sim = None
         autonomy.xbee = setup_xbee()
+
+        #store xbee to autonomyToCV
+        autonomyToCV.xbeeMutex.acquire()
+        autonomyToCV.xbee = autonomy.xbee
+        autonomyToCV.xbeeMutex.release()
+
         autonomy.gcs_timestamp = gcs_timestamp
         autonomy.connection_timestamp = connection_timestamp
+
+
+        autonomyToCV.xbeeMutex.acquire()
         autonomy.xbee.add_data_received_callback(xbee_callback)
+        autonomyToCV.xbeeMutex.release()
 
     # Generate waypoints after start_mission = True
     while not autonomy.start_mission:
@@ -198,9 +208,12 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
 
     # Connect to vehicle
     vehicle = setup_vehicle(configs)
+    autonomyToCV.vehicleMutex.acquire()
+    autonomyToCV.vehicle = vehicle
+    autonomyToCV.vehicleMutex.release()
 
     # Starts the update thread
-    update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"]))
+    update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"], autonomyToCV))
     update.start()
 
     # Send mission to vehicle
@@ -213,6 +226,7 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
     change_status("running")
 
     # Fly about spiral pattern
+    set_autonomytocv_start(autonomyToCV, True)
     while vehicle.commands.next != vehicle.commands.count:
         print(vehicle.location.global_relative_frame)
         time.sleep(1)
@@ -224,8 +238,12 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
                 vehicle.mode = VehicleMode("ALT_HOLD")
         # Lands the vehicle if receives stop mission
         elif autonomy.stop_mission:
+            set_autonomytocv_stop(autonomyToCV, True)
             land(configs, vehicle)
+    
             return
+
+    set_autonomytocv_stop(autonomyToCV, True)
 
     # Switch to detailed search if role switching is enabled
     if configs["quick_scan_specific"]["role_switching"]:
@@ -245,4 +263,17 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
     if comm_sim:
         comm_sim.join()
     else:
+        autonomyToCV.xbeeMutex.acquire()
         autonomy.xbee.close()
+        autonomyToCV.xbeeMutex.release()
+
+def set_autonomytocv_stop(autonomyToCV, stop):
+    autonomyToCV.stopMutex.acquire()
+    autonomyToCV.stop = stop
+    autonomyToCV.stopMutex.release()
+
+def set_autonomytocv_start(autonomyToCV, start):
+    autonomyToCV.startMutex.acquire()
+    autonomyToCV.start = start
+    autonomyToCV.startMutex.release()
+

@@ -12,6 +12,7 @@ install:
   - pip install pyserial
   - pip install typing
   - pip install ngcp-xbee
+  - pip install opencv-python
 
 script:
   - python2 tests/quick_scan_tests.py
