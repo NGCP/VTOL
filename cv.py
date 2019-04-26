@@ -13,11 +13,11 @@ def sorted_aphanumeric(data):
     return sorted(data, key=alphanum_key)
 
 def cv_simulation(configs):
-    global imgCounter
+    global img_counter
     files = sorted_aphanumeric(listdir(configs["cv_simulated"]["directory"]))
-    path = configs["cv_simulated"]["directory"] + "/" + files[imgCounter % len(files)]
+    path = configs["cv_simulated"]["directory"] + "/" + files[img_counter % len(files)]
     img = cv2.imread(path, 1)
-    imgCounter += 1
+    img_counter += 1
     return img
 
 def connect_solo_wifi():

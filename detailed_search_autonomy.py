@@ -18,7 +18,7 @@ POI_queue = queue.Queue()
 
 
 # Callback function for messages from GCS, parses JSON message and sets globals
-def xbee_callback(message):
+def xbee_callback(message, autonomyToCV):
     address = message.remote_device.get_64bit_addr()
     msg = json.loads(message.data.decode("utf8"))
     print("Received data from %s: %s" % (address, msg))
@@ -50,7 +50,7 @@ def xbee_callback(message):
             autonomy.ack_id = msg["ackid"]
 
         else:
-            bad_msg(address, "Unknown message type: \'" + msg_type + "\'")
+            bad_msg(address, "Unknown message type: \'" + msg_type + "\'", autonomyToCV)
 
     # KeyError if message was missing an expected key
     except KeyError as e:
@@ -153,7 +153,7 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
 
     # If comms is simulated, start comm simulation thread
     if configs["detailed_search_specific"]["comms_simulated"]["toggled_on"]:
-        comm_sim = Thread(target=comm_simulation, args=(configs["detailed_search_specific"]["comms_simulated"]["comm_sim_file"], xbee_callback,))
+        comm_sim = Thread(target=comm_simulation, args=(configs["detailed_search_specific"]["comms_simulated"]["comm_sim_file"], xbee_callback, autonomyToCV))
         comm_sim.start()
     # Otherwise, set up XBee device and add callback
     else:
@@ -168,7 +168,7 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
         vehicle = setup_vehicle(configs)
 
         # Starts the update thread
-        update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"]))
+        update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"], autonomyToCV))
         update.start()
         
         # Add the takeoff command and start the takeoff mission

@@ -31,7 +31,7 @@ class SearchArea:
 
 
 # Callback function for messages from GCS, parses JSON message and sets globals
-def xbee_callback(message):
+def xbee_callback(message, autonomyToCV):
     global search_area
 
     address = message.remote_device.get_64bit_addr()
@@ -179,7 +179,7 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
 
     # If comms is simulated, start comm simulation thread
     if configs["quick_scan_specific"]["comms_simulated"]["toggled_on"]:
-        comm_sim = Thread(target=comm_simulation, args=(configs["quick_scan_specific"]["comms_simulated"]["comm_sim_file"], xbee_callback,))
+        comm_sim = Thread(target=comm_simulation, args=(configs["quick_scan_specific"]["comms_simulated"]["comm_sim_file"], xbee_callback, autonomyToCV,))
         comm_sim.start()
     # Otherwise, set up XBee device and add callback
     else:

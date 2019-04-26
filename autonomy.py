@@ -247,7 +247,7 @@ def send_msg(address, msg):
 
 
 # Reads through comm simulation file from configs and calls xbee_callback to simulate radio messages.
-def comm_simulation(comm_file, xbee_callback):
+def comm_simulation(comm_file, xbee_callback, autonomyToCV):
     f = open(comm_file, "r")
 
     line = f.readline().strip()
@@ -258,7 +258,7 @@ def comm_simulation(comm_file, xbee_callback):
         time.sleep(curr_time - prev_time)
 
         # Send message to xbee_callback
-        xbee_callback(DummyMessage(line[delim + 1:]))
+        xbee_callback(DummyMessage(line[delim + 1:]), autonomyToCV)
 
         line = f.readline().strip()
         prev_time = curr_time
