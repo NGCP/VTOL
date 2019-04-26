@@ -231,7 +231,7 @@ def bad_msg(address, problem, autonomyToCV):
     if xbee:
         # Instantiate a remote XBee device object to send data.
         send_xbee = RemoteXBeeDevice(xbee, address)
-        packed_data = packb(json.dumps(msg, use_bin_type = True)
+        packed_data = packb(json.dumps(msg, use_bin_type = True))
         autonomyToCV.xbeeMutex.acquire()
         xbee.send_data(send_xbee, packed_Data)
         autonomyToCV.xbeeMutex.release()
