@@ -1,50 +1,67 @@
 from dronekit import *
 from dronekit_sitl import start_default
 import cv2
-from math import atan, sqrt, pi, acos
+from math import atan, sqrt, acos, pi
 import numpy as np
 from os import listdir
 import cProfile, pstats, StringIO
 from math import cos, sin, radians
 from time import time, sleep
 from pickle import dump, load, HIGHEST_PROTOCOL
+from threading import Thread
+
+# Quick configs
+ALTITUDE = 10
+SOLO = False
+CV_SIMULATION = True
+LOITER = True
 
 def main():
-    sitl = start_default(lat=35.328423, lon=-120.752505) # EFR location
-    vehicle = connect(sitl.connection_string())
-    vehicle = None
+    if SOLO:
+        connection_string = "udpin:0.0.0.0:14550"
+    else:
+        # Port 5763 must be forwarded on vagrant
+        connection_string = "tcp:127.0.0.1:5763"
+    vehicle = connect(connection_string)
 
     map_origin = LocationGlobalRelative(1.0, 1.0, 30)
     keys, descs = read_from_file()
     # takeoff currently uses GPS
-    takeoff(vehicle, 30)
+    takeoff(vehicle, ALTITUDE)
     vehicle.mode = VehicleMode("GUIDED")
 
-    gps_denied_move(vehicle, LocationGlobalRelative(1.005, 1.0, 30), keys, descs, map_origin)
+    camera = init_camera()
+    gps_denied_move(vehicle, camera, LocationGlobalRelative(1.005, 1.0, 30), keys, descs, map_origin)
 
     land(vehicle)
 
 # how many pixels the drone can be off from the target before being in acceptance state
 EPSILON = 100
 
-def gps_denied_move(vehicle, location, map_keys, map_descs, map_origin):
+def gps_denied_move(vehicle, camera, location, map_keys, map_descs, map_origin):
     # convert location to pixels
     target_pixel_location = gpsToPixels(location, map_origin)
 
-    current_pixel_location, current_orientation = calculatePixelLocation(map_keys, map_descs)
+    current_pixel_location, current_orientation = calculatePixelLocation(camera, map_keys, map_descs)
     print(current_pixel_location)
     print(current_orientation)
     while (euclidean_distance(current_pixel_location[0], current_pixel_location[1],
                               target_pixel_location[0], target_pixel_location[1]) >= EPSILON):
         # trigonometry to calculate how much yaw must change
         delta_direction = atan((target_pixel_location[1] - current_pixel_location[1]) /
-                               (target_pixel_location[0] - current_pixel_location[0])) - current_orientation
-        print(delta_direction)
+                               (target_pixel_location[0] - current_pixel_location[0])) * 180 / pi - current_orientation
+        print("delta direction: ", str(delta_direction))
+
+        vehicle.mode = VehicleMode("GUIDED_NOGPS")
         change_yaw(vehicle, delta_direction)
-        move_forward(vehicle, 5)
-        # Wait a second for the image to stabilize
+        move_forward(vehicle, 3)
+
+        # Wait a time interval for the image to stabilize
+        if LOITER:
+            vehicle.mode = VehicleMode("GUIDED")
         sleep(1)
-        current_pixel_location, current_orientation = calculatePixelLocation(map_keys, map_descs)
+
+        current_pixel_location, current_orientation = calculatePixelLocation(camera, map_keys, map_descs)
         print(current_pixel_location)
         print(current_orientation)
 
@@ -53,18 +70,12 @@ def gpsToPixels(location, map_origin):
     # TODO Samay Nathani
     return (906, 1210)
 
-CV_SIMULATION = True
 imgCounter = 0
 orb = cv2.ORB_create(nfeatures=1000, scoreType=cv2.ORB_FAST_SCORE)
 
-
-def calculatePixelLocation(map_keys, map_descs):
-    # TODO create test case in Paint.net
-    if (CV_SIMULATION):
-        img = cv_simulation()
-    else:
-        # TODO take picture with raspicam
-        pass
+def calculatePixelLocation(camera, map_keys, map_descs):
+    # Take picture using solo
+    img = take_picture(camera)
     
     img = cv2.resize(img, (0, 0), fx = 0.5, fy = 0.5)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -109,11 +120,36 @@ def cv_simulation():
     imgCounter = (imgCounter + 1) % len(files)
     return img
 
+def connect_solo_wifi():
+   # execute the shell script (does not terminate)
+   subprocess.check_output(["nc", "10.1.1.1", "5502"])
+   
+def init_camera():
+    if CV_SIMULATION:
+        return None
+    else:
+        # initialize camera for 3DR Solo
+        solo_connect_thread = Thread(target=connect_solo_wifi)
+        solo_connect_thread.daemon = True
+        solo_connect_thread.start()
+        sleep(1)
+        environ['OPENCV_FFMPEG_CAPTURE_OPTIONS'] = 'protocol_whitelist;file,rtp,udp'
+        cam = cv2.VideoCapture("./sololink.sdp")
+        return cam
+
+def take_picture(camera):
+    if CV_SIMULATION:
+        return cv_simulation()
+    else:
+        return camera.read()
+
 def euclidean_distance(x1, y1, x2, y2):
     return sqrt((x1 - x2)**2 + (y1 - y2)**2)
 
-def change_yaw(vehicle, theta):
-    set_attitude(vehicle, yaw_angle=theta + vehicle.heading, duration=3)
+def change_yaw(vehicle, thetaRad):
+    # convert theta to degrees
+    thetaDeg = thetaRad * 180 / pi
+    set_attitude(vehicle, yaw_angle=thetaDeg + vehicle.heading, duration=3)
 
 def move_forward(vehicle, durration):
     set_attitude(vehicle, pitch_angle=-12, yaw_rate=0, use_yaw_rate=True, duration=durration)

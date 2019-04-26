@@ -156,16 +156,16 @@ def quick_scan_adds_mission(configs, vehicle, lla_waypoint_list):
             # Planes need a waypoint tolerance
             cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
                             0, configs["waypoint_tolerance"], 0, 0, point.lat, point.lon, point.alt))
-            # Adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination.
-            cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
-                             0, configs["waypoint_tolerance"], 0, 0, lla_waypoint_list[-1].lat, lla_waypoint_list[-1].lon, lla_waypoint_list[-1].alt))
+        # Adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination.
+        cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
+                            0, configs["waypoint_tolerance"], 0, 0, lla_waypoint_list[-1].lat, lla_waypoint_list[-1].lon, lla_waypoint_list[-1].alt))
     elif (configs["vehicle_type"] == "Quadcopter"):
         for point in lla_waypoint_list:
             cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
                              0, 0, 0, 0, point.lat, point.lon, point.alt))
-            # Adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination.
-            cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
-                             0, 0, 0, 0, lla_waypoint_list[-1].lat, lla_waypoint_list[-1].lon, lla_waypoint_list[-1].alt))
+        # Adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination.
+        cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
+                            0, 0, 0, 0, lla_waypoint_list[-1].lat, lla_waypoint_list[-1].lon, lla_waypoint_list[-1].alt))
                 
     print("Upload new commands to vehicle")
     cmds.upload()
