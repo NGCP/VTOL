@@ -1,7 +1,7 @@
 from dronekit import *
 from dronekit_sitl import start_default
 import cv2
-from math import atan, sqrt, acos, pi
+from math import atan, atan2, sqrt, acos, pi
 import numpy as np
 from os import listdir
 import cProfile, pstats, StringIO
@@ -9,6 +9,7 @@ from math import cos, sin, radians
 from time import time, sleep
 from pickle import dump, load, HIGHEST_PROTOCOL
 from threading import Thread
+import re
 
 import sys
 sys.path.append('.')
@@ -20,6 +21,9 @@ ALTITUDE = 10
 SOLO = False
 CV_SIMULATION = True
 LOITER = True
+SCALE = 0.5
+MAP_HEADING = 50
+STABILIZE_TIME = 1
 
 def main():
     if SOLO:
@@ -28,24 +32,26 @@ def main():
         # Port 5763 must be forwarded on vagrant
         connection_string = "tcp:127.0.0.1:5763"
     vehicle = connect(connection_string)
+    vehicle = None
 
-    map_origin = LocationGlobalRelative(1.0, 1.0, 30)
+    map_origin = LocationGlobalRelative(35.328403, -120.752401, ALTITUDE)
+    target_location = LocationGlobalRelative(35.328219, -120.752315, ALTITUDE)
     keys, descs, length, width = read_from_file()
     # takeoff currently uses GPS
     takeoff(vehicle, ALTITUDE)
     vehicle.mode = VehicleMode("GUIDED")
 
     camera = init_camera()
-    gps_denied_move(vehicle, camera, LocationGlobalRelative(0.99995, 1.0, 30), keys, descs, map_origin, length, width)
+    gps_denied_move(vehicle, camera, target_location, keys, descs, map_origin, MAP_HEADING, length, width)
 
     land(vehicle)
 
 # how many pixels the drone can be off from the target before being in acceptance state
 EPSILON = 100
 
-def gps_denied_move(vehicle, camera, location, map_keys, map_descs, map_origin, map_length, map_width):
+def gps_denied_move(vehicle, camera, location, map_keys, map_descs, map_origin, map_heading, map_length, map_width):
     # convert location to pixels
-    target_pixel_location = gpsToPixels(location, map_origin, map_length, map_width)
+    target_pixel_location = gpsToPixels(location, map_origin, map_length, map_width, map_heading)
     print("target")
     print(target_pixel_location)
 
@@ -55,7 +61,7 @@ def gps_denied_move(vehicle, camera, location, map_keys, map_descs, map_origin, 
     while (euclidean_distance(current_pixel_location[0], current_pixel_location[1],
                               target_pixel_location[0], target_pixel_location[1]) >= EPSILON):
         # trigonometry to calculate how much yaw must change
-        delta_direction = atan((target_pixel_location[1] - current_pixel_location[1]) /
+        delta_direction = atan2((target_pixel_location[1] - current_pixel_location[1]),
                                (target_pixel_location[0] - current_pixel_location[0])) * 180 / pi - current_orientation
         print("delta direction: ", str(delta_direction))
 
@@ -66,7 +72,7 @@ def gps_denied_move(vehicle, camera, location, map_keys, map_descs, map_origin, 
         # Wait a time interval for the image to stabilize
         if LOITER:
             vehicle.mode = VehicleMode("GUIDED")
-        sleep(1)
+        sleep(STABILIZE_TIME)
 
         current_pixel_location, current_orientation = calculatePixelLocation(camera, map_keys, map_descs)
         print(current_pixel_location)
@@ -75,8 +81,9 @@ def gps_denied_move(vehicle, camera, location, map_keys, map_descs, map_origin, 
 # returns tuple of location (tuple) and orientation
 #Assumes map is oriented North
 def gpsToPixels(location, map_origin, map_length, map_width, HEADING = 0):
+    # TODO look into this code with test cases. For now return hardcoded value
+    return (3400, 1800)
     altitude = location.alt
-    SCALE = 0.5
     print("len {} and width {}".format(map_length, map_width))
 
     HORIZONTAL_RESOLUTION = 3280 * SCALE
@@ -108,14 +115,14 @@ def gpsToPixels(location, map_origin, map_length, map_width, HEADING = 0):
     print("xPixel {}, yPixel {}".format(POIX, POIY))
     return POIX, POIY
 
-imgCounter = 0
+img_counter = 0
 orb = cv2.ORB_create(nfeatures=1000, scoreType=cv2.ORB_FAST_SCORE)
 
 def calculatePixelLocation(camera, map_keys, map_descs):
     # Take picture using solo
     img = take_picture(camera)
     
-    img = cv2.resize(img, (0, 0), fx = 0.5, fy = 0.5)
+    img = cv2.resize(img, (0, 0), fx = SCALE, fy = SCALE)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     keys, descs = orb.detectAndCompute(img, None)
 
@@ -150,12 +157,17 @@ def calculatePixelLocation(camera, map_keys, map_descs):
     angle = acos(np.dot(vec, np.array([1, 0])) / (sqrt(vec[0]**2 + vec[1]**2))) * 180 / pi
     return ((mp[0], mp[1]), angle)
 
+def sorted_alphanumeric(data):
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+    return sorted(data, key=alphanum_key)
+
 def cv_simulation():
-    global imgCounter
-    files = listdir("./simulation_images")
-    path = "./simulation_images/" + str(imgCounter) + ".png"
-    img = cv2.imread(path)
-    imgCounter = (imgCounter + 1) % len(files)
+    global img_counter
+    files = sorted_alphanumeric(listdir("./simulation_images"))
+    path = "./simulation_images/" + files[img_counter % len(files)]
+    img = cv2.imread(path, 1)
+    img_counter += 1
     return img
 
 def connect_solo_wifi():
