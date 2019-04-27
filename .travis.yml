@@ -6,8 +6,8 @@ language: python
 python:
   - '2.7'
 install:
-  - pip install dronekit
-  - pip install dronekit-sitl
+  - pip install -Iv https://files.pythonhosted.org/packages/59/7d/d5ecb8151be29234ffc2eb49c2afb2ca1db9c9307e2ef3e9c1b81c6e57f9/dronekit-2.9.1.tar.gz
+  - pip install -Iv https://files.pythonhosted.org/packages/d2/ff/967e87ac5ac09cea5cdb5bbca5b48a24f695d6e583deb26f7ecf491fb884/dronekit_sitl-3.2.0.tar.gz
   - pip install pymavlink
   - pip install pyserial
   - pip install typing

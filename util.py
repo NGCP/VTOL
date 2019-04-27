@@ -1,6 +1,7 @@
 import json
 import datetime
 import subprocess
+import sys
 
 def parse_configs(argv):
     """Parses the .json file given as the first command line argument.
@@ -24,15 +25,38 @@ def new_output_file():
 
     # makes logs folder if not existing already
     try:
-        subprocess.check_output(["ls", "logs/"], stderr=subprocess.STDOUT)
+        if sys.platform == "darwin" or sys.platform == "linux" or sys.platform == "linux2":
+            subprocess.check_output(["ls", "logs/"], shell=False, stderr=subprocess.STDOUT)
+        elif sys.platform == "win32":
+            subprocess.check_output(["cd", "logs/"], shell=True, stderr=subprocess.STDOUT)
+        else:
+            raise Exception("Operating system not recognized")
     except subprocess.CalledProcessError:
-        subprocess.call(["mkdir", "logs/"])
+        if sys.platform == "darwin" or sys.platform == "linux" or sys.platform == "linux2":
+            subprocess.call(["mkdir", "logs/"], shell=False)
+        elif sys.platform == "win32":
+            # No ls on Windows cmd
+            subprocess.call(["mkdir", "logs/"], shell=True)
+        else:
+            raise Exception("Operating system not recognized")
 
     # makes folder for the current date in logs folder if not existing already
     try:
-        subprocess.check_output(["ls", "logs/" + date], stderr=subprocess.STDOUT)
+        if sys.platform == "darwin" or sys.platform == "linux" or sys.platform == "linux2":
+            subprocess.check_output(["ls", "logs/" + date], shell=False, stderr=subprocess.STDOUT)
+        elif sys.platform == "win32":
+            # No ls on Windows cmd
+            subprocess.check_output(["cd", "logs/" + date], shell=True, stderr=subprocess.STDOUT)
+        else:
+            raise Exception("Operating system not recognized")
     except subprocess.CalledProcessError:
-        subprocess.call(["mkdir", "logs/" + date])
+        if sys.platform == "darwin" or sys.platform == "linux" or sys.platform == "linux2":
+            subprocess.call(["mkdir", "logs/" + date], shell=False)
+        elif sys.platform == "win32":
+            # Windows cmd handles mkdir path in a strange way
+            subprocess.call(["mkdir", "logs\\" + date], shell=True)
+        else:
+            raise Exception("Operating system not recognized")
 
     # open file for current time
     return open("logs/" + date + "/" + time.replace(":", ".") + ".txt", "w")
