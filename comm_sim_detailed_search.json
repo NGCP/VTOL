@@ -3,7 +3,7 @@
         "time": 45.0,
         "message": {
             "type":"addMission",
-            "missionInfo":{"lat":35.32848, "lon": -120.75259},
+            "missionInfo":{"lat":35.32848, "lng": -120.75259},
             "id": 0}
     },
     {
