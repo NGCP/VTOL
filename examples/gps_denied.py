@@ -3,13 +3,14 @@ from dronekit_sitl import start_default
 import cv2
 from math import atan, atan2, sqrt, acos, pi
 import numpy as np
-from os import listdir
+from os import listdir, environ
 import cProfile, pstats, StringIO
 from math import cos, sin, radians
 from time import time, sleep
 from pickle import dump, load, HIGHEST_PROTOCOL
 from threading import Thread
 import re
+import subprocess
 
 import sys
 sys.path.append('.')
@@ -18,12 +19,12 @@ from conversions import geodetic2ecef, ecef2enu, ecef2ned
 
 # Quick configs
 ALTITUDE = 10
-SOLO = False
-CV_SIMULATION = True
+SOLO = True
+CV_SIMULATION = False
 LOITER = True
 SCALE = 0.5
 MAP_HEADING = 50
-STABILIZE_TIME = 1
+STABILIZE_TIME = 3
 
 def main():
     if SOLO:
@@ -37,6 +38,7 @@ def main():
     map_origin = LocationGlobalRelative(35.328403, -120.752401, ALTITUDE)
     target_location = LocationGlobalRelative(35.328219, -120.752315, ALTITUDE)
     keys, descs, length, width = read_from_file()
+
     # takeoff currently uses GPS
     takeoff(vehicle, ALTITUDE)
     vehicle.mode = VehicleMode("GUIDED")
@@ -55,9 +57,16 @@ def gps_denied_move(vehicle, camera, location, map_keys, map_descs, map_origin, 
     print("target")
     print(target_pixel_location)
 
-    current_pixel_location, current_orientation = calculatePixelLocation(camera, map_keys, map_descs)
+    result = calculatePixelLocation(camera, map_keys, map_descs)
+    # Wait for a match
+    while not result:
+        print("Can't find template match")
+        result = calculatePixelLocation(camera, map_keys, map_descs)
+        sleep(2)
+    current_pixel_location, current_orientation = result
     print(current_pixel_location)
     print(current_orientation)
+    print(img_counter - 1)
     while (euclidean_distance(current_pixel_location[0], current_pixel_location[1],
                               target_pixel_location[0], target_pixel_location[1]) >= EPSILON):
         # trigonometry to calculate how much yaw must change
@@ -74,9 +83,16 @@ def gps_denied_move(vehicle, camera, location, map_keys, map_descs, map_origin, 
             vehicle.mode = VehicleMode("GUIDED")
         sleep(STABILIZE_TIME)
 
-        current_pixel_location, current_orientation = calculatePixelLocation(camera, map_keys, map_descs)
+        result = calculatePixelLocation(camera, map_keys, map_descs)
+        # Wait for a match
+        while not result:
+            print("Can't find template match")
+            result = calculatePixelLocation(camera, map_keys, map_descs)
+            sleep(2)
+        current_pixel_location, current_orientation = result
         print(current_pixel_location)
         print(current_orientation)
+        print(img_counter - 1)
 
 # returns tuple of location (tuple) and orientation
 #Assumes map is oriented North
@@ -115,14 +131,12 @@ def gpsToPixels(location, map_origin, map_length, map_width, HEADING = 0):
     print("xPixel {}, yPixel {}".format(POIX, POIY))
     return POIX, POIY
 
-img_counter = 0
 orb = cv2.ORB_create(nfeatures=1000, scoreType=cv2.ORB_FAST_SCORE)
 
 def calculatePixelLocation(camera, map_keys, map_descs):
     # Take picture using solo
     img = take_picture(camera)
-    
-    img = cv2.resize(img, (0, 0), fx = SCALE, fy = SCALE)
+    #img = cv2.resize(img, (0, 0), fx = SCALE, fy = SCALE)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     keys, descs = orb.detectAndCompute(img, None)
 
@@ -145,17 +159,29 @@ def calculatePixelLocation(camera, map_keys, map_descs):
     src_pts = np.float32([ keys[m.queryIdx].pt for m in good_matches ]).reshape(-1,1,2)
     dst_pts = np.float32([ map_keys[m.trainIdx].pt for m in good_matches ]).reshape(-1,1,2)
 
-    M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
-    h,w = img.shape
-    pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
-    dst = cv2.perspectiveTransform(pts,M)
-    mp = cv2.perspectiveTransform(np.float32([[w/2.0, h/2.0]]).reshape(-1,1,2), M)[0][0]
-    
-    # Vector of the upper edge
-    vec = dst[3][0] - dst[0][0]
-    # Angle of upper edge to x axis in degrees
-    angle = acos(np.dot(vec, np.array([1, 0])) / (sqrt(vec[0]**2 + vec[1]**2))) * 180 / pi
-    return ((mp[0], mp[1]), angle)
+    try:
+        M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
+        h,w = img.shape
+        pts = np.float32([ [0,0],[0,h-1],[w-1,h-1],[w-1,0] ]).reshape(-1,1,2)
+        dst = cv2.perspectiveTransform(pts,M)
+        mp = cv2.perspectiveTransform(np.float32([[w/2.0, h/2.0]]).reshape(-1,1,2), M)[0][0]
+        
+        # Vector of the upper edge
+        vec = dst[3][0] - dst[0][0]
+        # Angle of upper edge to x axis in degrees
+        angle = acos(np.dot(vec, np.array([1, 0])) / (sqrt(vec[0]**2 + vec[1]**2))) * 180 / pi
+        return ((mp[0], mp[1]), angle)
+
+    except cv2.error:
+        # If there aren't enough matches to template match, return None
+        return None
+
+img_counter = 0
+
+def sorted_alphanumeric(data):
+    convert = lambda text: int(text) if text.isdigit() else text.lower()
+    alphanum_key = lambda key: [ convert(c) for c in re.split('([0-9]+)', key) ] 
+    return sorted(data, key=alphanum_key)
 
 def sorted_alphanumeric(data):
     convert = lambda text: int(text) if text.isdigit() else text.lower()
@@ -172,7 +198,10 @@ def cv_simulation():
 
 def connect_solo_wifi():
    # execute the shell script (does not terminate)
-   subprocess.check_output(["nc", "10.1.1.1", "5502"])
+    if sys.platform == "win32":
+        subprocess.check_output(["nc", "10.1.1.1", "5502"], shell=True)
+    else:
+        subprocess.check_output(["nc", "10.1.1.1", "5502"])
    
 def init_camera():
     if CV_SIMULATION:
@@ -191,7 +220,15 @@ def take_picture(camera):
     if CV_SIMULATION:
         return cv_simulation()
     else:
-        return camera.read()
+        global img_counter
+        count = camera.get(cv2.CAP_PROP_FRAME_COUNT)
+        camera.set(cv2.CAP_PROP_POS_FRAMES, count - 1)
+        camera.grab()
+        _, img = camera.retrieve()
+        cv2.imwrite("solopics/" + str(img_counter) + ".png", img)
+        print(img.shape)
+        img_counter += 1
+        return img
 
 def euclidean_distance(x1, y1, x2, y2):
     return sqrt((x1 - x2)**2 + (y1 - y2)**2)
