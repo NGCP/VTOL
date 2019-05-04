@@ -19,16 +19,19 @@ comm_sim_on = False
 
 # Represents a search area for quick scan aerial vehicles
 class SearchArea:
-    def __init__(self, center, rad1, rad2):
-        self.center = center  # tuple containing coor. of center point
-        self.rad1 = rad1  # first search radius from center
-        self.rad2 = rad2  # second search radius from center
+    def __init__(self, tl, tr, bl, br):
+	# tl-br are tuples containing the coordinates of rectangle corners
+	self.tl = tl
+	self.tr = tr
+	self.bl = bl
+	self.br = br
 
     def __str__(self):
         return "SearchArea(" + \
-               str(self.center) + ", " + \
-               str(self.rad1) + ", " + \
-               str(self.rad2) + ")"
+               str(self.tl) + ", " + \
+               str(self.tr) + ", " + \
+               str(self.bl) + ", " + \
+               str(self.br) + ")"
 
 
 # Callback function for messages from GCS, parses JSON message and sets globals
@@ -48,7 +51,8 @@ def xbee_callback(compressed_message, autonomyToCV):
 
         if msg_type == "addMission":
             area = msg["missionInfo"]["searchArea"]
-            search_area = SearchArea(area["center"], area["rad1"], area["rad2"])
+            search_area = SearchArea(area["topLeft"], area["topRight"],
+                area["bottomLeft"], area["bottomRight"])
             autonomy.start_mission = True
             acknowledge(address, msg["id"], autonomyToCV)
 
@@ -82,46 +86,60 @@ def generate_waypoints(configs, search_area):
     waypointsNED = []
     waypointsLLA = []
 
-    origin = search_area.center
-    radius = search_area.rad2
+    # start at the bottom left
+    start = search_area.tl
+    # end at the top right
+    end = search_area.br
 
     # pre-defined in configs file
     altitude = configs["altitude"]
-    lat = origin[0]
-    lon = origin[1]
-    centerX, centerY, centerZ = geodetic2ecef(lat, lon, altitude)
-    n, e, d = ecef2ned(centerX, centerY, centerZ, lat, lon, altitude)
-    waypointsLLA.append(LocationGlobalRelative(lat, lon, altitude))
-    waypointsNED.append([n, e, d])
+    lat = start[0]
+    lon = start[1]
+    startX, startY, startZ = geodetic2ecef(lat, lon, altitude)
+    start_n, start_e, d = ecef2ned(startX, startY, startZ, lat, lon, altitude)
+    dX = (search_area.tl[0] - search_area.bl[0]) * 111111.0
+    dY = (search_area.tl[1] - search_area.bl[1]) * 111111.0
+    height = (((search_area.tl[0] - search_area.tr[0]) * 111111.0) ** 2 +
+      ((search_area.tl[1] - search_area.tr[1]) * 111111.0) **2) ** .5
+    endX, endY, endZ = geodetic2ecef(end[0], end[1], altitude)
+    end_n, end_e, end_d = ecef2ned(endX, endY, endZ, lat, lon, altitude)
 
-    fovH = math.radians(62.2)  # raspicam horizontal FOV
-    boxH = 2 * altitude / math.tan(fovH / 2)  # height of bounding box
+    print(height)
+#    fovH = math.radians(62.2)  # raspicam horizontal FOV
+#    boxH = 2 * altitude / math.tan(fovH / 2)  # height of bounding box
+#    overlap = (0.5 * boxH) / (2 * math.pi)  # distance between zags with 50% overlap
 
-    b = (0.75 * boxH) / (2 * math.pi)  # distance between coils with 25% overlap
-    rotation = -(math.pi / 2)  # number of radians spiral is rotated
-    maxTheta = radius / b  # after using formula r = b * theta
+    overlap = 5.5 # 3 meters
 
-    theta = 0
-    while theta <= maxTheta:
-        # distance away from center
-        away = b * theta
+    temp_n = start_n
+    temp_e = start_e
+    
+    i = 0
+    while i * 2 * overlap < height:
+        # convert NED to LLA
+        newLat, newLon, newAlt = ned2geodetic(temp_n, temp_e, d, lat, lon, altitude)
+        waypointsNED.append([temp_n, temp_e, d])
+        waypointsLLA.append(LocationGlobalRelative(newLat, newLon, newAlt))
 
-        # distance around center
-        around = theta + rotation
-
-        # around & away -> x & y
-        x = centerX + math.cos(around) * away
-        y = centerY + math.sin(around) * away
-
-        # convert ECEF to NED and LLA
-        n, e, d = ecef2ned(x, y, centerZ, lat, lon, altitude)
-        newLat, newLon, newAlt = ned2geodetic(n, e, d, lat, lon, altitude)
-        waypointsNED.append([n, e, d])
+        newLat, newLon, newAlt = ned2geodetic(temp_n + dY, temp_e + dX, d, lat, lon, altitude)
+        waypointsNED.append([temp_n + dY, temp_e + dX, d])
         waypointsLLA.append(LocationGlobalRelative(newLat, newLon, altitude))
 
-        # generate a waypoint every pi/8 radian
-        theta += configs["d_theta_rad"]
+        temp_n += overlap * dX / (dY**2 + dX**2)**.5
+        temp_e -= overlap * dY / (dY**2 + dX**2)**.5
 
+        newLat, newLon, newAlt = ned2geodetic(temp_n + dY, temp_e + dX, d, lat, lon, altitude)
+        waypointsNED.append([temp_n + dY, temp_e + dX, d])
+        waypointsLLA.append(LocationGlobalRelative(newLat, newLon, altitude))
+
+        newLat, newLon, newAlt = ned2geodetic(temp_n, temp_e, d, lat, lon, altitude)
+        waypointsNED.append([temp_n, temp_e, d])
+        waypointsLLA.append(LocationGlobalRelative(newLat, newLon, altitude))
+
+        temp_n += overlap * dX / (dY**2 + dX**2)**.5
+        temp_e -= overlap * dY / (dY**2 + dX**2)**.5
+        
+        i += 1
     return (waypointsNED, waypointsLLA)
 
 def quick_scan_adds_mission(configs, vehicle, lla_waypoint_list):
@@ -283,4 +301,3 @@ def set_autonomytocv_start(autonomyToCV, start):
     autonomyToCV.startMutex.acquire()
     autonomyToCV.start = start
     autonomyToCV.startMutex.release()
-

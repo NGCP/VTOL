@@ -1,0 +1,17 @@
+[
+    {
+        "time": 0.75,
+        "message": {
+            "type":"addMission",
+            "missionInfo" : {
+                "searchArea": {
+                    "topLeft":[15.328375, -100.752615],
+                    "topRight":[55.328375, -100.752615],
+                    "bottomLeft":[15.328375, -140.752615],
+                    "bottomRight":[55.328375, -140.752615],
+                }
+            },
+            "id":0
+        }
+    }
+]
