@@ -19,6 +19,7 @@
     "role_switching": false,
     "quick_scan_images": "./quick_scan_images/",
     "rad_threshold" : 0.174533,
+    "demo": false,
     "comms_simulated": {
       "toggled_on": true,
       "comm_sim_file": "comm_sim_quick_scan.json"
