@@ -20,16 +20,16 @@ from conversions import geodetic2ecef, ecef2enu, ecef2ned
 
 # Quick configs
 ALTITUDE = 10
-SOLO = False
+SOLO = True
 CV_SIMULATION = False
 LOITER = True
 SCALE = 0.5
 MAP_HEADING = 50
 STABILIZE_TIME = 3
-MOVE_DURATION = 2
+MOVE_DURATION = 1
 TOTAL_TILT = 25
 # how many pixels the drone can be off from the target before being in acceptance state
-EPSILON = 500
+EPSILON = 1000
 
 
 def main():
@@ -133,10 +133,12 @@ def gps_denied_move(
             result = calculatePixelLocation(camera, map_keys, map_descs)
             sleep(2)
             misses += 1
+            '''
             if misses == 5:
                 print("Failed to find a template match")
                 move(vehicle, delta_direction, MOVE_DURATION / 2)
                 break
+            '''
         current_pixel_location, current_orientation = result
         print(current_pixel_location)
         print(current_orientation)
@@ -297,15 +299,22 @@ def take_picture(camera):
     if CV_SIMULATION:
         return cv_simulation()
     else:
-        global img_counter
-        count = camera.get(cv2.CAP_PROP_FRAME_COUNT)
-        camera.set(cv2.CAP_PROP_POS_FRAMES, count - 1)
-        camera.grab()
-        _, img = camera.retrieve()
-        cv2.imwrite("solopics/" + str(img_counter) + ".png", img)
-        crop_img = img[78:630, 270:1071]
-        img_counter += 1
-        return crop_img
+        try:
+            global img_counter
+            count = camera.get(cv2.CAP_PROP_FRAME_COUNT)
+            camera.set(cv2.CAP_PROP_POS_FRAMES, count - 1)
+            camera.grab()
+            _, img = camera.retrieve()
+            cv2.imwrite("solopics/" + str(img_counter) + ".png", img)
+            crop_img = img[78:630, 270:1071]
+            img_counter += 1
+            return crop_img
+        except KeyboardError:
+            raise
+        except:
+            # Try taking the picture again
+            sleep(1)
+            take_picture(camera)
 
 
 def euclidean_distance(x1, y1, x2, y2):

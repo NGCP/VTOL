@@ -12,9 +12,7 @@ def quick_scan_cv(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
     #Set output image folder based on simulation attribute in configs
     out_imagef_path = configs["quick_scan_specific"]["quick_scan_images"]
     cam = None
-    if configs['cv_simulated']['toggled_on']:
-        out_imagef_path = configs['cv_simulated']["directory"]
-    else: 
+    if not configs['cv_simulated']['toggled_on']:
         cam = cv.init_camera(configs)
         if cam is None: 
             print("Camera not found")
@@ -73,10 +71,13 @@ def quick_scan_cv(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
 
 
         #determines whether to save image to output folder based on angle of vehicle or simulation
+        '''
         if (abs(pitch) < rad_threshold and
                 abs(roll)  < rad_threshold and
                 configs['cv_simulated']['toggled_on'] == False):
+                '''
 
+        if not configs['cv_simulated']['toggled_on']:
             image_out =  out_imagef_path + str(image_ctr) + ".jpg"
             cv2.imwrite(image_out, img)
             image_ctr += 1
@@ -96,12 +97,19 @@ def quick_scan_cv(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
     return None #stitch_keypoints(kpts_list=all_kpts, descs_list=all_desc)
 
 def take_picture(camera):
-    count = camera.get(cv2.CAP_PROP_FRAME_COUNT)
-    camera.set(cv2.CAP_PROP_POS_FRAMES, count - 1)
-    camera.grab()
-    _, img = camera.retrieve()
-    crop_img = img[78:630, 270:1071]
-    return crop_img
+    try:
+        count = camera.get(cv2.CAP_PROP_FRAME_COUNT)
+        camera.set(cv2.CAP_PROP_POS_FRAMES, count - 1)
+        camera.grab()
+        _, img = camera.retrieve()
+        crop_img = img[78:630, 270:1071]
+        return crop_img
+    except KeyboardInterrupt:
+        raise
+    except:
+        # Try taking the picture again
+        time.sleep(1)
+        take_picture(camera)
 
 
 def get_autonomy_start_and_stop(autonomyToCV):
