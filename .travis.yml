@@ -2,9 +2,10 @@ branches:
   only:
     - master
     - add-travis
+dist: xenial
 language: python
 python:
-  - '3'
+  - '3.7'
 install:
   - pip3 install pymavlink
   - pip3 install pyserial
