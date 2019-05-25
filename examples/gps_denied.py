@@ -9,6 +9,7 @@ from math import cos, sin, radians
 from time import time, sleep
 from pickle import dump, load, HIGHEST_PROTOCOL
 from threading import Thread
+from simple_pid import PID
 import re
 import subprocess
 
@@ -20,17 +21,22 @@ from conversions import geodetic2ecef, ecef2enu, ecef2ned
 
 # Quick configs
 ALTITUDE = 10
-SOLO = True
+SOLO = False
 CV_SIMULATION = False
 LOITER = True
 SCALE = 0.5
 MAP_HEADING = 50
 STABILIZE_TIME = 3
 MOVE_DURATION = 1
-TOTAL_TILT = 25
+MAX_VELOCITY = 7
+P = .13
+I = .01
+D = .005
 # how many pixels the drone can be off from the target before being in acceptance state
 EPSILON = 1000
 
+X_VELOCITY = 0
+Y_VELOCITY = 0
 
 def main():
     if SOLO:
@@ -39,6 +45,14 @@ def main():
         # Port 5763 must be forwarded on vagrant
         connection_string = "tcp:127.0.0.1:5763"
     vehicle = connect(connection_string)
+
+    #Assigns listener to update X_VELOCITY and Y_VELOCITY on vehicle events
+    @vehicle.on_message('GLOBAL_POSITION_INT')
+    def listener(self, name, message):
+        global X_VELOCITY
+        global Y_VELOCITY
+        X_VELOCITY = message.vx
+        Y_VELOCITY = message.vy
 
     map_origin = LocationGlobalRelative(35.328403, -120.752401, ALTITUDE)
     target_location = LocationGlobalRelative(35.328219, -120.752315, ALTITUDE)
@@ -334,14 +348,23 @@ def move_forward(vehicle, duration):
 def move(vehicle, thetaDeg, duration):
     thetaDeg = thetaDeg / 180.0 * pi
     print("moving", thetaDeg, sin(thetaDeg), cos(thetaDeg))
-    set_attitude(
-        vehicle,
-        pitch_angle=-1 * cos(thetaDeg) * TOTAL_TILT,
-        roll_angle=sin(thetaDeg) * TOTAL_TILT,
-        yaw_rate=0,
-        use_yaw_rate=True,
-        duration=duration,
-    )
+    set_velocity(vehicle, vx = cos(thetaDeg) * MAX_VELOCITY, vy = sin(thetaDeg) * MAX_VELOCITY, duration = duration)
+
+
+#Sets the velocity of the vehicle RELATIVE TO HEADING
+def set_velocity(vehicle, vx = 0, vy = 0, duration = 0):
+    global X_VELOCITY
+    global Y_VELOCITY
+    xpid = PID(P, I, D, setpoint=vx * 133)
+    xpid.sample_time = 0.1
+    ypid = PID(P, I, D, setpoint=vy * 133)
+    ypid.sample_time = 0.1
+    for x in range(0, duration * 10):
+        # compute new ouput from the PID according to the systems current value
+        xcontrol = xpid(X_VELOCITY)
+        ycontrol = ypid(Y_VELOCITY)
+        set_attitude(vehicle, pitch_angle= -1 * xcontrol, roll_angle=ycontrol, duration=.1)
+        # feed the PID output to the system and get its current value
 
 
 # Commands drone to take off by arming vehicle and flying to altitude
