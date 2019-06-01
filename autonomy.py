@@ -123,14 +123,14 @@ def mac_xbee_port_name():
 # Arms and starts an AUTO mission loaded onto the vehicle
 def start_auto_mission(configs, vehicle):
     while not vehicle.is_armable:
-        print " Waiting for vehicle to initialise..."
+        print (" Waiting for vehicle to initialise...")
         time.sleep(1)
 
     vehicle.mode = VehicleMode("GUIDED")
     vehicle.armed = True
 
     while not vehicle.armed:
-        print " Waiting for arming..."
+        print (" Waiting for arming...")
         time.sleep(1)
 
     vehicle.commands.next = 0
