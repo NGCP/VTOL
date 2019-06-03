@@ -1,25 +1,21 @@
-from dronekit import *
-from dronekit_sitl import start_default
-import cv2
-from math import atan, atan2, sqrt, acos, pi, fabs
-import numpy as np
-import urllib.request
+'''
+First thoughts on SLAM cv
+'''
 import ssl
-from os import listdir, environ
-from math import cos, sin, radians
-from time import time, sleep
-from pickle import dump, load, HIGHEST_PROTOCOL
-from simple_pid import PID
-from threading import Thread
-import re
-import subprocess
-from scipy.spatial import ConvexHull, convex_hull_plot_2d, Delaunay
-
 import sys
+from time import time, sleep
+from math import cos, sin, radians
+from threading import Thread
+import urllib.request
+import numpy as np
+from dronekit import connect, VehicleMode
+import cv2
+from simple_pid import PID
+from scipy.spatial import Delaunay # pylint: disable=no-name-in-module
+
 
 sys.path.append(".")
 sys.path.append("..")
-from conversions import geodetic2ecef, ecef2enu, ecef2ned
 
 # Quick configs
 ALTITUDE = 10
@@ -40,39 +36,29 @@ I = .02
 D = .01
 
 #Pos PID
-pos_p = .13
-pos_i = .00005
-pos_d = .00001
+POS_P = .13
+POS_I = .00005
+POS_D = .00001
 
 #CV sim
 FRAME_SIZE = (600, 280)
 MISSES = 0
-UL_pos = (0,0)
+POSITION_GUESS = (0, 0)
 
 # how many pixels the drone can be off from the target before being in acceptance state
 EPSILON = 1000
 
-X_VELOCITY = 0
-Y_VELOCITY = 0
-
 def main():
+    '''set up threads for movement and cv'''
     global TARGET_POSITION
     global REACHED_DEST
     if SOLO:
         connection_string = "udpin:0.0.0.0:14550"
-        
+
     else:
         # Port 5763 must be forwarded on vagrant
         connection_string = "tcp:127.0.0.1:5760"
     vehicle = connect(connection_string)
-
-    @vehicle.on_message('GLOBAL_POSITION_INT')
-    def listener(self, name, message):
-        global X_VELOCITY
-        global Y_VELOCITY
-        X_VELOCITY = message.vx
-        Y_VELOCITY = message.vy
-
     takeoff(vehicle, ALTITUDE)
 
     TARGET_POSITION = (400, 0)
@@ -100,43 +86,45 @@ def main():
     # sleep(40)
     # takeoff currently uses GPS
 
-def getImage(lat, lng):
-    url = "https://maps.googleapis.com/maps/api/staticmap?center={},{}&zoom=20&size=600x300&maptype=satellite&key=AIzaSyDAsjW6VKaxLxSNXo3Ws8rg3SMvqaEY7mU".format(lat,lng)
-    context = ssl._create_unverified_context()
-    resp = urllib.request.urlopen(url,context=context)
+def get_image(lat, lng):
+    '''Gets image of current lat long coorindates from google static maps'''
+    url = "https://maps.googleapis.com/maps/api/staticmap?center={},{}&zoom=20&size=600x300&maptype=satellite&key=AIzaSyDAsjW6VKaxLxSNXo3Ws8rg3SMvqaEY7mU".format(lat, lng)
+    context = ssl._create_unverified_context()              # pylint: disable=protected-access
+    resp = urllib.request.urlopen(url, context=context)
     image = np.asarray(bytearray(resp.read()), dtype="uint8")
     decoded = cv2.imdecode(image, cv2.IMREAD_GRAYSCALE)
     cropped = decoded[:280, :]
     return cropped
 
-def set_position(vehicle = None):
+def set_position(vehicle=None):
+    '''Uses PID and position guesses to set the quad's position'''
     global REACHED_DEST
     global TARGET_POSITION
-    assert TARGET_POSITION is not None
+    assert TARGET_POSITION is not None and vehicle is not None
 
     #set attitude to 0
     set_attitude(vehicle, yaw_angle=0, duration=5)
     while True:
         print("Targeting", TARGET_POSITION)
         current_target = TARGET_POSITION
-        x_pid = PID(pos_p, pos_i, pos_d, setpoint=current_target[0])
+        x_pid = PID(POS_P, POS_I, POS_D, setpoint=current_target[0])
         x_pid.sample_time = 0.33
-        y_pid = PID(pos_p, pos_i, pos_d, setpoint=current_target[1])
+        y_pid = PID(POS_P, POS_I, POS_D, setpoint=current_target[1])
         y_pid.sample_time = 0.33
         till_stop = 15
         while True:
-            if(current_target != TARGET_POSITION):
+            if current_target != TARGET_POSITION:
                 #if dest changes rest PID algs
                 break
-            if(till_stop == 0):
+            if till_stop == 0:
                 REACHED_DEST = True
             #Get control from each PID
-            x_control = x_pid(UL_pos[0])
-            y_control = y_pid(UL_pos[1])
-            remaining_x = current_target[0] - UL_pos[0]
-            remaining_y = current_target[1] - UL_pos[1]
+            x_control = x_pid(POSITION_GUESS[0])
+            y_control = y_pid(POSITION_GUESS[1])
+            remaining_x = current_target[0] - POSITION_GUESS[0]
+            remaining_y = current_target[1] - POSITION_GUESS[1]
             remaining_dst_sq = (remaining_x ** 2 + remaining_y ** 2) ** .5
-            if(remaining_dst_sq < 20):
+            if remaining_dst_sq < 20:
                 till_stop -= 1
             else:
                 till_stop = 15
@@ -146,35 +134,22 @@ def set_position(vehicle = None):
                 x_control = TOTAL_TILT * remaining_x / remaining_dst_sq
                 y_control = TOTAL_TILT * remaining_y / remaining_dst_sq
 
-            set_attitude(vehicle, 
-                roll_angle=x_control, 
-                pitch_angle= y_control, 
-                duration=.33, 
-                yaw_angle=0)
-
-def set_velocity(vehicle, vx = 0, vy = 0, duration = 0):
-    xpid = PID(P, I, D, setpoint=vx * 100)
-    xpid.sample_time = 0.33
-    ypid = PID(P, I, D, setpoint=vy * 100)
-    ypid.sample_time = 0.33
-    for x in range(0, int(duration * 10)):
-        # compute new ouput from the PID according to the systems current value
-        xcontrol = xpid(X_VELOCITY)
-        ycontrol = ypid(Y_VELOCITY)
-        set_attitude(vehicle, pitch_angle= -1 * xcontrol, roll_angle=ycontrol, duration=.3)
-        # feed the PID output to the system and get its current value
-
+            set_attitude(vehicle,
+                         roll_angle=x_control,
+                         pitch_angle=y_control,
+                         duration=.33,
+                         yaw_angle=0)
 
 
 def cv_stitch(vehicle):
+    '''Gathers and organizes feature points. Reports position guesses'''
     global MISSES
-    global UL_pos
+    global POSITION_GUESS
 
     min_match_count = 10
-    PIXELS_PER_METER = 8.25
     # Initiate SIFT detector
 
-    ORB = cv2.ORB_create(nfeatures=1000, scoreType=cv2.ORB_FAST_SCORE)
+    orb = cv2.ORB_create(nfeatures=1000, scoreType=cv2.ORB_FAST_SCORE)
 
     flann_index_lsh = 6
     index_params = dict(
@@ -184,23 +159,24 @@ def cv_stitch(vehicle):
         multi_probe_level=1,
     )  # 2
     search_params = dict(checks=5)
-    FLANN = cv2.FlannBasedMatcher(index_params, search_params)
+    flann = cv2.FlannBasedMatcher(index_params, search_params)
 
-    BASE = getImage(vehicle.location.global_relative_frame.lat, vehicle.location.global_relative_frame.lon)
-    ORIGIN = (BASE.shape[1] / 2, BASE.shape[0] / 2)
-    map_kp, map_des = ORB.detectAndCompute(BASE, None)
+    base_image = get_image(vehicle.location.global_relative_frame.lat,
+                           vehicle.location.global_relative_frame.lon)
+    map_kp, map_des = orb.detectAndCompute(base_image, None)
 
     point_poly = Delaunay(list(map(lambda key: key.pt, map_kp)), incremental=True)
 
-    while True: 
-        img = getImage(vehicle.location.global_relative_frame.lat, vehicle.location.global_relative_frame.lon)
-        cur_kp, cur_des = ORB.detectAndCompute(img, None)
-        
-        keys_within_region = [i for i,v in enumerate(map_kp) if 
-                    v.pt[0] >= UL_pos[0] - FRAME_SIZE[0] / 2 and 
-                    v.pt[0] <= UL_pos[0] + FRAME_SIZE[0] * 1.5 and 
-                    v.pt[1] >= UL_pos[1] - FRAME_SIZE[1] / 2 and 
-                    v.pt[1] <= UL_pos[1] + FRAME_SIZE[1] * 1.5]
+    while True:
+        img = get_image(vehicle.location.global_relative_frame.lat,
+                        vehicle.location.global_relative_frame.lon)
+        cur_kp, cur_des = orb.detectAndCompute(img, None)
+
+        keys_within_region = [i for i, v in enumerate(map_kp) if
+                              v.pt[0] >= POSITION_GUESS[0] - FRAME_SIZE[0] / 2 and
+                              v.pt[0] <= POSITION_GUESS[0] + FRAME_SIZE[0] * 1.5 and
+                              v.pt[1] >= POSITION_GUESS[1] - FRAME_SIZE[1] / 2 and
+                              v.pt[1] <= POSITION_GUESS[1] + FRAME_SIZE[1] * 1.5]
         if MISSES < 3:
             #Use map des within the bounding box
             relevant_map_des = np.array([map_des[i] for i in keys_within_region])
@@ -209,13 +185,13 @@ def cv_stitch(vehicle):
             #Use all map des
             relevant_map_des = map_des
             relevant_map_kp = map_kp
-        matches = FLANN.knnMatch(relevant_map_des, cur_des, k=2)
+        matches = flann.knnMatch(relevant_map_des, cur_des, k=2)
         # store all the good matches as per Lowe's ratio test.
         good = []
         try:
-            for m, n in matches:
-                if m.distance < 0.7*n.distance:
-                    good.append(m)
+            for match_a, match_b in matches:
+                if match_a.distance < 0.7*match_b.distance:
+                    good.append(match_a)
         except ValueError:
             print('err')
 
@@ -223,30 +199,29 @@ def cv_stitch(vehicle):
             MISSES = 0
             src_pts = np.float32([cur_kp[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
             dst_pts = np.float32([relevant_map_kp[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
-            M, mask = cv2.findHomography(src_pts, dst_pts, cv2.LMEDS, 5.0)
-            matchesMask = mask.ravel().tolist()
+            m_matrix, _ = cv2.findHomography(src_pts, dst_pts, cv2.LMEDS, 5.0)
             for key in cur_kp:
-                key.pt = tuple(np.matmul(M, [key.pt[0], key.pt[1], 1])[:2])
-            outside_region_indecies = [i for i,v in enumerate(cur_kp) if not point_poly.find_simplex(v.pt) >= 0]
-            UL_pos = np.matmul(M, [0.0, 0.0, 1.0])[:2]
+                key.pt = tuple(np.matmul(m_matrix, [key.pt[0], key.pt[1], 1])[:2])
+            new_pts = [i for i, v in enumerate(cur_kp) if not point_poly.find_simplex(v.pt) >= 0]
 
-            new_des = [cur_des[i] for i in outside_region_indecies]
-            new_kp = [cur_kp[i] for i in outside_region_indecies]
+            POSITION_GUESS = np.matmul(m_matrix, [0.0, 0.0, 1.0])[:2]
 
-            if(len(outside_region_indecies) > 0):
+            new_des = [cur_des[i] for i in new_pts]
+            new_kp = [cur_kp[i] for i in new_pts]
+
+            if new_pts:
                 # print("appending new descriptors and keys", len(outside_region_indecies))
                 map_kp.extend(new_kp)
                 map_des = np.append(map_des, new_des, axis=0)
                 point_poly.add_points(list(map(lambda key: key.pt, new_kp)))
         else:
             print("Not enough matches are found - %d/%d" % (len(good), min_match_count))
-            matchesMask = None
             MISSES += 1
 
-        print(UL_pos)
+        print(POSITION_GUESS)
 
-# Commands drone to take off by arming vehicle and flying to altitude
 def takeoff(vehicle, altitude):
+    '''Commands drone to take off by arming vehicle and flying to altitude'''
     print("Pre-arm checks")
     while not vehicle.is_armable:
         print("Waiting for vehicle to initialize")
@@ -272,42 +247,41 @@ def takeoff(vehicle, altitude):
     print("Reached target altitude")
 
 
-
 def to_quaternion(roll=0.0, pitch=0.0, yaw=0.0):
-    """
+    '''
     Convert degrees to quaternions
-    """
-    t0 = cos(radians(yaw * 0.5))
-    t1 = sin(radians(yaw * 0.5))
-    t2 = cos(radians(roll * 0.5))
-    t3 = sin(radians(roll * 0.5))
-    t4 = cos(radians(pitch * 0.5))
-    t5 = sin(radians(pitch * 0.5))
+    '''
+    t0_val = cos(radians(yaw * 0.5))
+    t1_val = sin(radians(yaw * 0.5))
+    t2_val = cos(radians(roll * 0.5))
+    t3_val = sin(radians(roll * 0.5))
+    t4_val = cos(radians(pitch * 0.5))
+    t5_val = sin(radians(pitch * 0.5))
 
-    w = t0 * t2 * t4 + t1 * t3 * t5
-    x = t0 * t3 * t4 - t1 * t2 * t5
-    y = t0 * t2 * t5 + t1 * t3 * t4
-    z = t1 * t2 * t4 - t0 * t3 * t5
+    w_val = t0_val * t2_val * t4_val + t1_val * t3_val * t5_val
+    x_val = t0_val * t3_val * t4_val - t1_val * t2_val * t5_val
+    y_val = t0_val * t2_val * t5_val + t1_val * t3_val * t4_val
+    z_val = t1_val * t2_val * t4_val - t0_val * t3_val * t5_val
 
-    return [w, x, y, z]
+    return [w_val, x_val, y_val, z_val]
 
 
 def send_attitude_target(
-    vehicle,
-    roll_angle=0.0,
-    pitch_angle=0.0,
-    yaw_angle=None,
-    yaw_rate=0.0,
-    use_yaw_rate=False,
-    thrust=0.5,
+        vehicle,
+        roll_angle=0.0,
+        pitch_angle=0.0,
+        yaw_angle=None,
+        yaw_rate=0.0,
+        use_yaw_rate=False,
+        thrust=0.5,
 ):
-    """
+    '''
     use_yaw_rate: the yaw can be controlled using yaw_angle OR yaw_rate.
                   When one is used, the other is ignored by Ardupilot.
     thrust: 0 <= thrust <= 1, as a fraction of maximum vertical thrust.
             Note that as of Copter 3.5, thrust = 0.5 triggers a special case in
             the code for maintaining current altitude.
-    """
+    '''
     if yaw_angle is None:
         # this value may be unused by the vehicle, depending on use_yaw_rate
         yaw_angle = vehicle.attitude.yaw
@@ -327,24 +301,23 @@ def send_attitude_target(
     )
     vehicle.send_mavlink(msg)
 
-
 def set_attitude(
-    vehicle,
-    roll_angle=0.0,
-    pitch_angle=0.0,
-    yaw_angle=None,
-    yaw_rate=0.0,
-    use_yaw_rate=False,
-    thrust=0.5,
-    duration=0,
+        vehicle,
+        roll_angle=0.0,
+        pitch_angle=0.0,
+        yaw_angle=None,
+        yaw_rate=0.0,
+        use_yaw_rate=False,
+        thrust=0.5,
+        duration=0,
 ):
-    """
+    '''
     Note that from AC3.3 the message should be re-sent more often than every
     second, as an ATTITUDE_TARGET order has a timeout of 1s.
     In AC3.2.1 and earlier the specified attitude persists until it is canceled.
     The code below should work on either version.
     Sending the message multiple times is the recommended way.
-    """
+    '''
     send_attitude_target(
         vehicle, roll_angle, pitch_angle, yaw_angle, yaw_rate, use_yaw_rate, thrust
     )
@@ -356,25 +329,6 @@ def set_attitude(
         sleep(0.1)
     # Reset attitude, or it will persist for 1s more due to the timeout
     send_attitude_target(vehicle, 0, 0, 0, 0, True, thrust)
-
-
-def read_from_file():
-    with open("map2.bin", "rb") as read:
-        data = load(read)
-        keys_reconstructed = map(
-            lambda x: cv2.KeyPoint(
-                x["pt"][0],
-                x["pt"][1],
-                x["size"],
-                x["angle"],
-                x["response"],
-                x["octave"],
-                x["class_id"],
-            ),
-            data["keys"],
-        )
-    return (keys_reconstructed, data["descs"], data["length"], data["width"])
-
 
 if __name__ == "__main__":
     main()
