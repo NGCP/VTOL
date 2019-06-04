@@ -101,7 +101,7 @@ def main():
     # takeoff currently uses GPS
 
 def getImage(lat, lng):
-    url = "https://maps.googleapis.com/maps/api/staticmap?center={},{}&zoom=20&size=600x300&maptype=satellite&key=AIzaSyDAsjW6VKaxLxSNXo3Ws8rg3SMvqaEY7mU".format(lat,lng)
+    url = "https://maps.googleapis.com/maps/api/staticmap?center={},{}&zoom=20&size=600x300&maptype=satellite&key=".format(lat,lng)
     context = ssl._create_unverified_context()
     resp = urllib.request.urlopen(url,context=context)
     image = np.asarray(bytearray(resp.read()), dtype="uint8")
