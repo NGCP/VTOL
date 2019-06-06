@@ -48,26 +48,22 @@ def detailed_search(vehicle = None, gcs_timestamp = 0, connection_timestamp = 0)
 
     # Start autonomy and CV threads
     autonomyToCV = DetailedSearchAutonomyToCV()
-    autonomy_thread = Thread(target = detailed_search_autonomy,
-                             args = (configs, autonomyToCV, gcs_timestamp, connection_timestamp, vehicle))
-    autonomy_thread.daemon = True
-    autonomy_thread.start()
+    #autonomy_thread = Thread(target = detailed_search_autonomy,
+                             #args = (configs, autonomyToCV, gcs_timestamp, connection_timestamp, vehicle))
+    #autonomy_thread.daemon = True
+    #autonomy_thread.start()
 
-    cv_thread = Thread(target = detailed_search_cv, args = (configs, autonomyToCV))
-    cv_thread.daemon = True
-    cv_thread.start()
+    #cv_thread = Thread(target = detailed_search_cv, args = (configs, autonomyToCV))
+    #cv_thread.daemon = True
+    #cv_thread.start()
 
     # Wait for the threads to finish
-    autonomy_thread.join()
-    cv_thread.join()
+    #autonomy_thread.join()
+    #cv_thread.join()
 
     # Close XBee device
     if autonomy.xbee:
         autonomy.xbee.close()
-
-    # Close output file
-    if not autonomy.outfile.closed:
-        autonomy.outfile.close()
 
 
 if __name__ == "__main__":

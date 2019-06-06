@@ -132,7 +132,7 @@ def start_auto_mission(configs, vehicle):
     vehicle.armed = True
 
     while not vehicle.armed:
-        print (" Waiting for arming...")
+        print(" Waiting for arming...")
         time.sleep(1)
 
     vehicle.commands.next = 0
