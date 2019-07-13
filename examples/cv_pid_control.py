@@ -69,26 +69,29 @@ def main():
     cv_thread = Thread(target=cv_stitch, kwargs={'vehicle': vehicle})
     cv_thread.daemon = True
 
-    cv_thread.start()
-    position_thread.start()
-    while not REACHED_DEST:
-        sleep(1)
-    REACHED_DEST = False
-    TARGET_POSITION = (400, 400)
-    while not REACHED_DEST:
-        sleep(1)
-    REACHED_DEST = False
-    TARGET_POSITION = (0, 400)
-    while not REACHED_DEST:
-        sleep(1)
-    REACHED_DEST = False
+    # cv_thread.start()
+    # position_thread.start()
+    # while not REACHED_DEST:
+    #     sleep(1)
+    # REACHED_DEST = False
+    # TARGET_POSITION = (400, 400)
+    # while not REACHED_DEST:
+    #     sleep(1)
+    # REACHED_DEST = False
+    # TARGET_POSITION = (0, 400)
+    # while not REACHED_DEST:
+    #     sleep(1)
+    # REACHED_DEST = False
     # TARGET_POSITION = (-35.3603678, 149.1678384)
     # sleep(40)
     # takeoff currently uses GPS
 
+    cv_stitch(vehicle)
+
 def get_image(lat, lng):
     '''Gets image of current lat long coorindates from google static maps'''
-    url = "https://maps.googleapis.com/maps/api/staticmap?center={},{}&zoom=20&size=600x300&maptype=satellite&key=AIzaSyDAsjW6VKaxLxSNXo3Ws8rg3SMvqaEY7mU".format(lat, lng)
+    url = "https://maps.googleapis.com/maps/api/staticmap?center={},{}&zoom=20&size=600x300&maptype=satellite&key=AIzaSyAYSKNJf18DBxiTpY0FvgengIupGxdYgMM".format(lat, lng)
+    # print(url)
     context = ssl._create_unverified_context()              # pylint: disable=protected-access
     resp = urllib.request.urlopen(url, context=context)
     image = np.asarray(bytearray(resp.read()), dtype="uint8")
@@ -165,13 +168,13 @@ def cv_stitch(vehicle):
                            vehicle.location.global_relative_frame.lon)
     map_kp, map_des = orb.detectAndCompute(base_image, None)
 
-    point_poly = Delaunay(list(map(lambda key: key.pt, map_kp)), incremental=True)
+    x_bound = 0
 
     while True:
         img = get_image(vehicle.location.global_relative_frame.lat,
                         vehicle.location.global_relative_frame.lon)
         cur_kp, cur_des = orb.detectAndCompute(img, None)
-
+        cv2.waitKey(5)
         keys_within_region = [i for i, v in enumerate(map_kp) if
                               v.pt[0] >= POSITION_GUESS[0] - FRAME_SIZE[0] / 2 and
                               v.pt[0] <= POSITION_GUESS[0] + FRAME_SIZE[0] * 1.5 and
@@ -200,25 +203,37 @@ def cv_stitch(vehicle):
             src_pts = np.float32([cur_kp[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
             dst_pts = np.float32([relevant_map_kp[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
             m_matrix, _ = cv2.findHomography(src_pts, dst_pts, cv2.LMEDS, 5.0)
+            min_x = np.matmul(m_matrix, [cur_kp[0].pt[0], cur_kp[0].pt[1], 1])[0]
+            
+            im_points=cv2.drawKeypoints(img, cur_kp, None)
+            cv2.imshow('test', im_points)
+
             for key in cur_kp:
                 key.pt = tuple(np.matmul(m_matrix, [key.pt[0], key.pt[1], 1])[:2])
-            new_pts = [i for i, v in enumerate(cur_kp) if not point_poly.find_simplex(v.pt) >= 0]
+                min_x = min([min_x, key.pt[0]])
 
-            POSITION_GUESS = np.matmul(m_matrix, [0.0, 0.0, 1.0])[:2]
+            new_pts = [i for i, v in enumerate(cur_kp) if v.pt[0] < x_bound]
+            
 
-            new_des = [cur_des[i] for i in new_pts]
-            new_kp = [cur_kp[i] for i in new_pts]
+            new_guess = np.matmul(m_matrix, [0.0, 0.0, 1.0])[:2]
+            if((new_guess[0] - POSITION_GUESS[0]) ** 2 + (new_guess[1] - POSITION_GUESS[1]) ** 2 < 1600000):
+                POSITION_GUESS = new_guess
+                print("matching", len(cur_des), 'to', len(relevant_map_des), POSITION_GUESS)
 
-            if new_pts:
-                # print("appending new descriptors and keys", len(outside_region_indecies))
-                map_kp.extend(new_kp)
-                map_des = np.append(map_des, new_des, axis=0)
-                point_poly.add_points(list(map(lambda key: key.pt, new_kp)))
+                new_des = [cur_des[i] for i in new_pts]
+                new_kp = [cur_kp[i] for i in new_pts]
+
+                if new_pts:
+                    map_kp.extend(new_kp)
+                    map_des = np.append(map_des, new_des, axis=0)
+                    x_bound = min_x
+            else:
+                print("bad translation, not using")
         else:
             print("Not enough matches are found - %d/%d" % (len(good), min_match_count))
             MISSES += 1
-
-        print(POSITION_GUESS)
+        sleep(.5)
+        # print(POSITION_GUESS)
 
 def takeoff(vehicle, altitude):
     '''Commands drone to take off by arming vehicle and flying to altitude'''
