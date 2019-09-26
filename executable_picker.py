@@ -3,16 +3,16 @@ The GCS allocates roles to vehicles. The purpose of this program is to connect t
 read a start message from the GCS, which contains a certain job_type. It then runs the
 corresponding VTOL program (quick scan, detailed search, guide) based on the start message.
 '''
-import autonomy
-from autonomy import setup_xbee, bad_msg, send_till_ack
-from quick_scan import quick_scan
-from detailed_search import detailed_search
-from util import parse_configs, new_output_file
 import sys
 import json
 import time
+from quick_scan import quick_scan
+from detailed_search import detailed_search
+from util import parse_configs, new_output_file
+from autonomy import setup_xbee, bad_msg, send_till_ack
+import autonomy
 
-xbee = None
+XBEE = None
 gcs_timestamp = 0
 connection_timestamp = 0
 
@@ -34,8 +34,8 @@ def xbee_callback(message):
             
         elif msg_type == "start":
             # detach this callback so that the corresponding role can use its own callback
-            xbee.del_data_received_callback(xbee_callback)
-            xbee.close()
+            XBEE.del_data_received_callback(xbee_callback)
+            XBEE.close()
 
             job_type = msg['jobType']
             if job_type == "quickScan":
@@ -66,8 +66,8 @@ def main():
     sys.stderr = tee
 
     # no comms simulation; that wouldn't be useful as this program is supposed to interact w/ GCS
-    global xbee
-    xbee = setup_xbee()
+    global XBEE
+    XBEE = setup_xbee()
 
     # send connection message
     connection_message = {
@@ -81,7 +81,7 @@ def main():
     }
 
     # wait to receive the connection ack and start message
-    xbee.add_data_received_callback(xbee_callback)
+    XBEE.add_data_received_callback(xbee_callback)
 
     send_till_ack(configs["mission_control_MAC"], connection_message, 0)
 

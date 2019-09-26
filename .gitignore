@@ -129,5 +129,6 @@ dmypy.json
 .DS_STORE
 my_project
 *.pyc
-
+launch.json
+settings.json
 # End of https://www.gitignore.io/api/python
