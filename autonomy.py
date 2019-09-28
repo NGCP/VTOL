@@ -40,7 +40,6 @@ class Tee(object):
         for f in self.files:
             f.flush()
 
-
 # Dummy message class for comm simulation thread to be compatible with xbee_callback function
 class DummyMessage:
     def __init__(self, data=None):
@@ -187,7 +186,7 @@ def land(configs, vehicle):
     while not vehicle.location.global_relative_frame.alt < 1.0:
         print("Altitude: " + str(vehicle.location.global_relative_frame.alt))
         time.sleep(1)
-    
+
     time.sleep(10)
     vehicle.close()
 
