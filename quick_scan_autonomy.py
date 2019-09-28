@@ -200,9 +200,17 @@ def quick_scan_autonomy(configs, radio):
     # Fly about spiral pattern
     if (configs["flight_mode"] == "AUTO"):
         while vehicle.commands.next != vehicle.commands.count:
-            # TODO monitor pause, resume, stop variables
             print(vehicle.location.global_frame)
             time.sleep(1)
+            if autonomy.pause_mission:
+                # Hold the vehicle in place
+                vehicle.mode = VehicleMode("ALT_HOLD")
+            elif autonomy.stop_mission:
+                land(vehicle)
+                return
+            else:
+                # Continue path
+                vehicle.mode = VehicleMode("AUTO")
     else:
         raise Exception("Guided mode not supported")
 
