@@ -48,7 +48,9 @@ def detailed_search(vehicle = None, gcs_timestamp = 0, connection_timestamp = 0)
 
     # Start autonomy and CV threads
     autonomyToCV = DetailedSearchAutonomyToCV()
-    autonomy_thread = Thread(target = detailed_search_autonomy, args = (configs, autonomyToCV, gcs_timestamp, connection_timestamp, vehicle))
+
+    autonomy_thread = Thread(target = detailed_search_autonomy,
+                            args = (configs, autonomyToCV, gcs_timestamp, connection_timestamp, vehicle))
     autonomy_thread.daemon = True
     autonomy_thread.start()
 

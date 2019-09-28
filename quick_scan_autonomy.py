@@ -206,6 +206,7 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
         comm_sim_on = True
         comm_sim = Thread(target=comm_simulation, args=(configs["quick_scan_specific"]["comms_simulated"]["comm_sim_file"], xbee_callback, autonomyToCV))
         comm_sim.start()
+        comm_sim.join()
     # Otherwise, set up XBee device and add callback
     else:
         comm_sim = None
@@ -240,6 +241,7 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
     # Starts the update thread
     update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"], autonomyToCV))
     update.start()
+    update.join()
 
     # Send mission to vehicle
     quick_scan_adds_mission(configs, vehicle, waypoints[1])
@@ -270,20 +272,6 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
 
     set_autonomytocv_stop(autonomyToCV, True)
 
-    # Switch to detailed search if role switching is enabled
-    if configs["quick_scan_specific"]["role_switching"]:
-        autonomy.mission_completed = True
-        update.join()
-        detailed_search(vehicle)
-    else:
-        land(configs, vehicle)
-
-        # Ready for a new mission
-        autonomy.mission_completed = True
-
-        # Wait for update thread to end
-        update.join()
-
     # Wait for comm simulation thread to end
     if comm_sim:
         comm_sim.join()
@@ -291,6 +279,20 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
         autonomyToCV.xbeeMutex.acquire()
         autonomy.xbee.close()
         autonomyToCV.xbeeMutex.release()
+
+    # Switch to detailed search if role switching is enabled
+    if configs["quick_scan_specific"]["role_switching"]:
+        autonomy.mission_completed = True
+        update.join()
+        detailed_search(vehicle)
+    else:
+        # Ready for a new mission
+        autonomy.mission_completed = True
+
+        # Wait for update thread to end
+        update.join()
+
+        land(configs, vehicle)
 
 def set_autonomytocv_stop(autonomyToCV, stop):
     autonomyToCV.stopMutex.acquire()

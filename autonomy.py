@@ -4,7 +4,9 @@ import subprocess
 import time
 from dronekit import connect, VehicleMode
 from pymavlink import mavutil
-from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice
+from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
+import msgpack
+
 
 # Globals, updated by XBee callback function
 start_mission = False  # takeoff
@@ -129,7 +131,7 @@ def start_auto_mission(configs, vehicle):
     vehicle.armed = True
 
     while not vehicle.armed:
-        print (" Waiting for arming...")
+        print(" Waiting for arming...")
         time.sleep(1)
 
     vehicle.commands.next = 0
@@ -205,8 +207,8 @@ def acknowledge(address, ackid, autonomyToCV):
     # xbee is None if comms is simulated
     if xbee:
         # Instantiate a remote XBee device object to send data.
-        send_xbee = RemoteXBeeDevice(xbee, address)
-        packed_data = packb(json.dumps(ack), use_bin_type = True)
+        send_xbee = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
+        packed_data = msgpack.packb(ack)
         autonomyToCv.xbeeMutex.acquire()
         xbee.send_data(send_xbee, packed_data)
         autonomyToCV.xbeeMutex.release()
@@ -229,10 +231,10 @@ def bad_msg(address, problem, autonomyToCV):
     # xbee is None if comms is simulated
     if xbee:
         # Instantiate a remote XBee device object to send data.
-        send_xbee = RemoteXBeeDevice(xbee, address)
-        packed_data = packb(json.dumps(msg, use_bin_type = True))
+        send_xbee = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
+        packed_data = msgpack.packb(msg)
         autonomyToCV.xbeeMutex.acquire()
-        xbee.send_data(send_xbee, packed_Data)
+        xbee.send_data(send_xbee, packed_data)
         autonomyToCV.xbeeMutex.release()
     else:
         print("Error:", problem)
@@ -247,7 +249,7 @@ def new_msg_id():
 
 def send_msg(address, msg):
     # Instantiate a remote XBee device object to send data.
-    send_xbee = RemoteXBeeDevice(xbee, address)
+    send_xbee = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
     xbee.send_data(send_xbee, json.dumps(msg))
 
 
@@ -310,17 +312,15 @@ def update_thread(vehicle, address, autonomyToCV):
             autonomyToCV.xbeeMutex.acquire()
             send_till_ack(address, update_message, msg_id)
             autonomyToCV.xbeeMutex.release()
-
         time.sleep(1)
-
     change_status("ready")
 
 
 # Continuously sends message to given address until acknowledgement message is recieved with the corresponding ackid.
 def send_till_ack(address, msg, msg_id):
     # Instantiate a remote XBee device object to send data.
-    send_xbee = RemoteXBeeDevice(xbee, address)
-    packed_data = packb(json.dumps(ack), use_bin_type = True)
+    send_xbee = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
+    packed_data = bytearray(msgpack.packb(msg))
     while ack_id != msg_id:
         xbee.send_data(send_xbee, packed_data)
         time.sleep(1)
