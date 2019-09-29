@@ -241,8 +241,6 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
     # Starts the update thread
     update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"], autonomyToCV))
     update.start()
-    update.join()
-
     # Send mission to vehicle
     quick_scan_adds_mission(configs, vehicle, waypoints[1])
 
