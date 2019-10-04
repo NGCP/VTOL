@@ -71,7 +71,9 @@ def setup_vehicle(configs):
         if (configs["3dr_solo"]):
             connection_string = "udpin:0.0.0.0:14550"
         else:
-            connection_string = "/dev/serial0"
+            # connect to pixhawk via MicroUSB
+            # if we switch back to using the telem2 port, use "/dev/serial0"
+            connection_string = "/dev/ttyACM0"
 
     if (configs["vehicle_simulated"]):
         return connect(connection_string, wait_ready=True)
