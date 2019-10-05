@@ -6,7 +6,7 @@ import time
 from os import listdir
 ballTargetImgIndex = 0
 
-def quick_scan_cv(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
+def quick_scan_cv(configs, autonomyToCV, GCS_TIMESTAMP, CONNECTION_TIMESTAMP):
     print("Starting Quickscan CV")
 
     #Set output image folder based on simulation attribute in configs
@@ -56,7 +56,7 @@ def quick_scan_cv(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
                           "id": 0,
                           "sid":  configs["vehicle_id"],
                           "tid": 0,
-                          "time": round(time.clock() - connection_timestamp) + gcs_timestamp,
+                          "time": round(time.clock() - CONNECTION_TIMESTAMP) + GCS_TIMESTAMP,
 
                           "lat": lat,                   # Latitude of point of interest
                           "lng": lon,                   # Longitude of point of interest

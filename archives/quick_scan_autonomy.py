@@ -53,23 +53,23 @@ def xbee_callback(compressed_message, autonomyToCV):
             area = msg["missionInfo"]["searchArea"]
             search_area = SearchArea(area["topLeft"], area["topRight"],
                 area["bottomLeft"], area["bottomRight"])
-            autonomy.start_mission = True
+            autonomy.START_MISSION = True
             acknowledge(address, msg["id"], autonomyToCV)
 
         elif msg_type == "pause":
-            autonomy.pause_mission = True
+            autonomy.PAUSE_MISSION = True
             acknowledge(address, msg["id"], autonomyToCV)
 
         elif msg_type == "resume":
-            autonomy.pause_mission = False
+            autonomy.PAUSE_MISSION = False
             acknowledge(address, msg["id"], autonomyToCV)
 
         elif msg_type == "stop":
-            autonomy.stop_mission = True
+            autonomy.STOP_MISSION = True
             acknowledge(address, msg["id"], autonomyToCV)
 
         elif msg_type == "ack":
-            autonomy.ack_id = msg["ackid"]
+            autonomy.ACK_ID = msg["ackid"]
 
         else:
             bad_msg(address, "Unknown message type: \'" + msg_type + "\'", autonomyToCV)
@@ -196,7 +196,7 @@ def quick_scan_adds_mission(configs, vehicle, lla_waypoint_list):
 
 # Main autonomous flight thread
 # :param configs: dict from configs file
-def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
+def quick_scan_autonomy(configs, autonomyToCV, GCS_TIMESTAMP, CONNECTION_TIMESTAMP):
     print("\n######################## STARTING QUICK SCAN AUTONOMY ########################")
     autonomy.configs = configs
 
@@ -216,16 +216,16 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
         autonomyToCV.xbee = autonomy.xbee
         autonomyToCV.xbeeMutex.release()
 
-        autonomy.gcs_timestamp = gcs_timestamp
-        autonomy.connection_timestamp = connection_timestamp
+        autonomy.GCS_TIMESTAMP = GCS_TIMESTAMP
+        autonomy.CONNECTION_TIMESTAMP = CONNECTION_TIMESTAMP
 
 
         autonomyToCV.xbeeMutex.acquire()
         autonomy.xbee.add_data_received_callback(xbee_callback)
         autonomyToCV.xbeeMutex.release()
 
-    # Generate waypoints after start_mission = True
-    while not autonomy.start_mission:
+    # Generate waypoints after START_MISSION = True
+    while not autonomy.START_MISSION:
         pass
 
     # Generate waypoints
@@ -255,13 +255,13 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
         print(vehicle.location.global_relative_frame)
         time.sleep(1)
         # Holds the copter in place if receives pause
-        if autonomy.pause_mission:
+        if autonomy.PAUSE_MISSION:
             if (configs["vehicle_type"] == "VTOL"):
                 vehicle.mode = VehicleMode("QHOVER")
             elif (configs["vehicle_type"] == "Quadcopter"):
                 vehicle.mode = VehicleMode("ALT_HOLD")
         # Lands the vehicle if receives stop mission
-        elif autonomy.stop_mission:
+        elif autonomy.STOP_MISSION:
             set_autonomytocv_stop(autonomyToCV, True)
             land(configs, vehicle)
     

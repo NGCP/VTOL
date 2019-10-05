@@ -1,11 +1,11 @@
 import sys
-from threading import Thread, Lock
 import autonomy
-from detailed_search_autonomy import detailed_search_autonomy
-from detailed_search_cv import detailed_search_cv
+from threading import Thread, Lock
+from quick_scan_autonomy import quick_scan_autonomy
+from quick_scan_cv import quick_scan_cv
 from util import parse_configs, new_output_file
 
-class DetailedSearchAutonomyToCV:
+class QuickScanAutonomyToCV:
     def __init__(self):
         self.startMutex = Lock()
         self.start = False
@@ -34,8 +34,11 @@ class DetailedSearchAutonomyToCV:
         self.acknowledgementMutex = Lock()
         self.acknowledgementMutex = False
 
+        self.vehicleMutex = Lock()
+        self.vehicle = None
 
-def detailed_search(vehicle = None, gcs_timestamp = 0, connection_timestamp = 0):
+
+def quick_scan(GCS_TIMESTAMP = 0, CONNECTION_TIMESTAMP = 0):
     # Parse configs file
     configs = parse_configs(sys.argv)
 
@@ -47,14 +50,13 @@ def detailed_search(vehicle = None, gcs_timestamp = 0, connection_timestamp = 0)
         sys.stderr = tee
 
     # Start autonomy and CV threads
-    autonomyToCV = DetailedSearchAutonomyToCV()
-
-    autonomy_thread = Thread(target = detailed_search_autonomy,
-                            args = (configs, autonomyToCV, gcs_timestamp, connection_timestamp, vehicle))
+    autonomyToCV = QuickScanAutonomyToCV()
+    autonomy_thread = Thread(target=quick_scan_autonomy,
+                             args=(configs, autonomyToCV, GCS_TIMESTAMP, CONNECTION_TIMESTAMP))
     autonomy_thread.daemon = True
     autonomy_thread.start()
 
-    cv_thread = Thread(target = detailed_search_cv, args = (configs, autonomyToCV))
+    cv_thread = Thread(target=quick_scan_cv, args=(configs, autonomyToCV, GCS_TIMESTAMP, CONNECTION_TIMESTAMP))
     cv_thread.daemon = True
     cv_thread.start()
 
@@ -64,11 +66,11 @@ def detailed_search(vehicle = None, gcs_timestamp = 0, connection_timestamp = 0)
 
     # Close XBee device
     if autonomy.xbee:
+        autonomyToCV.xbeeMutex.release()
         autonomy.xbee.close()
+        autonomyToCV.xbeeMutex.release()
 
-    # Close output file
-    #if not autonomy.outfile.closed:
-#        autonomy.outfile.close()
+
 
 if __name__ == "__main__":
-    detailed_search()
+    quick_scan()

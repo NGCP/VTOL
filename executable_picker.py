@@ -13,12 +13,12 @@ from autonomy import setup_xbee, bad_msg, send_till_ack
 import autonomy
 
 XBEE = None
-gcs_timestamp = 0
-connection_timestamp = 0
+GCS_TIMESTAMP = 0
+CONNECTION_TIMESTAMP = 0
 
 def xbee_callback(message):
-    global gcs_timestamp
-    global connection_timestamp
+    global GCS_TIMESTAMP
+    global CONNECTION_TIMESTAMP
 
     address = message.remote_device.get_64bit_addr()
     msg = json.loads(message.data)
@@ -28,9 +28,9 @@ def xbee_callback(message):
         msg_type = msg["type"]
 
         if msg_type == "connectionAck":
-            gcs_timestamp = msg['clocktime']
-            connection_timestamp = time.time()
-            autonomy.ack_id = msg["ackid"]
+            GCS_TIMESTAMP = msg['clocktime']
+            CONNECTION_TIMESTAMP = time.time()
+            autonomy.ACK_ID = msg["ackid"]
             
         elif msg_type == "start":
             # detach this callback so that the corresponding role can use its own callback
@@ -39,9 +39,9 @@ def xbee_callback(message):
 
             job_type = msg['jobType']
             if job_type == "quickScan":
-                quick_scan(gcs_timestamp = gcs_timestamp, connection_timestamp = connection_timestamp)
+                quick_scan(GCS_TIMESTAMP = GCS_TIMESTAMP, CONNECTION_TIMESTAMP = CONNECTION_TIMESTAMP)
             elif job_type == "detailedSearch":
-                detailed_search(gcs_timestamp = gcs_timestamp, connection_timestamp = connection_timestamp)
+                detailed_search(GCS_TIMESTAMP = GCS_TIMESTAMP, CONNECTION_TIMESTAMP = CONNECTION_TIMESTAMP)
             elif job_type == "guide":
                 # TODO
                 pass

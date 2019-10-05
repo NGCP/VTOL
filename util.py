@@ -1,3 +1,4 @@
+'''Util methods for VTOL'''
 import json
 import datetime
 import subprocess
@@ -8,7 +9,7 @@ def parse_configs(argv):
     If no .json file is specified, defaults to "configs.json".
     If the specified .json file is found, returns a dict of the contents.
     """
-    if (len(argv) == 1):
+    if len(argv) == 1:
         read_file = open("configs.json", "r")
     else:
         read_file = open(argv[1], "r")
@@ -16,9 +17,9 @@ def parse_configs(argv):
     return json.load(read_file)
 
 
-# Creates a new directory for the current date if not created already
-# and creates an output file for all console output in the directory.
 def new_output_file():
+    '''Creates a new directory for the current date if not created already
+    and creates an output file for all console output in the directory.'''
     curr_time = str(datetime.datetime.today()).split()
     date = curr_time[0]
     time = curr_time[1]

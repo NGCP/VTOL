@@ -16,5 +16,3 @@ install:
   - pip3 install dronekit
 
 script:
-  - python3 tests/quick_scan_tests.py
-  - python3 tests/detailed_search_tests.py

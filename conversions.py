@@ -1,10 +1,11 @@
+#pylint: disable=invalid-name
+
 """
 Code from https://github.com/scivision/pymap3d
 """
 
 from numpy import radians, sin, cos, tan, arctan, hypot, degrees, arctan2, sqrt, pi
 import numpy as np
-from typing import Tuple
 
 class Ellipsoid:
     """
@@ -14,12 +15,12 @@ class Ellipsoid:
 
     def __init__(self, model='wgs84'):
         if model == 'wgs84':
-            """https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84"""
+            #https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84
             self.a = 6378137.  # semi-major axis [m]
             self.f = 1 / 298.2572235630  # flattening
             self.b = self.a * (1 - self.f)  # semi-minor axis
         elif model == 'grs80':
-            """https://en.wikipedia.org/wiki/GRS_80"""
+            #https://en.wikipedia.org/wiki/GRS_80
             self.a = 6378137.  # semi-major axis [m]
             self.f = 1 / 298.257222100882711243  # flattening
             self.b = self.a * (1 - self.f)  # semi-minor axis
@@ -40,7 +41,8 @@ class Ellipsoid:
             self.b = 6051000.
             self.f = 0.
         else:
-            raise NotImplementedError('{} model not implemented, let us know and we will add it (or make a pull request)'.format(model))
+            raise NotImplementedError('''{} model not implemented, let us know
+            and we will add it (or make a pull request)'''.format(model))
 
 
 def get_radius_normal(lat_radians, ell):
@@ -88,6 +90,9 @@ def ecef2enu(x, y, z, lat0, lon0, h0, ell, deg):
 
 
 def uvw2enu(u, v, w, lat0, lon0, deg=True):
+    '''
+    uvw to enu
+    '''
     if deg:
         lat0 = radians(lat0)
         lon0 = radians(lon0)
@@ -138,7 +143,10 @@ def geodetic2ecef(lat, lon, alt, ell=None, deg=True):
 
     return x, y, z
 
-def enu2uvw(east, north, up, lat0, lon0, deg = True):
+def enu2uvw(east, north, up, lat0, lon0, deg=True):
+    '''
+    enu to uvw
+    '''
     if deg:
         lat0 = radians(lat0)
         lon0 = radians(lon0)
@@ -151,7 +159,7 @@ def enu2uvw(east, north, up, lat0, lon0, deg = True):
 
     return u, v, w
 
-def enu2ecef(e1, n1, u1, lat0, lon0, h0, deg, ell = None):
+def enu2ecef(e1, n1, u1, lat0, lon0, h0, deg, ell=None):
     """
     ENU to ECEF
     inputs:
@@ -219,7 +227,8 @@ def ecef2geodetic(x, y, z, ell=None, deg=True):
     Beta = arctan(huE / u * z / hypot(x, y))
 
     # eqn. 13
-    eps = ((ell.b * u - ell.a * huE + E**2) * sin(Beta)) / (ell.a * huE * 1 / cos(Beta) - E**2 * cos(Beta))
+    eps = ((ell.b * u - ell.a * huE + E**2) * sin(Beta)) / \
+        (ell.a * huE * 1 / cos(Beta) - E**2 * cos(Beta))
 
     Beta += eps
 # %% final output
@@ -232,5 +241,4 @@ def ecef2geodetic(x, y, z, ell=None, deg=True):
 
     if deg:
         return degrees(lat), degrees(lon), alt
-    else:
-        return lat, lon, alt  # radians
+    return lat, lon, alt  # radians

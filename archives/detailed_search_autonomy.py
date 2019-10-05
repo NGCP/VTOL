@@ -35,19 +35,19 @@ def xbee_callback(message, autonomyToCV):
             acknowledge(address, msg["id"], autonomyToCV)
 
         elif msg_type == "pause":
-            autonomy.pause_mission = True
+            autonomy.PAUSE_MISSION = True
             acknowledge(address, msg["id"], autonomyToCV)
 
         elif msg_type == "resume":
-            autonomy.pause_mission = False
+            autonomy.PAUSE_MISSION = False
             acknowledge(address, msg["id"], autonomyToCV)
 
         elif msg_type == "stop":
-            autonomy.stop_mission = True
+            autonomy.STOP_MISSION = True
             acknowledge(address, msg["id"], autonomyToCV)
 
         elif msg_type == "ack":
-            autonomy.ack_id = msg["ackid"]
+            autonomy.ACK_ID = msg["ackid"]
 
         else:
             bad_msg(address, "Unknown message type: \'" + msg_type + "\'", autonomyToCV)
@@ -163,7 +163,7 @@ def detailed_search_adds_mission(configs, vehicle):
     cmds.upload()
 
 
-def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timestamp, vehicle=None):
+def detailed_search_autonomy(configs, autonomyToCV, GCS_TIMESTAMP, CONNECTION_TIMESTAMP, vehicle=None):
     print("\n######################## STARTING DETAILED SEARCH AUTONOMY ########################")
     autonomy.configs = configs
 
@@ -176,8 +176,8 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
     else:
         comm_sim = None
         autonomy.xbee = setup_xbee()
-        autonomy.gcs_timestamp = gcs_timestamp
-        autonomy.connection_timestamp = connection_timestamp
+        autonomy.GCS_TIMESTAMP = GCS_TIMESTAMP
+        autonomy.CONNECTION_TIMESTAMP = CONNECTION_TIMESTAMP
         autonomy.xbee.add_data_received_callback(xbee_callback)
 
     # If detailed search was not role-switched from quick scan, connect to new vehicle and takeoff
@@ -206,8 +206,8 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
     vehicle.mode = VehicleMode("GUIDED")
 
     # Continuously fly to POIs
-    while not autonomy.stop_mission:
-        if not POI_queue.empty() and not autonomy.pause_mission:
+    while not autonomy.STOP_MISSION:
+        if not POI_queue.empty() and not autonomy.PAUSE_MISSION:
             poi = POI_queue.get()
 
             orbit_poi(vehicle, poi, configs)
@@ -232,7 +232,7 @@ def detailed_search_autonomy(configs, autonomyToCV, gcs_timestamp, connection_ti
             change_status("waiting")
 
             # Holds the copter in place if receives pause
-        if autonomy.pause_mission:
+        if autonomy.PAUSE_MISSION:
             if (configs["vehicle_type"] == "VTOL"):
                 vehicle.mode = VehicleMode("QHOVER")
             elif (configs["vehicle_type"] == "Quadcopter"):

@@ -1,6 +1,7 @@
 '''
 First thoughts on SLAM cv
 '''
+from dronekit import connect, VehicleMode
 import ssl
 import sys
 from time import time, sleep
@@ -8,14 +9,15 @@ from math import cos, sin, radians
 from threading import Thread
 import urllib.request
 import numpy as np
-from dronekit import connect, VehicleMode
 import cv2
 from simple_pid import PID
 from scipy.spatial import Delaunay # pylint: disable=no-name-in-module
-
-
+from shapely.geometry import Polygon, Point
 sys.path.append(".")
 sys.path.append("..")
+
+
+from autonomy import takeoff
 
 # Quick configs
 ALTITUDE = 10
@@ -85,8 +87,11 @@ def main():
     # TARGET_POSITION = (-35.3603678, 149.1678384)
     # sleep(40)
     # takeoff currently uses GPS
-
-    cv_stitch(vehicle)
+    import pprofile
+    profiler = pprofile.Profile()
+    with profiler:
+        cv_stitch(vehicle)
+    profiler.dump_stats("profiler_stats.txt")
 
 def get_image(lat, lng):
     '''Gets image of current lat long coorindates from google static maps'''
@@ -149,11 +154,14 @@ def cv_stitch(vehicle):
     global MISSES
     global POSITION_GUESS
 
+    point_img = np.zeros([5000, 5000])
+
     min_match_count = 10
     # Initiate SIFT detector
 
     orb = cv2.ORB_create(nfeatures=1000, scoreType=cv2.ORB_FAST_SCORE)
 
+    counter = 0
     flann_index_lsh = 6
     index_params = dict(
         algorithm=flann_index_lsh,
@@ -161,26 +169,34 @@ def cv_stitch(vehicle):
         key_size=12,  # 20
         multi_probe_level=1,
     )  # 2
+
     search_params = dict(checks=5)
     flann = cv2.FlannBasedMatcher(index_params, search_params)
 
     base_image = get_image(vehicle.location.global_relative_frame.lat,
                            vehicle.location.global_relative_frame.lon)
     map_kp, map_des = orb.detectAndCompute(base_image, None)
+    
+    s = base_image.shape
+    padding = .1
+    low = padding
+    high = 1 - low
+    image_bounds = [(s[1] * low, s[0] * low), (s[1] * high, s[0] * low), (s[1]  * high, s[0] * high), (s[1] * low, s[0] * high)]
+    seen_polygon = Polygon()
 
-    x_bound = 0
-
-    while True:
+    while counter < 100:
+        counter += 1
+        # fetch key points from google image
         img = get_image(vehicle.location.global_relative_frame.lat,
                         vehicle.location.global_relative_frame.lon)
         cur_kp, cur_des = orb.detectAndCompute(img, None)
-        cv2.waitKey(5)
-        keys_within_region = [i for i, v in enumerate(map_kp) if
-                              v.pt[0] >= POSITION_GUESS[0] - FRAME_SIZE[0] / 2 and
-                              v.pt[0] <= POSITION_GUESS[0] + FRAME_SIZE[0] * 1.5 and
-                              v.pt[1] >= POSITION_GUESS[1] - FRAME_SIZE[1] / 2 and
-                              v.pt[1] <= POSITION_GUESS[1] + FRAME_SIZE[1] * 1.5]
+        # gathers map keys within frame size
         if MISSES < 3:
+            keys_within_region = [i for i, v in enumerate(map_kp) if
+                v.pt[0] >= POSITION_GUESS[0] - FRAME_SIZE[0] / 2 and
+                v.pt[0] <= POSITION_GUESS[0] + FRAME_SIZE[0] * 1.5 and
+                v.pt[1] >= POSITION_GUESS[1] - FRAME_SIZE[1] / 2 and
+                v.pt[1] <= POSITION_GUESS[1] + FRAME_SIZE[1] * 1.5]
             #Use map des within the bounding box
             relevant_map_des = np.array([map_des[i] for i in keys_within_region])
             relevant_map_kp = [map_kp[i] for i in keys_within_region]
@@ -188,12 +204,13 @@ def cv_stitch(vehicle):
             #Use all map des
             relevant_map_des = map_des
             relevant_map_kp = map_kp
+
         matches = flann.knnMatch(relevant_map_des, cur_des, k=2)
         # store all the good matches as per Lowe's ratio test.
         good = []
         try:
             for match_a, match_b in matches:
-                if match_a.distance < 0.7*match_b.distance:
+                if match_a.distance < 0.7 * match_b.distance:
                     good.append(match_a)
         except ValueError:
             print('err')
@@ -203,64 +220,43 @@ def cv_stitch(vehicle):
             src_pts = np.float32([cur_kp[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
             dst_pts = np.float32([relevant_map_kp[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
             m_matrix, _ = cv2.findHomography(src_pts, dst_pts, cv2.LMEDS, 5.0)
-            min_x = np.matmul(m_matrix, [cur_kp[0].pt[0], cur_kp[0].pt[1], 1])[0]
             
             im_points=cv2.drawKeypoints(img, cur_kp, None)
             cv2.imshow('test', im_points)
+            cv2.waitKey(5)
 
-            for key in cur_kp:
-                key.pt = tuple(np.matmul(m_matrix, [key.pt[0], key.pt[1], 1])[:2])
-                min_x = min([min_x, key.pt[0]])
+            for kp in cur_kp:
+                kp.pt = tuple(np.matmul(m_matrix, kp.pt + (1,))[:2])
 
-            new_pts = [i for i, v in enumerate(cur_kp) if v.pt[0] < x_bound]
-            
+            # estimae new position
+            new_guess = np.matmul(m_matrix, [img.shape[1] / 2, img.shape[0] / 2, 1.0])[:2]
 
-            new_guess = np.matmul(m_matrix, [0.0, 0.0, 1.0])[:2]
-            if((new_guess[0] - POSITION_GUESS[0]) ** 2 + (new_guess[1] - POSITION_GUESS[1]) ** 2 < 1600000):
-                POSITION_GUESS = new_guess
-                print("matching", len(cur_des), 'to', len(relevant_map_des), POSITION_GUESS)
+            # find points outside of already scanned region and within bounds
+            bounds = Polygon(list(map(lambda bound: np.matmul(m_matrix, bound + (1.0,))[:2], image_bounds)))
+            new_pts = [i for i, v in enumerate(cur_kp) if bounds.contains(Point(v.pt)) and not seen_polygon.contains(Point(v.pt))]
 
+            print("Found ", len(new_pts), new_guess)
+            POSITION_GUESS = new_guess
+
+            if seen_polygon.exterior is None or seen_polygon.exterior.distance(Point(new_guess)) < 100 and new_pts:
+                print('added new')
                 new_des = [cur_des[i] for i in new_pts]
                 new_kp = [cur_kp[i] for i in new_pts]
 
-                if new_pts:
-                    map_kp.extend(new_kp)
-                    map_des = np.append(map_des, new_des, axis=0)
-                    x_bound = min_x
-            else:
-                print("bad translation, not using")
+                for kp in new_kp:
+                    cv2.circle(point_img, (int(kp.pt[0]), int(kp.pt[1])), 10, 255, thickness=10)
+
+                cv2.imshow('points', cv2.resize(point_img, (500, 500)))
+
+                seen_polygon = seen_polygon.union(Polygon(bounds))
+
+                map_kp.extend(new_kp)
+                map_des = np.append(map_des, new_des, axis=0)
         else:
             print("Not enough matches are found - %d/%d" % (len(good), min_match_count))
             MISSES += 1
-        sleep(.5)
-        # print(POSITION_GUESS)
-
-def takeoff(vehicle, altitude):
-    '''Commands drone to take off by arming vehicle and flying to altitude'''
-    print("Pre-arm checks")
-    while not vehicle.is_armable:
-        print("Waiting for vehicle to initialize")
-        sleep(1)
-
-    print("Arming motors")
-    # Vehicle should arm in GUIDED mode
-    vehicle.mode = VehicleMode("GUIDED")
-    vehicle.armed = True
-
-    while not vehicle.armed:
-        print("Waiting to arm vehicle")
-        sleep(1)
-
-    print("Taking off")
-    vehicle.simple_takeoff(altitude)  # take off to altitude
-
-    # Wait until vehicle reaches minimum altitude
-    while vehicle.location.global_relative_frame.alt < altitude * 0.95:
-        print("Altitude: ", vehicle.location.global_relative_frame.alt)
-        sleep(1)
-
-    print("Reached target altitude")
-
+        
+        cv2.waitKey(5)
 
 def to_quaternion(roll=0.0, pitch=0.0, yaw=0.0):
     '''
