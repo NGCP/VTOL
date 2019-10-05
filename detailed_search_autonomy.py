@@ -20,7 +20,7 @@ POI_queue = queue.Queue()
 # Callback function for messages from GCS, parses JSON message and sets globals
 def xbee_callback(message, autonomyToCV):
     address = message.remote_device.get_64bit_addr()
-    msg = json.loads(message.data.decode("utf8"))
+    msg = json.loads(message.data)
     print("Received data from %s: %s" % (address, msg))
 
     try:

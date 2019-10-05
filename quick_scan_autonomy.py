@@ -21,10 +21,10 @@ comm_sim_on = False
 class SearchArea:
     def __init__(self, tl, tr, bl, br):
 	# tl-br are tuples containing the coordinates of rectangle corners
-	self.tl = tl
-	self.tr = tr
-	self.bl = bl
-	self.br = br
+        self.tl = tl
+        self.tr = tr
+        self.bl = bl
+        self.br = br
 
     def __str__(self):
         return "SearchArea(" + \
@@ -43,7 +43,7 @@ def xbee_callback(compressed_message, autonomyToCV):
     else:
         message = msgpack.unpackb(compressed_message)
     address = message.remote_device.get_64bit_addr()
-    msg = json.loads(message.data.decode("utf8"))
+    msg = json.loads(message.data)
     print("Received data from %s: %s" % (address, msg))
 
     try:
@@ -240,7 +240,6 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
     # Starts the update thread
     update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"], autonomyToCV))
     update.start()
-
     # Send mission to vehicle
     quick_scan_adds_mission(configs, vehicle, waypoints[1])
 
@@ -270,20 +269,6 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
 
     set_autonomytocv_stop(autonomyToCV, True)
 
-    # Switch to detailed search if role switching is enabled
-    if configs["quick_scan_specific"]["role_switching"]:
-        autonomy.mission_completed = True
-        update.join()
-        detailed_search(vehicle)
-    else:
-        land(configs, vehicle)
-
-        # Ready for a new mission
-        autonomy.mission_completed = True
-
-        # Wait for update thread to end
-        update.join()
-
     # Wait for comm simulation thread to end
     if comm_sim:
         comm_sim.join()
@@ -291,6 +276,20 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
         autonomyToCV.xbeeMutex.acquire()
         autonomy.xbee.close()
         autonomyToCV.xbeeMutex.release()
+
+    # Switch to detailed search if role switching is enabled
+    if configs["quick_scan_specific"]["role_switching"]:
+        autonomy.mission_completed = True
+        update.join()
+        detailed_search(vehicle)
+    else:
+        # Ready for a new mission
+        autonomy.mission_completed = True
+
+        # Wait for update thread to end
+        update.join()
+
+        land(configs, vehicle)
 
 def set_autonomytocv_stop(autonomyToCV, stop):
     autonomyToCV.stopMutex.acquire()

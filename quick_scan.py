@@ -71,10 +71,6 @@ def quick_scan(gcs_timestamp = 0, connection_timestamp = 0):
         autonomyToCV.xbeeMutex.release()
 
 
-    # Close output file
-    if not autonomy.outfile.closed:
-        autonomy.outfile.close()
-
 
 if __name__ == "__main__":
     quick_scan()
