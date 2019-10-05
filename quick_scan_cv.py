@@ -7,7 +7,6 @@ from os import listdir
 ballTargetImgIndex = 0
 
 def quick_scan_cv(configs, autonomyToCV, gcs_timestamp, connection_timestamp):
-    return None
     print("Starting Quickscan CV")
 
     #Set output image folder based on simulation attribute in configs
