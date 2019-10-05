@@ -204,11 +204,10 @@ def acknowledge(address, ackid, autonomyToCV):
         "id": new_msg_id(),
         "ackid": ackid
     }
-    xbee_address = XBee64BitAddress.from_hex_string(address)
     # xbee is None if comms is simulated
     if xbee:
         # Instantiate a remote XBee device object to send data.
-        send_xbee = RemoteXBeeDevice(xbee, xbee_address)
+        send_xbee = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
         packed_data = msgpack.packb(ack)
         autonomyToCv.xbeeMutex.acquire()
         xbee.send_data(send_xbee, packed_data)
@@ -230,10 +229,9 @@ def bad_msg(address, problem, autonomyToCV):
         "error": problem
     }
     # xbee is None if comms is simulated
-    xbee_address = XBee64BitAddress.from_hex_string(address)
     if xbee:
         # Instantiate a remote XBee device object to send data.
-        send_xbee = RemoteXBeeDevice(xbee, xbee_address)
+        send_xbee = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
         packed_data = msgpack.packb(msg)
         autonomyToCV.xbeeMutex.acquire()
         xbee.send_data(send_xbee, packed_data)
@@ -251,8 +249,7 @@ def new_msg_id():
 
 def send_msg(address, msg):
     # Instantiate a remote XBee device object to send data.
-    xbee_address = XBee64BitAddress.from_hex_string(address)
-    send_xbee = RemoteXBeeDevice(xbee, xbee_address)
+    send_xbee = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
     xbee.send_data(send_xbee, json.dumps(msg))
 
 
@@ -322,8 +319,7 @@ def update_thread(vehicle, address, autonomyToCV):
 # Continuously sends message to given address until acknowledgement message is recieved with the corresponding ackid.
 def send_till_ack(address, msg, msg_id):
     # Instantiate a remote XBee device object to send data.
-    xbee_address = XBee64BitAddress.from_hex_string(address)
-    send_xbee = RemoteXBeeDevice(xbee, xbee_address)
+    send_xbee = RemoteXBeeDevice(xbee, XBee64BitAddress.from_hex_string(address))
     packed_data = bytearray(msgpack.packb(msg))
     while ack_id != msg_id:
         xbee.send_data(send_xbee, packed_data)
