@@ -27,6 +27,9 @@ class SearchArea:
                str(self.rad2) + ")"
 
 # Callback function for messages from GCS, parses JSON message and sets globals
+start_mission = False
+pause_mission = False
+stop_mission = False
 def xbee_callback(message):
     global start_mission
     global pause_mission
@@ -44,18 +47,22 @@ def xbee_callback(message):
             area = msg["searchArea"]
             search_area = SearchArea(area["center"], area["rad1"], area["rad2"])
             autonomy.start_mission = True
+            start_mission = True
             acknowledge(address, msg_type)
 
         elif msg_type == "pause":
             autonomy.pause_mission = True
+            pause_mission = True
             acknowledge(address, msg_type)
 
         elif msg_type == "resume":
             autonomy.pause_mission = False
+            pause_mission = False
             acknowledge(address, msg_type)
 
         elif msg_type == "stop":
             autonomy.stop_mission = True
+            stop_mission = True
             acknowledge(address, msg_type)
 
         else:
@@ -201,6 +208,21 @@ def quick_scan_autonomy(configs, radio):
     if (configs["flight_mode"] == "AUTO"):
         while vehicle.commands.next != vehicle.commands.count:
             # TODO monitor pause, resume, stop variables
+            if stop_mission and (vehicle.mode.name != 'RTL'):
+                #Stopping if haven't done so
+                vehicle.mode = VehicleMode('RTL')
+                print('ABORT')
+                break
+
+            if pause_mission and vehicle.mode.name != 'BRAKE':
+                # Pausing mission
+                vehicle.mode = VehicleMode('BRAKE')
+                print('Mission paused')
+
+            elif (not pause_mission) and (vehicle.mode.name == 'BRAKE'):
+                vehicle.mode = 'AUTO'
+                print('Resuming mission')
+
             print(vehicle.location.global_frame)
             time.sleep(1)
     else:
