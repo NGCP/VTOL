@@ -57,27 +57,29 @@ def setup_vehicle(configs):
         if configs["vehicle_type"] == "VTOL":
             # If running a simulated VTOL on vagrant, connect to it via TCP
             # Port 5763 must be forwarded on vagrant
-            connection_string = "tcp:127.0.0.1:5763"
+            con_str = "tcp:127.0.0.1:5763"
         elif configs["vehicle_type"] == "Quadcopter":
             sitl = dronekit_sitl.start_default(lat=35.328423, lon=-120.752505)
-            connection_string = sitl.connection_string()
+            con_str = sitl.con_str()
     else:
         if configs["3dr_solo"]:
-            connection_string = "udpin:0.0.0.0:14550"
+            con_str = "udpin:0.0.0.0:14550"
         else:
             # connect to pixhawk via MicroUSB
             # if we switch back to using the telem2 port, use "/dev/serial0"
-            connection_string = "/dev/ttyACM0"
+            con_str = "/dev/ttyACM0"
 
     if configs["vehicle_simulated"]:
-        veh = connect(connection_string, wait_ready=True)
-    veh = connect(connection_string, baud=configs["baud_rate"], wait_ready=True)
-    vtol = VTOL(veh)
-    vtol.configs = configs
-    return vtol
+        veh = connect(con_str, wait_ready=True, vehicle_class=VTOL)
+    else:
+        veh = connect(con_str, baud=configs["baud_rate"], wait_ready=True, vehicle_class=VTOL)
+    veh.configs = configs
+    veh.takeoff(10)
 
 class VTOL(Vehicle):
     ''' VTOL basic state isolated'''
+    def __init__(self, *args): #pylint: disable=useless-super-delegation
+        super(VTOL, self).__init__(*args)
 
     # State, updated by XBee callback function
     configs = None
@@ -320,3 +322,6 @@ class VTOL(Vehicle):
         while self.ack_id != msg_id:
             self.xbee.send_data(send_xbee, packed_data)
             time.sleep(1)
+
+
+setup_vehicle({'vehicle_simulated': True, 'vehicle_type': 'Quadcopter', 'baud_rate': 1200})
