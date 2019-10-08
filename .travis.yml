@@ -8,8 +8,6 @@ python:
 dist: xenial
 install:
   - pip3 install tox-travis
-  - pip3 install pathlib2
-  - pip install pathlib2
-
+  
 script:
   - tox
