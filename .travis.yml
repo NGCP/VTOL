@@ -4,7 +4,7 @@ branches:
     - add-travis
 language: python
 python:
-  - '3.6'
+  - '3.4'
 install:
   - pip3 install tox-travis
   - pip3 install pathlib2
