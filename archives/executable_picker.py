@@ -6,10 +6,8 @@ corresponding VTOL program (quick scan, detailed search, guide) based on the sta
 import sys
 import json
 import time
-from quick_scan import quick_scan
-from detailed_search import detailed_search
 from util import parse_configs, new_output_file
-from autonomy import setup_xbee, bad_msg, send_till_ack
+from autonomy import VTOL
 import autonomy
 
 XBEE = None
@@ -17,6 +15,7 @@ GCS_TIMESTAMP = 0
 CONNECTION_TIMESTAMP = 0
 
 def xbee_callback(message):
+    '''callback for xbee'''
     global GCS_TIMESTAMP
     global CONNECTION_TIMESTAMP
 
@@ -31,22 +30,15 @@ def xbee_callback(message):
             GCS_TIMESTAMP = msg['clocktime']
             CONNECTION_TIMESTAMP = time.time()
             autonomy.ACK_ID = msg["ackid"]
-            
+
         elif msg_type == "start":
             # detach this callback so that the corresponding role can use its own callback
             XBEE.del_data_received_callback(xbee_callback)
             XBEE.close()
 
             job_type = msg['jobType']
-            if job_type == "quickScan":
-                quick_scan(GCS_TIMESTAMP = GCS_TIMESTAMP, CONNECTION_TIMESTAMP = CONNECTION_TIMESTAMP)
-            elif job_type == "detailedSearch":
-                detailed_search(GCS_TIMESTAMP = GCS_TIMESTAMP, CONNECTION_TIMESTAMP = CONNECTION_TIMESTAMP)
-            elif job_type == "guide":
-                # TODO
-                pass
-            else:
-                bad_msg(address, "Unknown jobType: \'" + job_type + "\'")
+            # TODO: Execute job
+            bad_msg(address, "Unknown jobType: \'" + job_type + "\'")
 
         else:
             bad_msg(address, "Unknown message type: \'" + msg_type + "\'")

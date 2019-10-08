@@ -20,7 +20,7 @@ from simple_pid import PID
 
 
 sys.path.append(".")
-sys.path.append("..")
+sys.path.append("..") 
 from conversions import geodetic2ecef, ecef2ned # pylint: disable=wrong-import-position
 
 # Quick configs

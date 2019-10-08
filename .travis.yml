@@ -8,7 +8,6 @@ python:
 install:
   - pip3 install pymavlink
   - pip3 install pyserial
-  - pip3 install typing
   - pip3 install digi-xbee
   - pip3 install opencv-python
   - pip3 install msgpack
@@ -16,3 +15,4 @@ install:
   - pip3 install dronekit
 
 script:
+  - tox

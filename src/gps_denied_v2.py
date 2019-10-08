@@ -217,8 +217,10 @@ class GpsDeniedVtol(VTOL):
 
             if len(good) > min_match_count:
                 self.misses = 0
+                 #pylint: disable=too-many-function-args
                 src_pts = np.float32([cur_kp[m.trainIdx].pt for m in good]) \
                     .reshape(-1, 1, 2)
+                #pylint: disable=too-many-function-args
                 dst = np.float32([relevant_map_kp[m.queryIdx].pt for m in good]) \
                     .reshape(-1, 1, 2)
                 m_matrix, _ = cv2.findHomography(src_pts, dst, cv2.LMEDS, 5.0)
@@ -249,7 +251,8 @@ class GpsDeniedVtol(VTOL):
                     new_kp = [cur_kp[i] for i in new_pts]
 
                     for key in new_kp:
-                        cv2.circle(point_img, (int(key.pt[0]), int(key.pt[1])), 10, 255, thickness=10)
+                        cv2.circle(point_img, (int(key.pt[0]), int(key.pt[1])), \
+                            10, 255, thickness=10)
 
                     cv2.imshow('points', cv2.resize(point_img, (500, 500)))
 
@@ -261,24 +264,6 @@ class GpsDeniedVtol(VTOL):
                 print("Not enough matches are found - %d/%d" % (len(good), min_match_count))
                 self.misses += 1
             cv2.waitKey(5)
-
-    def to_quaternion(self, roll=0.0, pitch=0.0, yaw=0.0):
-        '''
-        Convert degrees to quaternions
-        '''
-        t0_val = cos(radians(yaw * 0.5))
-        t1_val = sin(radians(yaw * 0.5))
-        t2_val = cos(radians(roll * 0.5))
-        t3_val = sin(radians(roll * 0.5))
-        t4_val = cos(radians(pitch * 0.5))
-        t5_val = sin(radians(pitch * 0.5))
-
-        w_val = t0_val * t2_val * t4_val + t1_val * t3_val * t5_val
-        x_val = t0_val * t3_val * t4_val - t1_val * t2_val * t5_val
-        y_val = t0_val * t2_val * t5_val + t1_val * t3_val * t4_val
-        z_val = t1_val * t2_val * t4_val - t0_val * t3_val * t5_val
-
-        return [w_val, x_val, y_val, z_val]
 
 
     def send_attitude_target(self, \
@@ -307,7 +292,7 @@ class GpsDeniedVtol(VTOL):
             1,  # Target system
             1,  # Target component
             0b00000000 if use_yaw_rate else 0b00000100,
-            self.to_quaternion(roll_angle, pitch_angle, yaw_angle),  # Quaternion
+            to_quaternion(roll_angle, pitch_angle, yaw_angle),  # Quaternion
             0,  # Body roll rate in radian
             0,  # Body pitch rate in radian
             radians(yaw_rate),  # Body yaw rate in radian/second
@@ -342,5 +327,24 @@ class GpsDeniedVtol(VTOL):
             sleep(0.1)
         # Reset attitude, or it will persist for 1s more due to the timeout
         self.send_attitude_target(0, 0, 0, 0, True, thrust)
+
+
+def to_quaternion(roll=0.0, pitch=0.0, yaw=0.0):
+    '''
+    Convert degrees to quaternions
+    '''
+    t0_val = cos(radians(yaw * 0.5))
+    t1_val = sin(radians(yaw * 0.5))
+    t2_val = cos(radians(roll * 0.5))
+    t3_val = sin(radians(roll * 0.5))
+    t4_val = cos(radians(pitch * 0.5))
+    t5_val = sin(radians(pitch * 0.5))
+
+    w_val = t0_val * t2_val * t4_val + t1_val * t3_val * t5_val
+    x_val = t0_val * t3_val * t4_val - t1_val * t2_val * t5_val
+    y_val = t0_val * t2_val * t5_val + t1_val * t3_val * t4_val
+    z_val = t1_val * t2_val * t4_val - t0_val * t3_val * t5_val
+
+    return [w_val, x_val, y_val, z_val]
 
 main()
