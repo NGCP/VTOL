@@ -60,7 +60,7 @@ def setup_vehicle(configs):
             con_str = "tcp:127.0.0.1:5763"
         elif configs["vehicle_type"] == "Quadcopter":
             sitl = dronekit_sitl.start_default(lat=35.328423, lon=-120.752505)
-            con_str = sitl.con_str()
+            con_str = sitl.connection_string()
     else:
         if configs["3dr_solo"]:
             con_str = "udpin:0.0.0.0:14550"
@@ -74,7 +74,6 @@ def setup_vehicle(configs):
     else:
         veh = connect(con_str, baud=configs["baud_rate"], wait_ready=True, vehicle_class=VTOL)
     veh.configs = configs
-    veh.takeoff(10)
 
 class VTOL(Vehicle):
     ''' VTOL basic state isolated'''
@@ -123,6 +122,33 @@ class VTOL(Vehicle):
                 print(ex)
                 print("Connect the XBee radio!")
                 time.sleep(5)
+
+    def recieve(self):
+        '''Instantiate XBee device'''
+        try:
+            self.xbee.flush_queues()
+            print("Waiting for data...\n")
+            while True:
+                xbee_message = self.xbee.read_data()
+                if xbee_message is not None:
+                    print("Received '%s' from %s" % (xbee_message.data.decode(), \
+                        xbee_message.remote_self.xbee.get_64bit_addr()))
+        finally:
+            if self.xbee is not None and self.xbee.is_open():
+                self.xbee.close()
+
+
+    def send(self, mac_address, data):
+        '''sends data over xbee'''
+        remote_device = RemoteXBeeDevice(self.xbee, XBee64BitAddress.from_hex_string(mac_address))
+
+        if remote_device is None:
+            print("Invalid MAC Address")
+            return
+
+        print("Sending '%s' to %s" % (data, remote_device.get_64bit_addr()))
+        self.xbee.send_data(remote_device, data)
+        print("Success")
 
 
     def start_auto_mission(self, configs):
@@ -322,6 +348,3 @@ class VTOL(Vehicle):
         while self.ack_id != msg_id:
             self.xbee.send_data(send_xbee, packed_data)
             time.sleep(1)
-
-
-setup_vehicle({'vehicle_simulated': True, 'vehicle_type': 'Quadcopter', 'baud_rate': 1200})

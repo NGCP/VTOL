@@ -1,7 +1,7 @@
+'''Old code, see gps_denied_v2 for more updated and linted version'''
 import cv2
 import numpy as np
 from math import sqrt, acos
-
 
 MATCH_COUNT = 10
 

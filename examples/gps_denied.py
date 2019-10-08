@@ -235,20 +235,20 @@ def calculate_pixel_location(camera, map_keys, map_descs):
     for _, (match, num) in enumerate(matches):
         if match.distance < 0.7 * num.distance:
             good_matches.append(match)
-
-    src_pts = np.float32([keys[match.queryIdx].pt for match in good_matches]).reshape(-1, 1, 2)
-    dst_pts = np.float32([map_keys[match.trainIdx].pt for match in good_matches]).reshape(
-        -1, 1, 2
-    )
+    src = [keys[match.queryIdx].pt for match in good_matches]
+    src_pts = np.float32(src.reshape(-1, 1, 2)) #pylint: disable=too-many-function-args
+    dst = [map_keys[match.trainIdx].pt for match in good_matches]
+    dst_pts = np.float32(dst).reshape(-1, 1, 2) #pylint: disable=too-many-function-args
 
     try:
         m_homography, _ = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 5.0)
         height, width = img.shape
-        pts = np.float32(
-            [[0, 0], [0, height - 1], [width - 1, height - 1], [width - 1, 0]]).reshape(-1, 1, 2)
+        pts = np.float32( #pylint: disable=too-many-function-args
+            [[0, 0], [0, height - 1], [width - 1, height - 1], [width - 1, 0]])\
+            .reshape(-1, 1, 2)
         dst = cv2.perspectiveTransform(pts, m_homography)
         map_points = cv2.perspectiveTransform(
-            np.float32([[width / 2.0, height / 2.0]]).reshape(-1, 1, 2), m_homography
+            np.float32([[width / 2.0, height / 2.0]]).reshape(-1, 1, 2), m_homography #pylint: disable=too-many-function-args
         )[0][0]
 
         # Vector of the upper edge
@@ -314,23 +314,22 @@ def take_picture(camera):
     '''Takes a picture using the cimulated camera or the connected camera'''
     if CV_SIMULATION:
         return cv_simulation()
-    else:
-        try:
-            global IMG_COUNTER # pylint: disable=global-statement
-            count = camera.get(cv2.CAP_PROP_FRAME_COUNT)
-            camera.set(cv2.CAP_PROP_POS_FRAMES, count - 1)
-            camera.grab()
-            _, img = camera.retrieve()
-            cv2.imwrite("solopics/" + str(IMG_COUNTER) + ".png", img)
-            crop_img = img[78:630, 270:1071]
-            IMG_COUNTER += 1
-            return crop_img
-        except KeyboardInterrupt:
-            raise
-        except TypeError:
-            # Try taking the picture again
-            sleep(1)
-            take_picture(camera)
+    try:
+        global IMG_COUNTER # pylint: disable=global-statement
+        count = camera.get(cv2.CAP_PROP_FRAME_COUNT)
+        camera.set(cv2.CAP_PROP_POS_FRAMES, count - 1)
+        camera.grab()
+        _, img = camera.retrieve()
+        cv2.imwrite("solopics/" + str(IMG_COUNTER) + ".png", img)
+        crop_img = img[78:630, 270:1071]
+        IMG_COUNTER += 1
+        return crop_img
+    # except KeyboardInterrupt:
+    #     raise
+    except TypeError:
+        # Try taking the picture again
+        sleep(1)
+        take_picture(camera)
 
 
 def euclidean_distance(x_initial, y_initial, x_final, y_final):
