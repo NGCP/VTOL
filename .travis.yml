@@ -6,14 +6,7 @@ language: python
 python:
   - '3.6'
 install:
-  - pip3 install pymavlink
-  - pip3 install pyserial
-  - pip3 install digi-xbee
-  - pip3 install opencv-python
-  - pip3 install msgpack
-  - pip3 install dronekit_sitl
-  - pip3 install dronekit
-  - pip install tox-travis
+  - pip3 install tox-travis
 
 script:
   - tox
