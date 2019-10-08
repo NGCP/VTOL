@@ -1,3 +1,4 @@
+pathlib2
 pylint
 msgpack
 numpy
@@ -15,4 +16,3 @@ gnureadline
 billiard
 numpy
 pyparsing
-pathlib2
