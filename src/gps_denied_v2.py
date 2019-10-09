@@ -13,7 +13,7 @@ from simple_pid import PID
 from shapely.geometry import Polygon, Point
 from dronekit import connect
 from dotenv import load_dotenv
-from autonomy import VTOL
+from vtol import VTOL
 
 load_dotenv()
 

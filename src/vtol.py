@@ -45,6 +45,7 @@ def setup_vehicle(configs):
         veh = connect(con_str, baud=configs["baud_rate"], wait_ready=True, vehicle_class=VTOL)
     veh.configs = configs
     veh.setup_coms()
+    return veh
 
 class VTOL(Vehicle):
     ''' VTOL basic state isolated'''
@@ -181,9 +182,3 @@ class VTOL(Vehicle):
             self.coms.send_till_ack(address, update_message, update_message['id'])
             time.sleep(1)
         self.change_status("ready")
-
-
-if __name__ == '__main__':
-    with open('configs.json', 'r') as data:
-        CONFIGS = json.load(data)
-        setup_vehicle(CONFIGS)
