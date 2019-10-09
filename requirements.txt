@@ -1,12 +1,9 @@
-pathlib2
-pylint
 msgpack
 numpy
 opencv-python
 simple_pid
 Shapely
 dronekit
-python-dotenv
 dronekit_sitl
 digi-xbee
 pyserial

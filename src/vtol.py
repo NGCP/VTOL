@@ -1,6 +1,5 @@
 '''Automous tools for VTOL'''
 import time
-import json
 from dronekit import connect, VehicleMode, Vehicle
 from pymavlink import mavutil
 import dronekit_sitl
@@ -98,7 +97,7 @@ class VTOL(Vehicle):
         self.commands.next = 0
 
 
-    def takeoff(self, altitude):
+    def takeoff(self):
         '''Commands drone to take off by arming vehicle and flying to altitude'''
         print("Pre-arm checks")
         while not self.is_armable:
@@ -115,6 +114,7 @@ class VTOL(Vehicle):
             time.sleep(1)
 
         print("Taking off")
+        altitude = self.configs['altitude']
         self.simple_takeoff(altitude)  # take off to altitude
 
         # Wait until vehicle reaches minimum altitude
