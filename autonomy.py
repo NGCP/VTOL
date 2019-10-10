@@ -42,7 +42,6 @@ class Tee(object):
         for f in self.files:
             f.flush()
 
-
 # Dummy message class for comm simulation thread to be compatible with xbee_callback function
 class DummyMessage:
     def __init__(self, data=None):
@@ -73,7 +72,9 @@ def setup_vehicle(configs):
         if (configs["3dr_solo"]):
             connection_string = "udpin:0.0.0.0:14550"
         else:
-            connection_string = "/dev/serial0"
+            # connect to pixhawk via MicroUSB
+            # if we switch back to using the telem2 port, use "/dev/serial0"
+            connection_string = "/dev/ttyACM0"
 
     if (configs["vehicle_simulated"]):
         return connect(connection_string, wait_ready=True)
@@ -189,7 +190,7 @@ def land(configs, vehicle):
     while not vehicle.location.global_relative_frame.alt < 1.0:
         print("Altitude: " + str(vehicle.location.global_relative_frame.alt))
         time.sleep(1)
-    
+
     time.sleep(10)
     vehicle.close()
 
