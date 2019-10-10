@@ -68,7 +68,7 @@ def detailed_search(vehicle = None, gcs_timestamp = 0, connection_timestamp = 0)
 
     # Close output file
     #if not autonomy.outfile.closed:
-#        autonomy.outfile.close()
+        autonomy.outfile.close()
 
 if __name__ == "__main__":
     detailed_search()

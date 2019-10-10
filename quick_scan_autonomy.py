@@ -206,6 +206,7 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
         comm_sim_on = True
         comm_sim = Thread(target=comm_simulation, args=(configs["quick_scan_specific"]["comms_simulated"]["comm_sim_file"], xbee_callback, autonomyToCV))
         comm_sim.start()
+        comm_sim.join()
     # Otherwise, set up XBee device and add callback
     else:
         comm_sim = None
@@ -240,6 +241,8 @@ def quick_scan_autonomy(configs, autonomyToCV, gcs_timestamp, connection_timesta
     # Starts the update thread
     update = Thread(target=update_thread, args=(vehicle, configs["mission_control_MAC"], autonomyToCV))
     update.start()
+    update.join()
+
     # Send mission to vehicle
     quick_scan_adds_mission(configs, vehicle, waypoints[1])
 
