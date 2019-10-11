@@ -1,1 +1,0 @@
-./simulator/arducopter -M Quad 

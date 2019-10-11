@@ -1,8 +1,10 @@
 {
   "vehicle_type": "Quadcopter",
+  
   "vehicle_id": 1,
   "vehicle_simulated": true,
   "coms_simulated": true,
+  "comm_sim_file": "comm_sim_example.json",
   "3dr_solo": false,
   "cv_simulated": {
     "toggled_on": true,

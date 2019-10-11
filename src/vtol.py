@@ -1,8 +1,10 @@
 '''Automous tools for VTOL'''
 import time
+import json
 from dronekit import connect, VehicleMode, Vehicle
 from pymavlink import mavutil
 import dronekit_sitl
+from coms import Coms
 
 class Tee():
     '''Writes to all file objects'''
@@ -46,6 +48,7 @@ def setup_vehicle(configs):
     veh.setup_coms()
     return veh
 
+
 class VTOL(Vehicle):
     ''' VTOL basic state isolated'''
     def __init__(self, *args): #pylint: disable=useless-super-delegation
@@ -63,10 +66,18 @@ class VTOL(Vehicle):
     MISSION_COMPLETED = False
     coms = None
 
+    # pylint: disable=no-self-use
+    def coms_callback(self, message, _):
+        '''callback for radio messages'''
+        # TODO respond to xbee messagge
+        data = json.loads(message.data)
+        print(data['type'])
+
     def setup_coms(self):
         '''sets up communication radios'''
         # TODO set up coms and callback
-        # self.coms = Coms(self.configs)
+        print('Initializing Coms')
+        self.coms = Coms(self.configs, self.coms_callback)
 
 
     def start_auto_mission(self):
