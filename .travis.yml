@@ -4,17 +4,10 @@ branches:
     - add-travis
 language: python
 python:
-  - '3.6'
+  - '3.7'
+dist: xenial
 install:
-  - pip3 install pymavlink
-  - pip3 install pyserial
-  - pip3 install typing
-  - pip3 install digi-xbee
-  - pip3 install opencv-python
-  - pip3 install msgpack
-  - pip3 install dronekit_sitl
-  - pip3 install dronekit
-
+  - pip3 install tox-travis
+  
 script:
-  - python3 tests/quick_scan_tests.py
-  - python3 tests/detailed_search_tests.py
+  - tox

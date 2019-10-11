@@ -15,7 +15,7 @@ ignore-patterns=
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
-#init-hook=
+init-hook='import sys; sys.path.append(".")'
 
 # Use multiple processes to speed up Pylint.
 jobs=1
@@ -142,7 +142,7 @@ enable=c-extension-no-member
 # respectively contain the number of errors / warnings messages and the total
 # number of statements analyzed. This is used by the global evaluation report
 # (RP0004).
-evaluation=10.0 - ((float(5 * error + warning + refactor + convention) / statement) * 10)
+# evaluation=
 
 # Template used to display messages. This is a python new-style format string
 # used to format the message information. See doc for all details
@@ -204,7 +204,6 @@ spelling-store-unknown-words=no
 # List of note tags to take in consideration, separated by a comma.
 notes=FIXME,
       XXX,
-      TODO
 
 
 [TYPECHECK]
@@ -511,7 +510,7 @@ max-attributes=7
 max-bool-expr=5
 
 # Maximum number of branch for function / method body
-max-branches=12
+max-branches=14
 
 # Maximum number of locals for function / method body
 max-locals=50
@@ -526,10 +525,10 @@ max-public-methods=20
 max-returns=6
 
 # Maximum number of statements in function / method body
-max-statements=50
+max-statements=60
 
 # Minimum number of public methods for a class (see R0903).
-min-public-methods=2
+min-public-methods=0
 
 
 [EXCEPTIONS]

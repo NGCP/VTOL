@@ -1,7 +1,10 @@
 {
   "vehicle_type": "Quadcopter",
+  
   "vehicle_id": 1,
   "vehicle_simulated": true,
+  "coms_simulated": true,
+  "comm_sim_file": "comm_sim_example.json",
   "3dr_solo": false,
   "cv_simulated": {
     "toggled_on": true,
@@ -11,25 +14,5 @@
   "baud_rate": 57600,
   "altitude": 10,
   "air_speed": 10,
-  "waypoint_tolerance": 3,
-  "orbit_number": 1,
-  "radius": 2,
-  "d_theta_rad": 0.392699,
-  "quick_scan_specific": {
-    "role_switching": false,
-    "quick_scan_images": "./quick_scan_images/",
-    "rad_threshold" : 0.174533,
-    "demo": false,
-    "comms_simulated": {
-      "toggled_on": true,
-      "comm_sim_file": "comm_sim_quick_scan.json"
-    }
-  },
-  "detailed_search_specific": {
-    "comms_simulated": {
-      "toggled_on": true,
-      "comm_sim_file": "comm_sim_detailed_search.json"
-    },
-    "poi_scan_altitude": 5
-  }
+  "waypoint_tolerance": 3
 }

@@ -1,0 +1,27 @@
+[
+    {
+        "time": 45.0,
+        "message": {
+            "type":"addMission",
+            "missionInfo":{"lat":35.32848, "lng": -120.75259},
+            "id": 0}
+    },
+    {
+        "time": 80.0,
+        "message": {
+            "type": "pause",
+            "id": 0}
+    },
+    {
+        "time": 81.0,
+        "message": {
+            "type": "resume",
+            "id":0}
+    },
+    {
+        "time": 100.0,
+        "message": {
+            "type": "stop",
+            "id": 0}
+    }
+]

@@ -1,0 +1,14 @@
+msgpack
+numpy
+opencv-python
+simple_pid
+Shapely
+dronekit
+dronekit_sitl
+digi-xbee
+pyserial
+pymavlink
+gnureadline
+billiard
+numpy
+pyparsing
