@@ -12,4 +12,7 @@ class XYSortedList:
         idx = self.x_sorted_list.searchsorted(x)
         np.concatenate((self.x_sorted_list[:idx], x, self.x_sorted_list[idx:]))
         self.y_values.setdefault(x, []).append(y)
-        
+
+    # Returns a list of points in x, y range.
+    def poll_range(self, x_start, x_end, y_start, y_end):
+        pass
