@@ -179,5 +179,6 @@ class Coms():
                 curr_time = instr["time"]
                 time.sleep(curr_time - prev_time)  # waits for the next instruction
                 # Send message to xbee_callback
-                self.xbee_callback(DummyMessage(json.dumps(instr["message"])), self.mutex)
+                #deleting second argument 'self.mutex'
+                self.xbee_callback(DummyMessage(json.dumps(instr["message"])))
                 prev_time = curr_time
