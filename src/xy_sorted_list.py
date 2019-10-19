@@ -11,6 +11,5 @@ class XYSortedList:
         y = point[1]
         idx = self.x_sorted_list.searchsorted(x)
         np.concatenate((self.x_sorted_list[:idx], x, self.x_sorted_list[idx:]))
-        self.y_values[x] = y
-
-    
+        self.y_values.setdefault(x, []).append(y)
+        
