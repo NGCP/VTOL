@@ -5,74 +5,35 @@ import ssl
 import os
 from time import time, sleep
 from math import cos, sin, radians
-from threading import Thread
+# from threading import Thread
+import json
 import urllib.request
 import numpy as np
 import cv2
 from simple_pid import PID
 from shapely.geometry import Polygon, Point
-from dronekit import connect
+from dronekit import connect, VehicleMode
 from dotenv import load_dotenv
 from vtol import VTOL
 
 load_dotenv()
 
-def main():
-    '''set up gps denied vehicle for movement and cv'''
-    solo = False
-    altitude = 10
+def setup_vehicle(configs):
+    '''sets up gps denied vehicle'''
+    con_str = "tcp:127.0.0.1:5763"
+    veh = connect(con_str, wait_ready=True, vehicle_class=GpsDeniedVtol)
+    veh.configs = configs
+    # veh.setup_coms()
+    return veh
 
-    if solo:
-        connection_string = "udpin:0.0.0.0:14550"
-
-    else:
-        # Port 5763 must be forwarded on vagrant
-        connection_string = "tcp:127.0.0.1:5760"
-    vehicle = connect(connection_string, vehicle_class=GpsDeniedVtol)
-
-    vehicle.takeoff(altitude)
-
-    vehicle.target_position = (400, 0)
-
-    # position_thread = Thread(target=set_position, kwargs={'vehicle': vehicle})
-    # position_thread.daemon = True
-
-    # position_thread.start()
-    # while not reached_dest:
-    #     sleep(1)
-    # reached_dest = False
-    # target_position = (400, 400)
-    # while not reached_dest:
-    #     sleep(1)
-    # reached_dest = False
-    # target_position = (0, 400)
-    # while not reached_dest:
-    #     sleep(1)
-    # reached_dest = False
-    # target_position = (-35.3603678, 149.1678384)
-    # sleep(40)
-    # takeoff currently uses GPS
-    # import pprofile
-    # profiler = pprofile.Profile()
-    # with profiler:
-    # profiler.dump_stats("profiler_stats.txt")
 
 class GpsDeniedVtol(VTOL):
     '''encapsualtes variables and tools used for GPS denied navigation'''
 
-    def __init__(self, *args):
-        '''Initializes as vehicle'''
-        super(GpsDeniedVtol, self).__init__(*args)
-
-        cv_thread = Thread(target=self.cv_stitch)
-        # cv_thread.daemon = True
-
-        cv_thread.start()
-
     # Quick configs
     cv_simulation = False
     total_tilt = 25
-    target_position = None
+    target_position = (0, 0)
     reached_dest = False
 
     locating = True
@@ -104,7 +65,6 @@ class GpsDeniedVtol(VTOL):
         url = 'https://maps.googleapis.com/maps/api/staticmap?center=' + \
             '{},{}&zoom=20&size=600x300&maptype=satellite&key={}' \
             .format(lat, lng, os.getenv('google_maps_api_key'))
-        print(url)
         context = ssl._create_unverified_context()              # pylint: disable=protected-access
         resp = urllib.request.urlopen(url, context=context)
         image = np.asarray(bytearray(resp.read()), dtype="uint8")
@@ -121,6 +81,7 @@ class GpsDeniedVtol(VTOL):
         self.set_attitude(yaw_angle=0, duration=5)
         while True:
             print("Targeting", self.target_position)
+            targ = []
             targ = self.target_position
             x_pid = PID(self.POS_P, self.POS_I, self.POS_D, setpoint=targ[0])
             x_pid.sample_time = 0.33
@@ -180,8 +141,7 @@ class GpsDeniedVtol(VTOL):
         map_kp, map_des = orb.detectAndCompute(base_image, None)
 
         dim = base_image.shape
-        padding = .1
-        low = padding
+        low = .1
         high = 1 - low
         image_bounds = [(dim[1] * low, dim[0] * low), (dim[1] * high, dim[0] * low), \
             (dim[1] * high, dim[0] * high), (dim[1] * low, dim[0] * high)]
@@ -223,12 +183,14 @@ class GpsDeniedVtol(VTOL):
                 #pylint: disable=too-many-function-args
                 dst = np.float32([relevant_map_kp[m.queryIdx].pt for m in good]) \
                     .reshape(-1, 1, 2)
+
                 m_matrix, _ = cv2.findHomography(src_pts, dst, cv2.LMEDS, 5.0)
 
                 im_points = cv2.drawKeypoints(img, cur_kp, None)
                 cv2.imshow('test', im_points)
                 cv2.waitKey(5)
 
+                # translate points by m matrix
                 for key in cur_kp:
                     key.pt = tuple(np.matmul(m_matrix, key.pt + (1,))[:2])
 
@@ -260,6 +222,9 @@ class GpsDeniedVtol(VTOL):
 
                     map_kp.extend(new_kp)
                     map_des = np.append(map_des, new_des, axis=0)
+
+                    # map_kp = cur_kp
+                    # map_des = cur_des
             else:
                 print("Not enough matches are found - %d/%d" % (len(good), min_match_count))
                 self.misses += 1
@@ -299,6 +264,11 @@ class GpsDeniedVtol(VTOL):
             thrust,  # Thrust
         )
         self.send_mavlink(msg)
+
+    def set_mode(self, mode):
+        '''sets the vehicle's mode'''
+        self.mode = VehicleMode(mode)
+        print('set mode to {}'.format(mode))
 
     def set_attitude(self, \
         roll_angle=0.0, \
@@ -347,4 +317,7 @@ def to_quaternion(roll=0.0, pitch=0.0, yaw=0.0):
 
     return [w_val, x_val, y_val, z_val]
 
-main()
+with open('configs.json', 'r') as data:
+    VEH = setup_vehicle(json.load(data))
+    VEH.takeoff()
+    VEH.cv_stitch()
