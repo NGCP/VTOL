@@ -65,53 +65,27 @@ class VTOL(Vehicle):
     heading = None
     MISSION_COMPLETED = False
     coms = None
-
     # pylint: disable=no-self-use
     def coms_callback(self, message):
         '''callback for radio messages'''
-        #message will be an object, we will be responding to the type attribute
-        #makes the message a dictionary
         parsed_message = json.loads(message.data)
+        #tuple of commands that can be executed
+        valid_commands = ("takeoff", "RTL")
         #gives us the specific command we want the drone to executre
         command = parsed_message['type']
 
-        print(parsed_message['type'], type(parsed_message['type']))
+        print('Recieved message type:', type(parsed_message['type']))
 
         #checking for valid command
-        if command not in ("takeoff", "land"):
+        if command not in valid_commands:
             raise Exception("Error: Unsupported status for vehicle")
 
         #executes takeoff command to drone
         if command == 'takeoff':
             self.takeoff()
         #executes land command to drone
-        elif command == 'land':
-            self.land()
-
-
-        
-         
-        
-        #opens a json file, if we need to have take a list from json format, I can change that
-        
-
-        
-        #me writing sudo code
-        #if message[0] == 'land':
-            #land()
-        #elif message[0] == 'takeoff':
-            #takeoff()
-
-        #elif message[0] == 'goto'
-            #goto location
-
-        #things to do
-
-        #1. add a land case
-
-        #2. add a takeoff case
-
-        #3. add a goto case
+        elif command == 'RTL':
+            self.rtl()
 
 
     def setup_coms(self):
@@ -177,7 +151,7 @@ class VTOL(Vehicle):
         print("Reached target altitude")
 
 
-    def land(self):
+    def rtl(self):
         '''Commands vehicle to land'''
         print("Returning to launch")
         if self.configs["vehicle_type"] == "VTOL":

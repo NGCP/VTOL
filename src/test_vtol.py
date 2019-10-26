@@ -1,6 +1,7 @@
 '''test for vtol.py'''
 import pytest
 from vtol import setup_vehicle
+from json import load
 
 CONFIGS = {
     'vehicle_simulated': True,
@@ -39,3 +40,11 @@ def test_change_status():
 
     with pytest.raises(Exception):
         VEHICLE.change_status('invalid')
+
+def test_coms_callback(message):
+    global VEHICLE
+    VEHICLE.coms_callback(message)
+
+file = "comm_sim_example.json"
+
+test_coms_callback(file)
