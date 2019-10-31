@@ -138,18 +138,13 @@ class VTOL(Vehicle):
 
     def land(self):
         '''Commands vehicle to land'''
-        print("Returning to launch")
-        if self.configs["vehicle_type"] == "VTOL":
-            self.mode = VehicleMode("QRTL")
-        elif self.configs["vehicle_type"] == "Quadcopter":
-            self.mode = VehicleMode("RTL")
+        self.mode = VehicleMode("LAND")
 
-        # Wait until vehicle reaches ground
-        while not self.location.global_relative_frame.alt < 1.0:
+        print("Landing...")
+
+        while self.location.global_relative_frame.alt > 0:
             print("Altitude: " + str(self.location.global_relative_frame.alt))
             time.sleep(1)
-        time.sleep(10)
-        self.close()
 
 
     def change_status(self, new_status):

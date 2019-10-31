@@ -25,13 +25,7 @@ def main(configs):
     
     # Pick-up function for ping pong balls
 
-    vehicle.mode = VehicleMode("LAND")
-
-    print("Landing...")
-
-    while vehicle.location.global_relative_frame.alt > 0:
-            print("Altitude: " + str(vehicle.location.global_relative_frame.alt))
-            time.sleep(1)
+    vehicle.land()
 
     print("Landed")
 
