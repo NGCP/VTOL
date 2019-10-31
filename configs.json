@@ -1,6 +1,8 @@
 {
   "vehicle_type": "Quadcopter",
-  
+  "lat": 35.3284237,
+  "long": -120.7530046,
+  "alt": 9.94,
   "vehicle_id": 1,
   "vehicle_simulated": true,
   "coms_simulated": true,

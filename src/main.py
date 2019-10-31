@@ -1,30 +1,39 @@
 '''main executable for setting up VTOL'''
 import json
 import time
-from dronekit import LocationGlobalRelative
+from dronekit import LocationGlobalRelative, VehicleMode
 from vtol import setup_vehicle
+from util import get_distance_metres
+
 def main(configs):
+
     '''Configure vtol and ready for mission'''
     # pylint: disable=unused-variable
     vehicle = setup_vehicle(configs)
 
-    print(vehicle.location.global_relative_frame)
-
     vehicle.takeoff()
-    
-    point1 = LocationGlobalRelative(35.3284237, -120.7530046, 9.94)
 
-    vehicle.simple_goto(point1, 20)
+    destination = LocationGlobalRelative(configs["lat"], configs["long"], configs["alt"])
 
-    while (vehicle.location.global_relative_frame != point1) :
-        print(vehicle.location.global_relative_frame)
+    vehicle.simple_goto(destination, 20)
+
+    while (get_distance_metres(vehicle.location.global_relative_frame, destination) > 1) :
+        print("Distance remaining:", get_distance_metres(vehicle.location.global_relative_frame, destination))
         time.sleep(1)
     
     print("Target reached")
     
     # Pick-up function for ping pong balls
 
-    vehicle.land()
+    vehicle.mode = VehicleMode("LAND")
+
+    print("Landing...")
+
+    while vehicle.location.global_relative_frame.alt > 0:
+            print("Altitude: " + str(vehicle.location.global_relative_frame.alt))
+            time.sleep(1)
+
+    print("Landed")
 
 
 if __name__ == '__main__':
