@@ -1,10 +1,15 @@
 {
+
   "vehicle_type": "Quadcopter",
-  
   "vehicle_id": 1,
   "vehicle_simulated": true,
   "coms_simulated": true,
   "comm_sim_file": "comm_sim_example.json",
+  "dest": {
+    "lat": 35.3284237,
+    "long": -120.7530046,
+    "alt": 9.94
+  },
   "3dr_solo": false,
   "cv_simulated": {
     "toggled_on": true,
@@ -12,7 +17,8 @@
   },
   "mission_control_MAC": "0013A200409BD79C",
   "baud_rate": 57600,
-  "altitude": 10,
-  "air_speed": 10,
+  "initialAltitude": 10,
+  "air_speed": 30,
   "waypoint_tolerance": 3
 }
+  
