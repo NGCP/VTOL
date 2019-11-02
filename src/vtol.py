@@ -1,7 +1,7 @@
 '''Automous tools for VTOL'''
 import time
 import json
-from dronekit import connect, VehicleMode, Vehicle, LocationGlobalRelative
+from dronekit import connect, VehicleMode, Vehicle
 from pymavlink import mavutil
 import dronekit_sitl
 from coms import Coms
@@ -126,6 +126,7 @@ class VTOL(Vehicle):
             time.sleep(1)
 
         print("Taking off")
+
         altitude = self.configs['initialAltitude']
         self.simple_takeoff(altitude)  # take off to altitude
 
@@ -136,15 +137,15 @@ class VTOL(Vehicle):
 
         print("Reached target altitude")
 
-    def go_to(self, point) :
+    def go_to(self, point):
+        ''' Commands drone to fly to a specified point perform a simple_goto '''
         destination = point
 
         self.simple_goto(destination, self.configs["air_speed"])
 
-        while (get_distance_metres(self.location.global_relative_frame, destination) > 1) :
+        while get_distance_metres(self.location.global_relative_frame, destination) > 1:
             print("Distance remaining:", get_distance_metres(self.location.global_relative_frame, destination))
             time.sleep(1)
-    
         print("Target reached")
 
     def land(self):
@@ -204,3 +205,4 @@ class VTOL(Vehicle):
             self.coms.send_till_ack(address, update_message, update_message['id'])
             time.sleep(1)
         self.change_status("ready")
+        
