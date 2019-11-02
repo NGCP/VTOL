@@ -14,26 +14,18 @@
 			"id": 0
 		}
 	},
-
 	{
         "time": 10.0,
         "message": {
             "type": "stop",
             "id": 0
         }
-
-    
     },
-
     {
-
     	"time": 5.0,
     	"message" : {
     		"type": "Takeoff",
     		"id": 1
-
     	}
-
     }   
-    
 ]
