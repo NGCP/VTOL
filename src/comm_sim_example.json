@@ -1,9 +1,0 @@
-[
-    {
-    	"time": 5.0,
-    	"message" : {
-    		"type": "takeoff",
-    		"id": 1
-    	}
-    }
-]

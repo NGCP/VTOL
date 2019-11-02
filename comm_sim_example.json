@@ -2,7 +2,7 @@
 {
     	"time": 5.0,
     	"message" : {
-    		"type": "takeoff",
+    		"type": "RTL",
     		"id": 1
     	}
     }   
