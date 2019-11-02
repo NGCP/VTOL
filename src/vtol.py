@@ -155,7 +155,7 @@ class VTOL(Vehicle):
         '''Commands vehicle to land'''
         print("Returning to launch")
         if self.configs["vehicle_type"] == "VTOL":
-            self.mode = VehicleMode("QRTL")
+            self.mode = VehicleMode("RTL")
         elif self.configs["vehicle_type"] == "Quadcopter":
             self.mode = VehicleMode("RTL")
 
