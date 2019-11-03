@@ -11,7 +11,9 @@ def main(configs):
 
     home = vehicle.location.global_relative_frame
 
-    destination = LocationGlobalRelative(configs["dest"]["lat"], configs["dest"]["long"], configs["dest"]["alt"])
+    destination = LocationGlobalRelative(configs["dest"]["lat"],\
+        configs["dest"]["long"],\
+        configs["dest"]["alt"])
 
     vehicle.go_to(destination)
     # Pick-up function for ping pong balls

@@ -133,4 +133,5 @@ my_project
 *.bin
 launch.json
 settings.json
+*.DAT
 # End of https://www.gitignore.io/api/python

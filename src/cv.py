@@ -41,7 +41,7 @@ class Vision():
             cam = cv2.VideoCapture("./sololink.sdp")
             return cam
         # initialize camera for Raspberry PI
-        from picamera import PiCamera #pylint: disable=import-error
+        from picamera import PiCamera #pylint: disable=import-outside-toplevel,import-error
         cam = PiCamera() #pylint: disable=import-error
         return cam
 
@@ -51,7 +51,7 @@ class Vision():
         '''takes picture using config'''
         if configs["3dr_solo"]:
             return camera.read()
-        from picamera.array import PiRGBArray #pylint: disable=import-error
+        from picamera.array import PiRGBArray #pylint: disable=import-outside-toplevel,import-error
         raw_capture = PiRGBArray(camera) #pylint: disable=import-error
         camera.capture(raw_capture, format="bgr")
         return raw_capture.array

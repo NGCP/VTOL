@@ -11,8 +11,8 @@ import urllib.request
 import numpy as np
 import cv2
 from simple_pid import PID
-from shapely.geometry import Polygon, Point
 from dronekit import connect, VehicleMode
+from shapely.geometry import Polygon, Point
 from dotenv import load_dotenv
 from vtol import VTOL
 
@@ -27,35 +27,20 @@ def setup_vehicle(configs):
     return veh
 
 
-class GpsDeniedVtol(VTOL):
+class GpsDeniedVtol(VTOL): #pylint: disable=too-many-instance-attributes
     '''encapsualtes variables and tools used for GPS denied navigation'''
 
     # Quick configs
-    cv_simulation = False
     total_tilt = 25
     target_position = (0, 0)
     reached_dest = False
 
     locating = True
 
-    #Motion PID
-    P = .10
-    I = .02
-    D = .01
-
-    #Pos PID
-    POS_P = .13
-    POS_I = .00005
-    POS_D = .00001
-
     #CV sim
     frame_size = (600, 280)
     misses = 0
     position_guess = (0, 0)
-
-    # how many pixels the drone can be off from the target before being in acceptance state
-    EPSILON = 1000
-
 
     def get_image(self):
         '''gets image at vehicle's current lat lng position'''
@@ -83,10 +68,10 @@ class GpsDeniedVtol(VTOL):
             print("Targeting", self.target_position)
             targ = []
             targ = self.target_position
-            x_pid = PID(self.POS_P, self.POS_I, self.POS_D, setpoint=targ[0])
-            x_pid.sample_time = 0.33
-            y_pid = PID(self.POS_P, self.POS_I, self.POS_D, setpoint=targ[1])
-            y_pid.sample_time = 0.33
+            xpid = PID(self.configs.pos.P, self.configs.pos.I, self.configs.pos.D, setpoint=targ[0])
+            xpid.sample_time = 0.33
+            ypid = PID(self.configs.pos.P, self.configs.pos.I, self.configs.pos.D, setpoint=targ[1])
+            ypid.sample_time = 0.33
             till_stop = 15
             while True:
                 if targ != self.target_position:
@@ -95,8 +80,8 @@ class GpsDeniedVtol(VTOL):
                 if till_stop == 0:
                     self.reached_dest = True
                 #Get control from each PID
-                x_control = x_pid(self.position_guess[0])
-                y_control = y_pid(self.position_guess[1])
+                x_control = xpid(self.position_guess[0])
+                y_control = ypid(self.position_guess[1])
                 remaining_x = targ[0] - self.position_guess[0]
                 remaining_y = targ[1] - self.position_guess[1]
                 remaining_dst_sq = (remaining_x ** 2 + remaining_y ** 2) ** .5
@@ -209,8 +194,8 @@ class GpsDeniedVtol(VTOL):
                 if seen_poly.exterior is None or seen_poly.exterior.distance(Point(new_guess)) \
                         < 100 and new_pts:
                     print('added new')
-                    new_des = [cur_des[i] for i in new_pts]
-                    new_kp = [cur_kp[i] for i in new_pts]
+                    new_des = [cur_des[i] for i in new_pts] #pylint: disable=unused-variable
+                    new_kp = [cur_kp[i] for i in new_pts] #pylint: disable=unused-variable
 
                     for key in new_kp:
                         cv2.circle(point_img, (int(key.pt[0]), int(key.pt[1])), \
@@ -220,11 +205,11 @@ class GpsDeniedVtol(VTOL):
 
                     seen_poly = seen_poly.union(Polygon(bounds))
 
-                    map_kp.extend(new_kp)
-                    map_des = np.append(map_des, new_des, axis=0)
+                    # map_kp.extend(new_kp)
+                    # map_des = np.append(map_des, new_des, axis=0)
 
-                    # map_kp = cur_kp
-                    # map_des = cur_des
+                map_kp = cur_kp
+                map_des = cur_des
             else:
                 print("Not enough matches are found - %d/%d" % (len(good), min_match_count))
                 self.misses += 1
@@ -317,7 +302,8 @@ def to_quaternion(roll=0.0, pitch=0.0, yaw=0.0):
 
     return [w_val, x_val, y_val, z_val]
 
-with open('configs.json', 'r') as data:
-    VEH = setup_vehicle(json.load(data))
-    VEH.takeoff()
-    VEH.cv_stitch()
+if __name__ == '__main__':
+    with open('gps_denied_config.json', 'r') as data:
+        VEH = setup_vehicle(json.load(data))
+        VEH.takeoff()
+        VEH.cv_stitch()
