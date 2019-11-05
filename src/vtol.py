@@ -7,20 +7,6 @@ import dronekit_sitl
 from coms import Coms
 from util import get_distance_metres
 
-class Tee():
-    '''Writes to all file objects'''
-    def __init__(self, *files):
-        self.files = files
-
-    def write(self, obj):
-        '''writes files'''
-        for file in self.files:
-            file.write(obj)
-
-    def flush(self):
-        '''flushes files'''
-        for file in self.files:
-            file.flush()
 
 def setup_vehicle(configs):
     '''Sets up self as a vehicle'''
@@ -139,6 +125,7 @@ class VTOL(Vehicle):
 
         print("Reached target altitude")
 
+
     def go_to(self, point):
         ''' Commands drone to fly to a specified point perform a simple_goto '''
         destination = point
@@ -150,6 +137,7 @@ class VTOL(Vehicle):
                 get_distance_metres(self.location.global_relative_frame, destination))
             time.sleep(1)
         print("Target reached")
+
 
     def land(self):
         '''Commands vehicle to land'''
@@ -172,6 +160,7 @@ class VTOL(Vehicle):
         if new_status not in ("ready", "running", "waiting", "paused", "error"):
             raise Exception("Error: Unsupported status for vehicle")
         self.status = new_status
+
 
     def include_heading(self):
         '''Includes heading in messages'''
