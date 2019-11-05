@@ -6,20 +6,6 @@ from pymavlink import mavutil
 import dronekit_sitl
 from coms import Coms
 
-class Tee():
-    '''Writes to all file objects'''
-    def __init__(self, *files):
-        self.files = files
-
-    def write(self, obj):
-        '''writes files'''
-        for file in self.files:
-            file.write(obj)
-
-    def flush(self):
-        '''flushes files'''
-        for file in self.files:
-            file.flush()
 
 def setup_vehicle(configs):
     '''Sets up self as a vehicle'''
@@ -66,12 +52,14 @@ class VTOL(Vehicle):
     MISSION_COMPLETED = False
     coms = None
 
+
     # pylint: disable=no-self-use
     def coms_callback(self, message, _):
         '''callback for radio messages'''
         # TODO respond to xbee messagge
         data = json.loads(message.data)
         print(data['type'])
+
 
     def setup_coms(self):
         '''sets up communication radios'''
@@ -157,6 +145,7 @@ class VTOL(Vehicle):
         if new_status not in ("ready", "running", "waiting", "paused", "error"):
             raise Exception("Error: Unsupported status for vehicle")
         self.status = new_status
+
 
     def include_heading(self):
         '''Includes heading in messages'''
