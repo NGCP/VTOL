@@ -1,0 +1,30 @@
+{
+    "vehicle_type": "VTOL",
+    
+    "vehicle_id": 1,
+    "vehicle_simulated": true,
+    "coms_simulated": true,
+    "comm_sim_file": "comm_sim_example.json",
+    "3dr_solo": false,
+    "cv_simulated": {
+      "toggled_on": true,
+      "directory": "./simulation_images/"
+    },
+    "mission_control_MAC": "0013A200409BD79C",
+    "baud_rate": 57600,
+    "altitude": 10,
+    "air_speed": 10,
+    "waypoint_tolerance": 3,
+    "motion" : 
+    {
+        "P":  0.10,
+        "I": 0.02,
+        "D": 0.01
+    },
+    "pos": 
+    {
+        "P": 0.13,
+        "I": 0.00005,
+        "D": 0.00001
+    }
+}
