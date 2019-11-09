@@ -1,24 +1,9 @@
 [
-	{
-		"time": 0.75,
-		"message": {
-			"type": "addMission",
-			"missionInfo": {
-				"searchArea": {
-					"topLeft": [ 35.328545, -120.752872 ],
-					"topRight": [ 35.328662, -120.752604 ],
-					"bottomLeft": [ 35.328184, -120.752414 ],
-					"bottomRight": [ 35.32835, -120.752272 ]
-				}
-			},
-			"id": 0
-		}
-	},
-	{
-        "time": 10.0,
-        "message": {
-            "type": "stop",
-            "id": 0
-        }
-	}
+{
+    	"time": 5.0,
+    	"message" : {
+    		"type": "RTL",
+    		"id": 1
+    	}
+    }   
 ]
