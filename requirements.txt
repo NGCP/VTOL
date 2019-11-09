@@ -2,7 +2,6 @@ msgpack
 numpy
 opencv-python
 simple_pid
-Shapely
 dronekit
 dronekit_sitl
 digi-xbee
@@ -12,3 +11,4 @@ gnureadline
 billiard
 numpy
 pyparsing
+tox

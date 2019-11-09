@@ -5,21 +5,8 @@ from dronekit import connect, VehicleMode, Vehicle
 from pymavlink import mavutil
 import dronekit_sitl
 from coms import Coms
+from util import get_distance_metres
 
-class Tee():
-    '''Writes to all file objects'''
-    def __init__(self, *files):
-        self.files = files
-
-    def write(self, obj):
-        '''writes files'''
-        for file in self.files:
-            file.write(obj)
-
-    def flush(self):
-        '''flushes files'''
-        for file in self.files:
-            file.flush()
 
 def setup_vehicle(configs):
     '''Sets up self as a vehicle'''
@@ -65,6 +52,8 @@ class VTOL(Vehicle):
     heading = None
     MISSION_COMPLETED = False
     coms = None
+
+
     # pylint: disable=no-self-use
     def coms_callback(self, message):
         '''callback for radio messages'''
@@ -88,6 +77,7 @@ class VTOL(Vehicle):
             self.rtl()
 
 
+
     def setup_coms(self):
         '''sets up communication radios'''
         # TODO set up coms and callback
@@ -101,7 +91,7 @@ class VTOL(Vehicle):
             print(" Waiting for vehicle to initialise...")
             time.sleep(1)
 
-        self.mode = VehicleMode("GUIDED")
+        self.mode = VehicleMode('GUIDED')
         self.armed = True
 
         while not self.armed:
@@ -123,7 +113,7 @@ class VTOL(Vehicle):
         self.commands.next = 0
 
 
-    def takeoff(self):
+    def takeoff(self, mode="GUIDED"):
         '''Commands drone to take off by arming vehicle and flying to altitude'''
         print("Pre-arm checks")
         while not self.is_armable:
@@ -132,7 +122,7 @@ class VTOL(Vehicle):
 
         print("Arming motors")
         # Vehicle should arm in GUIDED mode
-        self.mode = VehicleMode("GUIDED")
+        self.mode = VehicleMode(mode)
         self.armed = True
 
         while not self.armed:
@@ -140,6 +130,7 @@ class VTOL(Vehicle):
             time.sleep(1)
 
         print("Taking off")
+
         altitude = self.configs['altitude']
         self.simple_takeoff(altitude)  # take off to altitude
 
@@ -150,21 +141,32 @@ class VTOL(Vehicle):
 
         print("Reached target altitude")
 
+    def go_to(self, point):
+        ''' Commands drone to fly to a specified point perform a simple_goto '''
+        destination = point
+
+        self.simple_goto(destination, self.configs["air_speed"])
+
+        while get_distance_metres(self.location.global_relative_frame, destination) > 1:
+            print("Distance remaining:",\
+                get_distance_metres(self.location.global_relative_frame, destination))
+            time.sleep(1)
+        print("Target reached")
 
     def rtl(self):
         '''Commands vehicle to land'''
-        print("Returning to launch")
-        if self.configs["vehicle_type"] == "VTOL":
-            self.mode = VehicleMode("RTL")
-        elif self.configs["vehicle_type"] == "Quadcopter":
-            self.mode = VehicleMode("RTL")
+        self.mode = VehicleMode("LAND")
 
-        # Wait until vehicle reaches ground
-        while not self.location.global_relative_frame.alt < 1.0:
+        print("Landing...")
+
+        while self.location.global_relative_frame.alt > 0:
             print("Altitude: " + str(self.location.global_relative_frame.alt))
             time.sleep(1)
-        time.sleep(10)
-        self.close()
+
+        print("Landed")
+
+        print("Sleeping...")
+        time.sleep(5)
 
 
     def change_status(self, new_status):
@@ -172,6 +174,7 @@ class VTOL(Vehicle):
         if new_status not in ("ready", "running", "waiting", "paused", "error"):
             raise Exception("Error: Unsupported status for vehicle")
         self.status = new_status
+
 
     def include_heading(self):
         '''Includes heading in messages'''
@@ -208,3 +211,8 @@ class VTOL(Vehicle):
             self.coms.send_till_ack(address, update_message, update_message['id'])
             time.sleep(1)
         self.change_status("ready")
+
+
+if __name__ == '__main__':
+    with open('configs.json', 'r') as config_file:
+        VEHICLE = setup_vehicle(json.load(config_file))

@@ -22,6 +22,7 @@ class ComsMutex:
         self.acknowledgement_mutex = Lock()
         self.acknowledgement_mutex = False
 
+
 def mac_xbee_port_name():
     '''Looks in /dev directory for connected XBee serial port name on a macOS.'''
     try:

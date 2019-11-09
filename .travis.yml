@@ -10,4 +10,4 @@ install:
   - pip3 install tox-travis
   
 script:
-  - tox
+  - tox -e lint,vtol -c tox.ini
