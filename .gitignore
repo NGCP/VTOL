@@ -135,4 +135,5 @@ my_project
 launch.json
 settings.json
 *.store
+*.DAT
 # End of https://www.gitignore.io/api/python

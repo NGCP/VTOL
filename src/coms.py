@@ -22,6 +22,7 @@ class ComsMutex:
         self.acknowledgement_mutex = Lock()
         self.acknowledgement_mutex = False
 
+
 def mac_xbee_port_name():
     '''Looks in /dev directory for connected XBee serial port name on a macOS.'''
     try:
@@ -179,5 +180,5 @@ class Coms():
                 curr_time = instr["time"]
                 time.sleep(curr_time - prev_time)  # waits for the next instruction
                 # Send message to xbee_callback
-                self.xbee_callback(DummyMessage(json.dumps(instr["message"])), self.mutex)
+                self.xbee_callback(DummyMessage(json.dumps(instr["message"])))
                 prev_time = curr_time

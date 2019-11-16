@@ -3,7 +3,7 @@ import json
 import datetime
 import subprocess
 import sys
-from math import cos, sin, radians
+from math import cos, sin, radians, sqrt
 
 def to_quaternion(roll=0.0, pitch=0.0, yaw=0.0):
     '''
@@ -80,3 +80,15 @@ def new_output_file():
 
     # open file for current time
     return open("logs/" + date + "/" + time.replace(":", ".") + ".txt", "w")
+
+def get_distance_metres(loc_a, loc_b):
+    """
+    Returns the ground distance in metres between two LocationGlobal objects.
+    This method is an approximation, and will not be accurate over large distances and close to the
+    earth's poles. It comes from the ArduPilot test code:
+    https://github.com/diydrones/ardupilot/blob/master/Tools/autotest/common.py
+    """
+    dlat = loc_b.lat - loc_a.lat
+    dlong = loc_b.lon - loc_a.lon
+    return sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+    

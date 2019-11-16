@@ -1,6 +1,8 @@
 '''test for vtol.py'''
 import pytest
-from vtol import setup_vehicle
+from dronekit_sitl import start_default
+from dronekit import connect
+from vtol import VTOL
 
 CONFIGS = {
     'vehicle_simulated': True,
@@ -8,13 +10,18 @@ CONFIGS = {
     'coms_simulated': True,
     'altitude': 5,
     'comm_sim_file': 'comm_sim_example.json',
-    'air_speed': 20
+    'air_speed': 20,
+    'simulation': {
+        'defaultPort': 5760,
+        'shelveName': 'shelfStore.store'
+    }
 }
 
-with open('configs.json', 'r') as data:
-    VEHICLE = setup_vehicle(CONFIGS)
-    print("HERE")
+CON_STR = start_default().connection_string()
 
+with open('configs.json', 'r') as data:
+    VEHICLE = connect(CON_STR, wait_ready=True, vehicle_class=VTOL)
+    VEHICLE.configs = CONFIGS
 
 def test_takeoff():
     '''quadcopter dronekit-sitl takeoff'''
@@ -27,7 +34,7 @@ def test_takeoff():
 def test_land():
     '''quadcopter dronekit-sitl land'''
     global VEHICLE # pylint: disable=global-statement
-    VEHICLE.land()
+    VEHICLE.rtl()
     alt = VEHICLE.location.global_relative_frame.alt
     assert -1 < alt < 1, "vehicle did not land"
 
