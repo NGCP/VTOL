@@ -1,18 +1,20 @@
 {
-  "vehicle_type": "Quadcopter",
-  
-  "vehicle_id": 1,
-  "vehicle_simulated": true,
-  "coms_simulated": true,
-  "comm_sim_file": "comm_sim_example.json",
-  "3dr_solo": false,
-  "cv_simulated": {
-    "toggled_on": true,
-    "directory": "./simulation_images/"
-  },
-  "mission_control_MAC": "0013A200409BD79C",
-  "baud_rate": 57600,
-  "altitude": 10,
-  "air_speed": 10,
-  "waypoint_tolerance": 3
+    "vehicle_id": 1,
+    "vehicle_simulated": true,
+    "simulation": {
+        "defaultPort": 5760,
+        "shelveName": "shelfStore.store"
+    },
+    "coms_simulated": true,
+    "comm_sim_file": "comm_sim_example.json",
+    "3dr_solo": false,
+    "cv_simulated": {
+        "toggled_on": true,
+        "directory": "./simulation_images/"
+    },
+    "mission_control_MAC": "0013A200409BD79C",
+    "baud_rate": 57600,
+    "altitude": 10,
+    "air_speed": 2,
+    "waypoint_tolerance": 3
 }

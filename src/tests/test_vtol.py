@@ -4,11 +4,11 @@ from vtol import setup_vehicle
 
 CONFIGS = {
     'vehicle_simulated': True,
-    'vehicle_type': 'Quadcopter',
     'vehicle_id': 1,
     'coms_simulated': True,
     'altitude': 5,
-    'comm_sim_file': 'comm_sim_example.json'
+    'comm_sim_file': 'comm_sim_example.json',
+    'air_speed': 20
 }
 
 with open('configs.json', 'r') as data:
