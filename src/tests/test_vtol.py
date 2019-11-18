@@ -27,7 +27,7 @@ def test_takeoff():
 def test_land():
     '''quadcopter dronekit-sitl land'''
     global VEHICLE # pylint: disable=global-statement
-    VEHICLE.rtl()
+    VEHICLE.land()
     alt = VEHICLE.location.global_relative_frame.alt
     assert -1 < alt < 1, "vehicle did not land"
 

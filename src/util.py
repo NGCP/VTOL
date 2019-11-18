@@ -72,5 +72,6 @@ def get_distance_metres(loc_a, loc_b):
     """
     dlat = loc_b.lat - loc_a.lat
     dlong = loc_b.lon - loc_a.lon
-    return math.sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+    dalt = loc_b.alt - loc_a.alt
+    return math.sqrt((dlat**2) + (dlong**2) + (dalt**2))* 1.113195e5
     

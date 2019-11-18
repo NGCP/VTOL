@@ -1,12 +1,11 @@
 '''Automous tools for VTOL'''
 import time
 import json
-from dronekit import connect, VehicleMode, Vehicle
+from dronekit import connect, VehicleMode, Vehicle, LocationGlobalRelative
 from pymavlink import mavutil
 import dronekit_sitl
 from coms import Coms
 from util import get_distance_metres
-
 
 def setup_vehicle(configs):
     '''Sets up self as a vehicle'''
@@ -53,7 +52,6 @@ class VTOL(Vehicle):
     MISSION_COMPLETED = False
     coms = None
 
-
     # pylint: disable=no-self-use
     def coms_callback(self, message):
         '''callback for radio messages'''
@@ -73,10 +71,12 @@ class VTOL(Vehicle):
         if command == 'takeoff':
             self.takeoff()
         #executes land command to drone
-        elif command == 'RTL':
-            self.rtl()
+        elif command == 'land':
+            self.land()
 
-
+        # TODO respond to xbee messagge
+        data = json.loads(message.data)
+        print(data['type'])
 
     def setup_coms(self):
         '''sets up communication radios'''
@@ -91,7 +91,7 @@ class VTOL(Vehicle):
             print(" Waiting for vehicle to initialise...")
             time.sleep(1)
 
-        self.mode = VehicleMode('GUIDED')
+        self.mode = VehicleMode("GUIDED")
         self.armed = True
 
         while not self.armed:
@@ -113,7 +113,7 @@ class VTOL(Vehicle):
         self.commands.next = 0
 
 
-    def takeoff(self, mode="GUIDED"):
+    def takeoff(self):
         '''Commands drone to take off by arming vehicle and flying to altitude'''
         print("Pre-arm checks")
         while not self.is_armable:
@@ -122,7 +122,7 @@ class VTOL(Vehicle):
 
         print("Arming motors")
         # Vehicle should arm in GUIDED mode
-        self.mode = VehicleMode(mode)
+        self.mode = VehicleMode("GUIDED")
         self.armed = True
 
         while not self.armed:
@@ -142,18 +142,20 @@ class VTOL(Vehicle):
         print("Reached target altitude")
 
     def go_to(self, point):
-        ''' Commands drone to fly to a specified point perform a simple_goto '''
-        destination = point
+        '''Commands drone to fly to a specified point perform a simple_goto '''
 
-        self.simple_goto(destination, self.configs["air_speed"])
+        self.simple_goto(point, self.configs["air_speed"])
 
-        while get_distance_metres(self.location.global_relative_frame, destination) > 1:
-            print("Distance remaining:",\
-                get_distance_metres(self.location.global_relative_frame, destination))
-            time.sleep(1)
+        while True:
+            distance = get_distance_metres(self.location.global_relative_frame, point)
+            if distance > self.configs['waypoint_tolerance']:
+                print("Distance remaining:", distance)
+                time.sleep(1)
+            else:
+                break
         print("Target reached")
 
-    def rtl(self):
+    def land(self):
         '''Commands vehicle to land'''
         self.mode = VehicleMode("LAND")
 
@@ -168,13 +170,19 @@ class VTOL(Vehicle):
         print("Sleeping...")
         time.sleep(5)
 
+    def set_altitude(self, alt):
+        '''Sets altitude of quadcopter using an "alt" parameter'''
+        print("Setting altitude:")
+        destination = LocationGlobalRelative(self.location.global_relative_frame.lat, \
+            self.location.global_relative_frame.lon, alt)
+        self.go_to(destination)
+        print("Altitude reached")
 
     def change_status(self, new_status):
         ''':param new_status: new vehicle status to change to (refer to GCS formatting)'''
         if new_status not in ("ready", "running", "waiting", "paused", "error"):
             raise Exception("Error: Unsupported status for vehicle")
         self.status = new_status
-
 
     def include_heading(self):
         '''Includes heading in messages'''
@@ -211,8 +219,3 @@ class VTOL(Vehicle):
             self.coms.send_till_ack(address, update_message, update_message['id'])
             time.sleep(1)
         self.change_status("ready")
-
-
-if __name__ == '__main__':
-    with open('configs.json', 'r') as config_file:
-        VEHICLE = setup_vehicle(json.load(config_file))

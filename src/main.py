@@ -9,6 +9,10 @@ def main(configs):
 
     vehicle.takeoff()
 
+    vehicle.set_altitude(3)
+
+    vehicle.set_altitude(10)
+
     home = vehicle.location.global_relative_frame
 
     destination = LocationGlobalRelative(configs["dest"]["lat"],\

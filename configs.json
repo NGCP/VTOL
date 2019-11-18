@@ -19,6 +19,5 @@
   "baud_rate": 57600,
   "altitude": 10,
   "air_speed": 30,
-  "waypoint_tolerance": 3
+  "waypoint_tolerance": 1
 }
-  
