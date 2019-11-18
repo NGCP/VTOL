@@ -55,5 +55,3 @@ if __name__ == '__main__':
     with open('configs.json', 'r') as data:
         VEHICLE = setup_vehicle(json.load(data))
         VEHICLE.takeoff()
-        # vehicle.send_ned_velocity(-5, 3, 0, 5)
-        VEHICLE.set_attitude(pitch_angle=20, duration=5)

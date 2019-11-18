@@ -81,6 +81,7 @@ def new_output_file():
     # open file for current time
     return open("logs/" + date + "/" + time.replace(":", ".") + ".txt", "w")
 
+
 def get_distance_metres(loc_a, loc_b):
     """
     Returns the ground distance in metres between two LocationGlobal objects.
@@ -90,5 +91,6 @@ def get_distance_metres(loc_a, loc_b):
     """
     dlat = loc_b.lat - loc_a.lat
     dlong = loc_b.lon - loc_a.lon
-    return sqrt((dlat*dlat) + (dlong*dlong)) * 1.113195e5
+    dalt = loc_b.alt - loc_a.alt
+    return sqrt((dlat**2) + (dlong**2) + (dalt**2))* 1.113195e5
     
