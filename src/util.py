@@ -4,6 +4,54 @@ import datetime
 import subprocess
 import sys
 from math import cos, sin, radians, sqrt
+import shelve
+from dronekit import connect, APIException
+
+
+def setup_vehicle(configs, v_type):
+    '''Sets up self as a quadplane vehicle'''
+    if configs["vehicle_simulated"]:
+        veh = scan_ports(configs, v_type)
+    else:
+        if configs["SOLO"]:
+            con_str = "udpin:0.0.0.0:14550"
+        else:
+            # connect to pixhawk via MicroUSB
+            # if we switch back to using the telem2 port, use "/dev/serial0"
+            con_str = "/dev/ttyACM0"
+        veh = connect(con_str, baud=configs["baud_rate"], wait_ready=True, vehicle_class=v_type)
+    veh.configs = configs
+    veh.airspeed = configs['air_speed']
+    return veh
+
+
+def scan_ports(configs, v_type):
+    '''scans TCP ports to find open simulator'''
+    itteration = 0
+    shelf = shelve.open(configs['simulation']['shelveName'])
+    try:
+        port = shelf['port']
+        print('shelf found')
+    except KeyError:
+        port = configs['simulation']['defaultPort']
+        itteration += 1
+        print('not found')
+    while True:
+        try:
+            con_str = "tcp:127.0.0.1:{}".format(port)
+            print("Attempting to connect to {}".format(con_str))
+            veh = connect(con_str, wait_ready=True, vehicle_class=v_type)
+            shelf['port'] = port
+            shelf.close()
+            break
+        except (OSError, APIException):
+            port = configs['simulation']['defaultPort'] + itteration
+            itteration += 1
+            if itteration == 8:
+                print('make sure your simulator is running')
+                sys.exit(-1)
+    return veh
+
 
 def to_quaternion(roll=0.0, pitch=0.0, yaw=0.0):
     '''

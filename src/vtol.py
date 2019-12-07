@@ -2,26 +2,10 @@
 import time
 import json
 from math import radians
-from dronekit import connect, VehicleMode, Vehicle, LocationGlobalRelative
+from dronekit import VehicleMode, Vehicle, LocationGlobalRelative
 from pymavlink import mavutil
 from coms import Coms
 from util import to_quaternion, get_distance_metres
-
-def setup_vehicle(configs):
-    '''Sets up self as a vehicle'''
-    #Start SITL if vehicle is being simulated
-    if configs["vehicle_simulated"]:
-        con_str = "tcp:127.0.0.1:{}".format(configs['simulation']['defaultPort'])
-    else:
-        con_str = "udpin:0.0.0.0:14550"
-    if configs["vehicle_simulated"]:
-        veh = connect(con_str, wait_ready=True, vehicle_class=VTOL)
-    else:
-        veh = connect(con_str, baud=configs["baud_rate"], wait_ready=True, vehicle_class=VTOL)
-    veh.configs = configs
-    veh.airspeed = configs['air_speed']
-    # veh.setup_coms()
-    return veh
 
 
 class VTOL(Vehicle):

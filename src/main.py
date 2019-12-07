@@ -1,11 +1,13 @@
 '''main executable for setting up VTOL'''
 import json
-from vtol import setup_vehicle
+from util import setup_vehicle
+from vtol import VTOL
 
 def main(configs):
     '''Configure vtol and ready for mission'''
-    vehicle = setup_vehicle(configs)
+    vehicle = setup_vehicle(configs, VTOL)
     vehicle.takeoff()
+
     # vehicle.send_ned_velocity(-5, 3, 0, 5)
     vehicle.set_attitude(pitch_angle=20, duration=5)
 
