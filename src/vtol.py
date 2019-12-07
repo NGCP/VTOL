@@ -23,6 +23,7 @@ class VTOL(Vehicle):
     status = "ready"
     MISSION_COMPLETED = False
     coms = None
+    land_mode = 'LAND'
 
     # pylint: disable=no-self-use
     def coms_callback(self, message):
@@ -126,9 +127,10 @@ class VTOL(Vehicle):
                 break
         print("Target reached")
 
+
     def land(self):
         '''Commands vehicle to land'''
-        self.mode = VehicleMode("LAND")
+        self.mode = VehicleMode(self.land_mode)
 
         print("Landing...")
 

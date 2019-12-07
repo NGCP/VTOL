@@ -19,7 +19,7 @@ def setup_vehicle(configs, v_type):
             # connect to pixhawk via MicroUSB
             # if we switch back to using the telem2 port, use "/dev/serial0"
             con_str = "/dev/ttyACM0"
-        veh = connect(con_str, baud=configs["baud_rate"], wait_ready=True, vehicle_class=v_type)
+        veh = connect(con_str, baud=configs["baud_rate"], wait_ready=True, vehicle_class=v_type, heartbeat_timeout=5)
     veh.configs = configs
     veh.airspeed = configs['air_speed']
     return veh
@@ -140,5 +140,5 @@ def get_distance_metres(loc_a, loc_b):
     dlat = loc_b.lat - loc_a.lat
     dlong = loc_b.lon - loc_a.lon
     dalt = loc_b.alt - loc_a.alt
-    return sqrt((dlat**2) + (dlong**2) + (dalt**2))* 1.113195e5
+    return sqrt((((dlat**2) + (dlong**2)) * 1.113195e5 ** 2) + (dalt ** 2))
     

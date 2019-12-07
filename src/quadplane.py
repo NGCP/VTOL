@@ -5,6 +5,7 @@ from util import setup_vehicle
 
 class QuadPlane(VTOL):
     '''State deffinition for QuadPlane'''
+    land_mode = 'QLAND'
 
 
 if __name__ == '__main__':
