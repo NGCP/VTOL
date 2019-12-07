@@ -19,7 +19,8 @@ def setup_vehicle(configs, v_type):
             # connect to pixhawk via MicroUSB
             # if we switch back to using the telem2 port, use "/dev/serial0"
             con_str = "/dev/ttyACM0"
-        veh = connect(con_str, baud=configs["baud_rate"], wait_ready=True, vehicle_class=v_type, heartbeat_timeout=5)
+        veh = connect(con_str, baud=configs["baud_rate"], wait_ready=True, \
+            vehicle_class=v_type, heartbeat_timeout=5)
     veh.configs = configs
     veh.airspeed = configs['air_speed']
     return veh
