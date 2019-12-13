@@ -7,11 +7,8 @@ def main(configs):
     '''Configure vtol and ready for mission'''
     vehicle = setup_vehicle(configs, QuadPlane)
 
-    vehicle.parameters['Q_GUIDED_MODE'] = 1
     vehicle.takeoff()
-    vehicle.set_altitude(10)
-    # vehicle.send_ned_velocity(-5, 3, 0, 5)
-    # vehicle.set_attitude(pitch_angle=20, duration=5)
+    vehicle.set_attitude(pitch_angle=-5, duration=10, yaw_angle=180)
 
     # vehicle.land()
 

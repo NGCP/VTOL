@@ -13,6 +13,10 @@ class VTOL(Vehicle):
     def __init__(self, *args): #pylint: disable=useless-super-delegation
         super(VTOL, self).__init__(*args)
 
+    def setup(self):
+        '''vtol specific steps needed before flight'''
+
+
     # State, updated by XBee callback function
     configs = None
     start_mission = False  # takeoff

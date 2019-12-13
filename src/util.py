@@ -20,9 +20,10 @@ def setup_vehicle(configs, v_type):
             # if we switch back to using the telem2 port, use "/dev/serial0"
             con_str = "/dev/ttyACM0"
         veh = connect(con_str, baud=configs["baud_rate"], wait_ready=True, \
-            vehicle_class=v_type, heartbeat_timeout=5)
+            vehicle_class=v_type, heartbeat_timeout=5, timeout=5)
     veh.configs = configs
     veh.airspeed = configs['air_speed']
+    veh.setup()
     return veh
 
 
@@ -41,7 +42,8 @@ def scan_ports(configs, v_type):
         try:
             con_str = "tcp:127.0.0.1:{}".format(port)
             print("Attempting to connect to {}".format(con_str))
-            veh = connect(con_str, wait_ready=True, vehicle_class=v_type)
+            veh = connect(con_str, wait_ready=True, vehicle_class=v_type, \
+                heartbeat_timeout=5, timeout=5)
             shelf['port'] = port
             shelf.close()
             break

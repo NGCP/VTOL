@@ -8,11 +8,6 @@ def main(configs):
     vehicle = setup_vehicle(configs, VTOL)
     vehicle.takeoff()
 
-    # vehicle.send_ned_velocity(-5, 3, 0, 5)
-    vehicle.set_attitude(pitch_angle=20, duration=5)
-
-    vehicle.takeoff()
-
     vehicle.set_altitude(10)
 
     home = vehicle.location.global_relative_frame
