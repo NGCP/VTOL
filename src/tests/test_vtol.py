@@ -1,20 +1,27 @@
 '''test for vtol.py'''
 import pytest
-from vtol import setup_vehicle
+from dronekit_sitl import start_default
+from dronekit import connect
+from vtol import VTOL
 
 CONFIGS = {
     'vehicle_simulated': True,
-    'vehicle_type': 'Quadcopter',
     'vehicle_id': 1,
     'coms_simulated': True,
     'altitude': 5,
-    'comm_sim_file': 'comm_sim_example.json'
+    'comm_sim_file': 'comm_sim_example.json',
+    'air_speed': 20,
+    'simulation': {
+        'defaultPort': 5760,
+        'shelveName': 'shelfStore.store'
+    }
 }
 
-with open('configs.json', 'r') as data:
-    VEHICLE = setup_vehicle(CONFIGS)
-    print("HERE")
+CON_STR = start_default().connection_string()
 
+with open('configs.json', 'r') as data:
+    VEHICLE = connect(CON_STR, wait_ready=True, vehicle_class=VTOL)
+    VEHICLE.configs = CONFIGS
 
 def test_takeoff():
     '''quadcopter dronekit-sitl takeoff'''
