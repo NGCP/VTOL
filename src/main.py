@@ -5,6 +5,7 @@ from vtol import setup_vehicle
 
 def main(configs):
     '''Configure vtol and ready for mission'''
+
     vehicle = setup_vehicle(configs)
 
     vehicle.takeoff()
@@ -33,4 +34,3 @@ def main(configs):
 if __name__ == '__main__':
     with open('configs.json', 'r') as data:
         main(json.load(data))
-        

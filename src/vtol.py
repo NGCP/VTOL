@@ -6,6 +6,8 @@ from pymavlink import mavutil
 import dronekit_sitl
 from coms import Coms
 from util import get_distance_metres
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import logging
 
 def setup_vehicle(configs):
     '''Sets up self as a vehicle'''
@@ -53,15 +55,12 @@ class VTOL(Vehicle):
     coms = None
 
     # pylint: disable=no-self-use
-    def coms_callback(self, message):
+    def coms_callback(self, command):
         '''callback for radio messages'''
-        parsed_message = json.loads(message.data)
-        #tuple of commands that can be executed
-        valid_commands = ("takeoff", "RTL")
-        #gives us the specific command we want the drone to executre
-        command = parsed_message['type']
 
-        print('Recieved message type:', type(parsed_message['type']))
+        #tuple of commands that can be executed
+        valid_commands = ("takeoff", "land")
+        #gives us the specific command we want the drone to executre
 
         #checking for valid command
         if command not in valid_commands:
@@ -74,9 +73,6 @@ class VTOL(Vehicle):
         elif command == 'land':
             self.land()
 
-        # TODO respond to xbee messagge
-        data = json.loads(message.data)
-        print(data['type'])
 
     def setup_coms(self):
         '''sets up communication radios'''
@@ -219,3 +215,6 @@ class VTOL(Vehicle):
             self.coms.send_till_ack(address, update_message, update_message['id'])
             time.sleep(1)
         self.change_status("ready")
+
+
+
