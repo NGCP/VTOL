@@ -1,46 +1,21 @@
 '''Automous tools for VTOL'''
 import time
 import json
-from dronekit import connect, VehicleMode, Vehicle, LocationGlobalRelative
+from math import radians
+from dronekit import VehicleMode, Vehicle, LocationGlobalRelative
 from pymavlink import mavutil
-import dronekit_sitl
 from coms import Coms
-from util import get_distance_metres
+from util import get_distance_metres, to_quaternion
 from http.server import BaseHTTPRequestHandler, HTTPServer
-import logging
-
-def setup_vehicle(configs):
-    '''Sets up self as a vehicle'''
-    #Start SITL if vehicle is being simulated
-    if configs["vehicle_simulated"]:
-        if configs["vehicle_type"] == "VTOL":
-            # If running a simulated VTOL on vagrant, connect to it via TCP
-            # Port 5763 must be forwarded on vagrant
-            con_str = "tcp:127.0.0.1:5763"
-        elif configs["vehicle_type"] == "Quadcopter":
-            sitl = dronekit_sitl.start_default(lat=35.328423, lon=-120.752505)
-            con_str = sitl.connection_string()
-    else:
-        if configs["3dr_solo"]:
-            con_str = "udpin:0.0.0.0:14550"
-        else:
-            # connect to pixhawk via MicroUSB
-            # if we switch back to using the telem2 port, use "/dev/serial0"
-            con_str = "/dev/ttyACM0"
-
-    if configs["vehicle_simulated"]:
-        veh = connect(con_str, wait_ready=True, vehicle_class=VTOL)
-    else:
-        veh = connect(con_str, baud=configs["baud_rate"], wait_ready=True, vehicle_class=VTOL)
-    veh.configs = configs
-    veh.setup_coms()
-    return veh
-
 
 class VTOL(Vehicle):
     ''' VTOL basic state isolated'''
     def __init__(self, *args): #pylint: disable=useless-super-delegation
         super(VTOL, self).__init__(*args)
+
+    def setup(self):
+        '''vtol specific steps needed before flight'''
+
 
     # State, updated by XBee callback function
     configs = None
@@ -50,9 +25,9 @@ class VTOL(Vehicle):
 
     # Global status, updated by various functions
     status = "ready"
-    heading = None
     MISSION_COMPLETED = False
     coms = None
+    land_mode = 'LAND'
 
     # pylint: disable=no-self-use
     def coms_callback(self, command):
@@ -97,14 +72,13 @@ class VTOL(Vehicle):
         self.commands.next = 0
         self.mode = VehicleMode("AUTO")
 
-        if self.configs["vehicle_type"] == "Quadcopter":
-            msg = self.message_factory.command_long_encode(
-                0, 0,    # target_system, target_component
-                mavutil.mavlink.MAV_CMD_MISSION_START, #command
-                0, #confirmation
-                0, 0, 0, 0, 0, 0, 0)    # param 1 ~ 7 not used
-            # send command to vehicle
-            self.send_mavlink(msg)
+        msg = self.message_factory.command_long_encode(
+            0, 0,    # target_system, target_component
+            mavutil.mavlink.MAV_CMD_MISSION_START, #command
+            0, #confirmation
+            0, 0, 0, 0, 0, 0, 0)    # param 1 ~ 7 not used
+        # send command to vehicle
+        self.send_mavlink(msg)
 
         self.commands.next = 0
 
@@ -151,9 +125,10 @@ class VTOL(Vehicle):
                 break
         print("Target reached")
 
+
     def land(self):
         '''Commands vehicle to land'''
-        self.mode = VehicleMode("LAND")
+        self.mode = VehicleMode(self.land_mode)
 
         print("Landing...")
 
@@ -180,9 +155,71 @@ class VTOL(Vehicle):
             raise Exception("Error: Unsupported status for vehicle")
         self.status = new_status
 
-    def include_heading(self):
-        '''Includes heading in messages'''
-        self.heading = True
+
+    def send_attitude_target(
+            self,
+            roll_angle=0.0,
+            pitch_angle=0.0,
+            yaw_angle=None,
+            yaw_rate=0.0,
+            use_yaw_rate=False,
+            thrust=0.5,
+    ):
+        '''
+        use_yaw_rate: the yaw can be controlled using yaw_angle OR yaw_rate.
+                    When one is used, the other is ignored by Ardupilot.
+        thrust: 0 <= thrust <= 1, as a fraction of maximum vertical thrust.
+                Note that as of Copter 3.5, thrust = 0.5 triggers a special case in
+                the code for maintaining current altitude.
+        '''
+        if yaw_angle is None:
+            # this value may be unused by the vehicle, depending on use_yaw_rate
+            yaw_angle = self.attitude.yaw
+        # Thrust >  0.5: Ascend
+        # Thrust == 0.5: Hold the altitude
+        # Thrust <  0.5: Descend
+        msg = self.message_factory.set_attitude_target_encode(
+            0,  # time_boot_ms
+            1,  # Target system
+            1,  # Target component
+            0b00000000 if use_yaw_rate else 0b00000100,
+            to_quaternion(roll_angle, pitch_angle, yaw_angle),  # Quaternion
+            0,  # Body roll rate in radian
+            0,  # Body pitch rate in radian
+            radians(yaw_rate),  # Body yaw rate in radian/second
+            thrust,  # Thrust
+        )
+        self.send_mavlink(msg)
+
+
+    def set_attitude(
+            self,
+            roll_angle=0.0,
+            pitch_angle=0.0,
+            yaw_angle=None,
+            yaw_rate=0.0,
+            use_yaw_rate=False,
+            thrust=0.5,
+            duration=0,
+    ):
+        '''
+        Note that from AC3.3 the message should be re-sent more often than every
+        second, as an ATTITUDE_TARGET order has a timeout of 1s.
+        In AC3.2.1 and earlier the specified attitude persists until it is canceled.
+        The code below should work on either version.
+        Sending the message multiple times is the recommended way.
+        '''
+        self.send_attitude_target(
+            roll_angle, pitch_angle, yaw_angle, yaw_rate, use_yaw_rate, thrust
+        )
+        start = time.time()
+        while time.time() - start < duration:
+            self.send_attitude_target(
+                roll_angle, pitch_angle, yaw_angle, yaw_rate, use_yaw_rate, thrust
+            )
+            time.sleep(0.1)
+        # Reset attitude, or it will persist for 1s more due to the timeout
+        self.send_attitude_target(0, 0, 0, 0, True, thrust)
 
 
     def update_thread(self, address):
@@ -209,12 +246,6 @@ class VTOL(Vehicle):
                 "battery": battery_level
             }
 
-            if self.heading:
-                update_message["heading"] = self.heading
-
             self.coms.send_till_ack(address, update_message, update_message['id'])
             time.sleep(1)
         self.change_status("ready")
-
-
-

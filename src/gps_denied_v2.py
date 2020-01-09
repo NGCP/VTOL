@@ -3,16 +3,14 @@ First thoughts on SLAM cv
 '''
 import ssl
 import os
-from time import time, sleep
-from math import cos, sin, radians
 # from threading import Thread
 import json
 import urllib.request
 import numpy as np
 import cv2
 from simple_pid import PID
-from dronekit import connect, VehicleMode
 from shapely.geometry import Polygon, Point
+from dronekit import connect
 from dotenv import load_dotenv
 from vtol import VTOL
 
@@ -215,95 +213,7 @@ class GpsDeniedVtol(VTOL): #pylint: disable=too-many-instance-attributes
                 self.misses += 1
             cv2.waitKey(5)
 
-
-    def send_attitude_target(self, \
-        roll_angle=0.0, \
-        pitch_angle=0.0, \
-        yaw_angle=None, \
-        yaw_rate=0.0, \
-        use_yaw_rate=False, \
-        thrust=0.5 \
-    ):
-        '''
-        use_yaw_rate: the yaw can be controlled using yaw_angle OR yaw_rate.
-                    When one is used, the other is ignored by Ardupilot.
-        thrust: 0 <= thrust <= 1, as a fraction of maximum vertical thrust.
-                Note that as of Copter 3.5, thrust = 0.5 triggers a special case in
-                the code for maintaining current altitude.
-        '''
-        if yaw_angle is None:
-            # this value may be unused by the vehicle, depending on use_yaw_rate
-            yaw_angle = self.attitude.yaw
-        # Thrust >  0.5: Ascend
-        # Thrust == 0.5: Hold the altitude
-        # Thrust <  0.5: Descend
-        msg = self.message_factory.set_attitude_target_encode(
-            0,  # time_boot_ms
-            1,  # Target system
-            1,  # Target component
-            0b00000000 if use_yaw_rate else 0b00000100,
-            to_quaternion(roll_angle, pitch_angle, yaw_angle),  # Quaternion
-            0,  # Body roll rate in radian
-            0,  # Body pitch rate in radian
-            radians(yaw_rate),  # Body yaw rate in radian/second
-            thrust,  # Thrust
-        )
-        self.send_mavlink(msg)
-
-    def set_mode(self, mode):
-        '''sets the vehicle's mode'''
-        self.mode = VehicleMode(mode)
-        print('set mode to {}'.format(mode))
-
-    def set_attitude(self, \
-        roll_angle=0.0, \
-        pitch_angle=0.0, \
-        yaw_angle=None, \
-        yaw_rate=0.0, \
-        use_yaw_rate=False, \
-        thrust=0.5, \
-        duration=0 \
-    ):
-        '''
-        Note that from AC3.3 the message should be re-sent more often than every
-        second, as an ATTITUDE_TARGET order has a timeout of 1s.
-        In AC3.2.1 and earlier the specified attitude persists until it is canceled.
-        The code below should work on either version.
-        Sending the message multiple times is the recommended way.
-        '''
-        self.send_attitude_target(
-            roll_angle, pitch_angle, yaw_angle, yaw_rate, use_yaw_rate, thrust
-        )
-        start = time()
-        while time() - start < duration:
-            self.send_attitude_target(
-                roll_angle, pitch_angle, yaw_angle, yaw_rate, use_yaw_rate, thrust
-            )
-            sleep(0.1)
-        # Reset attitude, or it will persist for 1s more due to the timeout
-        self.send_attitude_target(0, 0, 0, 0, True, thrust)
-
-
-def to_quaternion(roll=0.0, pitch=0.0, yaw=0.0):
-    '''
-    Convert degrees to quaternions
-    '''
-    t0_val = cos(radians(yaw * 0.5))
-    t1_val = sin(radians(yaw * 0.5))
-    t2_val = cos(radians(roll * 0.5))
-    t3_val = sin(radians(roll * 0.5))
-    t4_val = cos(radians(pitch * 0.5))
-    t5_val = sin(radians(pitch * 0.5))
-
-    w_val = t0_val * t2_val * t4_val + t1_val * t3_val * t5_val
-    x_val = t0_val * t3_val * t4_val - t1_val * t2_val * t5_val
-    y_val = t0_val * t2_val * t5_val + t1_val * t3_val * t4_val
-    z_val = t1_val * t2_val * t4_val - t0_val * t3_val * t5_val
-
-    return [w_val, x_val, y_val, z_val]
-
-if __name__ == '__main__':
-    with open('gps_denied_config.json', 'r') as data:
-        VEH = setup_vehicle(json.load(data))
-        VEH.takeoff()
-        VEH.cv_stitch()
+with open('configs.json', 'r') as data:
+    VEH = setup_vehicle(json.load(data))
+    VEH.takeoff()
+    VEH.cv_stitch()
