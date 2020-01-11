@@ -1,26 +1,12 @@
 '''main executable for setting up VTOL'''
 import json
 from util import setup_vehicle
-from vtol import VTOL
+from quad import QUAD
 
 def main(configs):
     '''Configure vtol and ready for mission'''
-    vehicle = setup_vehicle(configs, VTOL)
+    vehicle = setup_vehicle(configs, QUAD)
     vehicle.takeoff()
-
-    vehicle.set_altitude(10)
-
-    home = vehicle.location.global_relative_frame
-
-    # Pick-up function for ping pong balls
-
-    vehicle.land()
-
-    vehicle.takeoff()
-
-    vehicle.go_to(home)
-
-    vehicle.land()
 
 if __name__ == '__main__':
     with open('configs.json', 'r') as data:
