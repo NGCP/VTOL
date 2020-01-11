@@ -1,61 +1,31 @@
 '''Automous tools for VTOL'''
 import time
 import json
-from dronekit import VehicleMode, Vehicle, LocationGlobalRelative
+from dronekit import VehicleMode, Vehicle
 from coms import Coms
 from util import get_distance_metres
 
 
 class QUAD(Vehicle):
     ''' VTOL basic state isolated'''
+    coms = None
+
     def __init__(self, *args): #pylint: disable=useless-super-delegation
         super(QUAD, self).__init__(*args)
 
     def setup(self):
         '''vtol specific steps needed before flight'''
 
-
-    # State, updated by XBee callback function
-    configs = None
-    start_mission = False  # takeoff
-    pause_mission = False  # vehicle will hover
-    stop_mission = False  # return to start and land
-
-    # Global status, updated by various functions
-    status = "ready"
-    MISSION_COMPLETED = False
-    coms = None
-    land_mode = 'LAND'
-
-    # pylint: disable=no-self-use
     def coms_callback(self, message):
         '''callback for radio messages'''
         parsed_message = json.loads(message.data)
-        #tuple of commands that can be executed
-        valid_commands = ("takeoff", "RTL")
         #gives us the specific command we want the drone to executre
         command = parsed_message['type']
 
-        print('Recieved message type:', type(parsed_message['type']))
-
-        #checking for valid command
-        if command not in valid_commands:
-            raise Exception("Error: Unsupported status for vehicle")
-
-        #executes takeoff command to drone
-        if command == 'takeoff':
-            self.takeoff()
-        #executes land command to drone
-        elif command == 'land':
-            self.land()
-
-        # TODO respond to xbee messagge
-        data = json.loads(message.data)
-        print(data['type'])
+        # START HERE
 
     def setup_coms(self):
         '''sets up communication radios'''
-        # TODO set up coms and callback
         print('Initializing Coms')
         self.coms = Coms(self.configs, self.coms_callback)
 
@@ -68,7 +38,6 @@ class QUAD(Vehicle):
             time.sleep(1)
 
         print("Arming motors")
-        # Vehicle should arm in GUIDED mode
         self.mode = VehicleMode("GUIDED")
         self.armed = True
 
@@ -106,7 +75,7 @@ class QUAD(Vehicle):
 
     def land(self):
         '''Commands vehicle to land'''
-        self.mode = VehicleMode(self.land_mode)
+        self.mode = VehicleMode("LAND")
 
         print("Landing...")
 
@@ -118,12 +87,3 @@ class QUAD(Vehicle):
 
         print("Sleeping...")
         time.sleep(5)
-
-
-    def set_altitude(self, alt):
-        '''Sets altitude of quadcopter using an "alt" parameter'''
-        print("Setting altitude:")
-        destination = LocationGlobalRelative(self.location.global_relative_frame.lat, \
-            self.location.global_relative_frame.lon, alt)
-        self.go_to(destination)
-        print("Altitude reached")

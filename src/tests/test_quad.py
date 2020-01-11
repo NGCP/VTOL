@@ -1,7 +1,6 @@
 '''test for vtol.py'''
-import pytest
 from dronekit_sitl import start_default
-from dronekit import connect
+from util import setup_vehicle
 from quad import QUAD
 
 CONFIGS = {
@@ -20,8 +19,7 @@ CONFIGS = {
 CON_STR = start_default().connection_string()
 
 with open('configs.json', 'r') as data:
-    VEHICLE = connect(CON_STR, wait_ready=True, vehicle_class=QUAD)
-    VEHICLE.configs = CONFIGS
+    VEHICLE = setup_vehicle(CONFIGS, QUAD)
 
 def test_takeoff():
     '''quadcopter dronekit-sitl takeoff'''
@@ -37,12 +35,3 @@ def test_land():
     VEHICLE.land()
     alt = VEHICLE.location.global_relative_frame.alt
     assert -1 < alt < 1, "vehicle did not land"
-
-def test_change_status():
-    '''set status sets the vehicles status correctly and throws with invalid status'''
-    global VEHICLE # pylint: disable=global-statement
-    VEHICLE.change_status('paused')
-    assert VEHICLE.status == 'paused'
-
-    with pytest.raises(Exception):
-        VEHICLE.change_status('invalid')
