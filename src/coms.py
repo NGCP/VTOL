@@ -19,13 +19,13 @@ class Coms():
         self.xbee_callback = xbee_callback
 
         sim_file = configs["comm_sim_file"]
-        comm_sim = Thread(target=self.comm_simulation, args=(sim_file,))
-        comm_sim.start()
+        self.comm_simulation(sim_file)
 
 
     def comm_simulation(self, comm_file):
         '''Reads through comm simulation file from configs and calls
         xbee_callback to simulate radio messages.'''
+        print('listening for messages')
         with open(comm_file, "r") as com_data:
             comms = json.load(com_data)  # reads the json file
             prev_time = 0

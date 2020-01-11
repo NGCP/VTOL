@@ -1,9 +1,20 @@
 [
-{
+    {
     	"time": 5.0,
     	"message" : {
-    		"type": "RTL",
+    		"type": "TAKEOFF",
     		"id": 1
     	}
-    }   
+    },
+    {
+    	"time": 15.0,
+    	"message" : {
+            "type": "GOTO",
+            "body": {
+                "lat": 100,
+                "lon": 100
+            },
+    		"id": 1
+    	}
+    }
 ]

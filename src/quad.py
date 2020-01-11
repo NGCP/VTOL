@@ -1,7 +1,7 @@
 '''Automous tools for VTOL'''
 import time
 import json
-from dronekit import VehicleMode, Vehicle
+from dronekit import VehicleMode, Vehicle, LocationGlobalRelative
 from coms import Coms
 from util import get_distance_metres
 
@@ -10,24 +10,29 @@ class QUAD(Vehicle):
     ''' VTOL basic state isolated'''
     coms = None
 
-    def __init__(self, *args): #pylint: disable=useless-super-delegation
+    def __init__(self, configs, *args): #pylint: disable=useless-super-delegation
         super(QUAD, self).__init__(*args)
+        self.configs = configs
 
     def setup(self):
-        '''vtol specific steps needed before flight'''
+        '''initializes coms'''
+        self.coms = Coms(self.configs, self.coms_callback)
 
+    #pylint: disable=no-self-use
     def coms_callback(self, message):
         '''callback for radio messages'''
         parsed_message = json.loads(message.data)
         #gives us the specific command we want the drone to executre
         command = parsed_message['type']
+        print("recieved message {}".format(command))
 
         # START HERE
 
-    def setup_coms(self):
-        '''sets up communication radios'''
-        print('Initializing Coms')
-        self.coms = Coms(self.configs, self.coms_callback)
+        # Respond to takeoff command
+
+        # Respond to go_to command
+
+        # Respond to land command
 
 
     def takeoff(self):
@@ -58,9 +63,9 @@ class QUAD(Vehicle):
         print("Reached target altitude")
 
 
-    def go_to(self, point):
+    def go_to(self, lat, lon):
         '''Commands drone to fly to a specified point perform a simple_goto '''
-
+        point = LocationGlobalRelative(lat, lon, self.configs['altitude'])
         self.simple_goto(point, self.configs["air_speed"])
 
         while True:
@@ -75,15 +80,7 @@ class QUAD(Vehicle):
 
     def land(self):
         '''Commands vehicle to land'''
-        self.mode = VehicleMode("LAND")
-
-        print("Landing...")
-
-        while self.location.global_relative_frame.alt > 0:
-            print("Altitude: " + str(self.location.global_relative_frame.alt))
-            time.sleep(1)
-
-        print("Landed")
-
-        print("Sleeping...")
-        time.sleep(5)
+        # Implement land
+        # See above methods as examples
+        # https://dronekit-python.readthedocs.io/en/latest/guide/copter/guided_mode.html
+        # https://dronekit-python.readthedocs.io/en/latest/examples/guided-set-speed-yaw-demo.html
