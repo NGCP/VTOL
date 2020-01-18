@@ -5,7 +5,7 @@ from vtol import VTOL
 
 def main(configs):
     '''Configure vtol and ready for mission'''
-    vehicle = setup_vehicle(configs, VTOL)
+    setup_vehicle(configs, VTOL)
     while True:
         pass
     # vehicle.takeoff()
