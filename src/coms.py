@@ -213,13 +213,14 @@ class ComsServer(BaseHTTPRequestHandler, Coms):
         # self.wfile.close() to send to Postman before the command is called
         if cmd == "takeoff":
             self.wfile.write("Taking off\n".encode())
-            self.callback(data)
+            callback = Thread(target=self.callback, args=(data,))
         elif cmd == "go_to":
             self.wfile.write("Heading to point\n".encode())
-            self.callback(data)
+            callback = Thread(target=self.callback, args=(data,))
         elif cmd == "land":
             self.wfile.write("Landing\n".encode())
-            self.callback(data)
+            callback = Thread(target=self.callback, args=(data,))
         elif cmd == "set_altitude":
             self.wfile.write("Setting altitude\n".encode())
-            self.callback(data)
+            callback = Thread(target=self.callback, args=(data,))
+        callback.start()
