@@ -1,12 +1,10 @@
 '''Automous tools for VTOL'''
 import time
-import json
 from math import radians
 from dronekit import VehicleMode, Vehicle, LocationGlobalRelative
 from pymavlink import mavutil
 from coms import Coms
-from util import to_quaternion, get_distance_metres
-
+from util import get_distance_metres, to_quaternion
 
 class VTOL(Vehicle):
     ''' VTOL basic state isolated'''
@@ -15,6 +13,8 @@ class VTOL(Vehicle):
 
     def setup(self):
         '''vtol specific steps needed before flight'''
+        print('Initializing Coms')
+        self.coms = Coms(self.configs, self.coms_callback)
 
 
     # State, updated by XBee callback function
@@ -30,36 +30,28 @@ class VTOL(Vehicle):
     land_mode = 'LAND'
 
     # pylint: disable=no-self-use
-    def coms_callback(self, message):
+    def coms_callback(self, command):
         '''callback for radio messages'''
-        parsed_message = json.loads(message.data)
-        #tuple of commands that can be executed
-        valid_commands = ("takeoff", "RTL")
-        #gives us the specific command we want the drone to executre
-        command = parsed_message['type']
 
-        print('Recieved message type:', type(parsed_message['type']))
+        #tuple of commands that can be executed
+        valid_commands = ("takeoff", "land", "go_to", "set_altitude")
+        #gives us the specific command we want the drone to executre
 
         #checking for valid command
-        if command not in valid_commands:
+        if command["Type"] not in valid_commands:
             raise Exception("Error: Unsupported status for vehicle")
 
         #executes takeoff command to drone
-        if command == 'takeoff':
+        if command["Type"] == 'takeoff':
             self.takeoff()
         #executes land command to drone
-        elif command == 'land':
+        elif command["Type"] == 'land':
             self.land()
-
-        # TODO respond to xbee messagge
-        data = json.loads(message.data)
-        print(data['type'])
-
-    def setup_coms(self):
-        '''sets up communication radios'''
-        # TODO set up coms and callback
-        print('Initializing Coms')
-        self.coms = Coms(self.configs, self.coms_callback)
+        elif command["Type"] == 'go_to':
+            self.go_to(LocationGlobalRelative(command["Body"]["Lat"], \
+                command["Body"]["Lon"], command["Body"]["Alt"]))
+        elif command["Type"] == 'set_altitude':
+            self.set_altitude(command["Body"]["Alt"])
 
 
     def start_auto_mission(self):

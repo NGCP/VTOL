@@ -4,8 +4,11 @@ from threading import Lock, Thread
 import sys
 import subprocess
 import json
-import msgpack
+import logging
+from functools import partial
+from http.server import BaseHTTPRequestHandler, HTTPServer
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
+import msgpack
 
 class ComsMutex:
     '''maintains order between threads'''
@@ -50,7 +53,6 @@ class DummyRemoteDevice:
     def __init__(self):
         self.get_64bit_addr = lambda _: 'comms simulation'
 
-
 class Coms():
     '''compartenmentalizes coms functionality and scope'''
     configs = None
@@ -60,7 +62,6 @@ class Coms():
     ack_id = None
     xbee = None  # XBee radio object
     xbee_callback = None
-
     def __init__(self, configs, xbee_callback):
         '''initializes coms object'''
         self.configs = configs
@@ -68,8 +69,7 @@ class Coms():
         self.mutex = ComsMutex()
 
         if configs['coms_simulated'] is True:
-            sim_file = configs["comm_sim_file"]
-            comm_sim = Thread(target=self.comm_simulation, args=(sim_file,))
+            comm_sim = Thread(target=self.comm_simulation)
             comm_sim.start()
         else:
             try:
@@ -170,15 +170,56 @@ class Coms():
         self.send(address, msg)
 
     # TODO: needs to be updated
-    def comm_simulation(self, comm_file):
-        '''Reads through comm simulation file from configs and calls
-        xbee_callback to simulate radio messages.'''
-        with open(comm_file, "r") as com_data:
-            comms = json.load(com_data)  # reads the json file
-            prev_time = 0
-            for instr in comms:  # gets time and message from each json object (instruction)
-                curr_time = instr["time"]
-                time.sleep(curr_time - prev_time)  # waits for the next instruction
-                # Send message to xbee_callback
-                self.xbee_callback(DummyMessage(json.dumps(instr["message"])))
-                prev_time = curr_time
+    def comm_simulation(self):
+        '''Connects to HTTP server at a specific port'''
+        logging.basicConfig(level=logging.INFO)
+        server_address = ('', 8080)
+        partial_server = partial(ComsServer, self.xbee_callback)
+        httpd = HTTPServer(server_address, partial_server)
+        logging.info('Starting httpd...\n')
+        try:
+            httpd.serve_forever()
+        except KeyboardInterrupt:
+            pass
+        httpd.server_close()
+        logging.info('Stopping httpd...\n')
+
+class ComsServer(BaseHTTPRequestHandler, Coms):
+    '''Sets response'''
+    def __init__(self, callback, *args, **kwargs):
+        self.callback = callback
+        # BaseHTTPRequestHandler calls do_GET **inside** __init__ !!!
+        # So we have to call super().__init__ after setting attributes.
+        super().__init__(*args, **kwargs)
+
+    def _set_response(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'text/html')
+        self.end_headers()
+
+    # pylint: disable=invalid-name
+    def do_POST(self):
+        '''Handles POST requests'''
+        content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
+        post_data = self.rfile.read(content_length) # <--- Gets the data itself
+        logging.info("POST request,\nPath: %s\nHeaders:\n%s\n\nBody:\n%s\n", \
+            str(self.path), str(self.headers), post_data.decode('utf-8'))
+
+        self._set_response()
+
+        post_data = post_data.decode()
+        data = json.loads(post_data)
+        cmd = data["Type"]
+        # self.wfile.close() to send to Postman before the command is called
+        if cmd == "takeoff":
+            self.wfile.write("Taking off\n".encode())
+            self.callback(data)
+        elif cmd == "go_to":
+            self.wfile.write("Heading to point\n".encode())
+            self.callback(data)
+        elif cmd == "land":
+            self.wfile.write("Landing\n".encode())
+            self.callback(data)
+        elif cmd == "set_altitude":
+            self.wfile.write("Setting altitude\n".encode())
+            self.callback(data)
