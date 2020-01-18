@@ -1,12 +1,10 @@
 '''Automous tools for VTOL'''
 import time
-import json
 from math import radians
 from dronekit import VehicleMode, Vehicle, LocationGlobalRelative
 from pymavlink import mavutil
 from coms import Coms
 from util import get_distance_metres, to_quaternion
-from http.server import BaseHTTPRequestHandler, HTTPServer
 
 class VTOL(Vehicle):
     ''' VTOL basic state isolated'''

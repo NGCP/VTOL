@@ -9,6 +9,7 @@ import time
 
 import dronekit
 
+# pylint: disable=import-error
 from pid import PID
 
 
@@ -28,10 +29,10 @@ def arm(vehicle):
     vehicle.armed = True
 
 
-def move_to_target(vehicle, target_waypoint, dt=0.5):
+def move_to_target(vehicle, target_waypoint, d_t=0.5):
     """
     Moves vehicle to the target coordinate. Must be interrupted if 'vehicle'
-    only needs to move in the direction of target coordinate. 
+    only needs to move in the direction of target coordinate.
 
     Parameters
     ----------
@@ -39,9 +40,9 @@ def move_to_target(vehicle, target_waypoint, dt=0.5):
         Vehicle object from dronekit module.
     target : dronekit.LocationGlobal
         A global location object from dronekit module.
-    dt : float
+    d_t : float
         Interval to send rc override and check if target is reached.
-    
+
     Returns
     -------
     reached_target : bool
@@ -51,7 +52,7 @@ def move_to_target(vehicle, target_waypoint, dt=0.5):
 
     reached_target = False
     while not reached_target:
-        time.sleep(dt)
+        time.sleep(d_t)
         pid_controller = PID()
         correct_thrust(vehicle)
         correct_yaw(vehicle, target_waypoint, pid_controller)
@@ -72,7 +73,7 @@ def correct_thrust(vehicle, target_relative_altitude=50):
 def correct_yaw(vehicle, target_waypoint, pid_controller=PID()):
     """Corrects the yaw so that vehicle heads towards target_waypoint"""
     calculated_yaw = get_calculated_yaw(vehicle, target_waypoint, pid_controller)
-    change_yaw(vehicle, calculated_yaw) 
+    change_yaw(vehicle, calculated_yaw)
 
 
 def get_calculated_yaw(vehicle, target_waypoint, pid_controller):
@@ -90,7 +91,8 @@ def get_calculated_yaw(vehicle, target_waypoint, pid_controller):
     destination_angle_from_north = to_positive_angle(get_angle(current_waypoint, target_waypoint))
     heading_angle_from_north = get_heading_angle(vehicle)
 
-    angle_difference = get_smallest_angle_diff(heading_angle_from_north, destination_angle_from_north)
+    angle_difference = get_smallest_angle_diff(heading_angle_from_north, \
+        destination_angle_from_north)
     error_percent = pid_controller.output(angle_difference) / 360
     increment = math.erf(error_percent) * max_yaw_increment
 
@@ -121,9 +123,9 @@ def get_heading_angle(vehicle):
     return vehicle.heading
 
 
-def get_distance(p0, p1):
+def get_distance(p_0, p_1):
     """Gets distance between two points."""
-    return math.sqrt((p0.lat - p1.lat)**2 + (p0.lon - p1.lon)**2)
+    return math.sqrt((p_0.lat - p_1.lat)**2 + (p_0.lon - p_1.lon)**2)
 
 
 def to_positive_angle(angle):
@@ -133,7 +135,7 @@ def to_positive_angle(angle):
 
 def get_smallest_angle_diff(source, target):
     """Gets the smallest difference between two angles.
-    
+
     Gives a signed angle.
     """
 
@@ -145,7 +147,6 @@ def get_smallest_angle_diff(source, target):
 
 def circle_currrent_location(vehicle):
     """Circle location in GPS-denied.
-    
     Don't use this function. Use LOITER instead.
     """
 
@@ -155,17 +156,17 @@ def circle_currrent_location(vehicle):
 
 def check_reached_target(vehicle, target_waypoint, margin_of_error=0.0001):
     """Checks if vehicle has reached target.
-       
+
     Margin of error is in terms of degrees.
     1 degree = 69 mi = 111045 m.
     """
 
     current_waypoint = get_current_location(vehicle)
     distance = get_distance(target_waypoint, current_waypoint)
-    
+
     if abs(distance) < margin_of_error:
         return True
-    
+
     return False
 
 
@@ -194,11 +195,12 @@ TARGET_WAYPOINT = dronekit.LocationGlobal(-35.356833, 149.162703, None)
 #TARGET_WAYPOINT = dronekit.LocationGlobal(-35.371415, 149.162192, None)
 
 def main():
+    '''tests'''
     vehicle = dronekit.connect('tcp:127.0.0.1:5763', wait_ready=True)
     arm(vehicle)
     move_to_target(vehicle, TARGET_WAYPOINT)
     vehicle.mode = dronekit.VehicleMode("LOITER")
-    
+
     # Sleeping so all MAVLINK messages are correctly sent
     time.sleep(3)
 
