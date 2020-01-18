@@ -1,6 +1,5 @@
 '''methods neccecary for coms'''
 import time
-from threading import Thread
 import json
 
 class Coms():
