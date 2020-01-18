@@ -6,21 +6,23 @@ from vtol import VTOL
 def main(configs):
     '''Configure vtol and ready for mission'''
     vehicle = setup_vehicle(configs, VTOL)
-    vehicle.takeoff()
+    while True:
+        pass
+    # vehicle.takeoff()
 
-    vehicle.set_altitude(10)
+    # vehicle.set_altitude(10)
 
-    home = vehicle.location.global_relative_frame
+    # home = vehicle.location.global_relative_frame
 
-    # Pick-up function for ping pong balls
+    # # Pick-up function for ping pong balls
 
-    vehicle.land()
+    # vehicle.land()
 
-    vehicle.takeoff()
+    # vehicle.takeoff()
 
-    vehicle.go_to(home)
+    # vehicle.go_to(home)
 
-    vehicle.land()
+    # vehicle.land()
 
 if __name__ == '__main__':
     with open('configs.json', 'r') as data:

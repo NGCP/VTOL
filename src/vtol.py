@@ -15,6 +15,8 @@ class VTOL(Vehicle):
 
     def setup(self):
         '''vtol specific steps needed before flight'''
+        print('Initializing Coms')
+        self.coms = Coms(self.configs, self.coms_callback)
 
 
     # State, updated by XBee callback function
@@ -34,26 +36,24 @@ class VTOL(Vehicle):
         '''callback for radio messages'''
 
         #tuple of commands that can be executed
-        valid_commands = ("takeoff", "land")
+        valid_commands = ("takeoff", "land", "go_to", "set_altitude")
         #gives us the specific command we want the drone to executre
 
         #checking for valid command
-        if command not in valid_commands:
+        if command["Type"] not in valid_commands:
             raise Exception("Error: Unsupported status for vehicle")
 
         #executes takeoff command to drone
-        if command == 'takeoff':
+        if command["Type"] == 'takeoff':
             self.takeoff()
         #executes land command to drone
-        elif command == 'land':
+        elif command["Type"] == 'land':
             self.land()
-
-
-    def setup_coms(self):
-        '''sets up communication radios'''
-        # TODO set up coms and callback
-        print('Initializing Coms')
-        self.coms = Coms(self.configs, self.coms_callback)
+        elif command["Type"] == 'go_to':
+            self.go_to(LocationGlobalRelative(command["Body"]["Lat"], \
+                command["Body"]["Lon"], command["Body"]["Alt"]))
+        elif command["Type"] == 'set_altitude':
+            self.set_altitude(command["Body"]["Alt"])
 
 
     def start_auto_mission(self):

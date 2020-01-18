@@ -7,6 +7,7 @@ import json
 import msgpack
 from digi.xbee.devices import XBeeDevice, RemoteXBeeDevice, XBee64BitAddress
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from functools import partial
 import logging
 import vtol
 
@@ -69,8 +70,7 @@ class Coms():
         self.mutex = ComsMutex()
 
         if configs['coms_simulated'] is True:
-            sim_file = configs["comm_sim_file"]
-            comm_sim = Thread(target=self.comm_simulation, args=(sim_file,))
+            comm_sim = Thread(target=self.comm_simulation)
             comm_sim.start()
         else:
             try:
@@ -171,12 +171,12 @@ class Coms():
         self.send(address, msg)
 
     # TODO: needs to be updated
-    def comm_simulation(self, server_class=HTTPServer, port=8080):
+    def comm_simulation(self):
         '''Connects to HTTP server at a specific port'''
         logging.basicConfig(level=logging.INFO)
-        server_address = ('', port)
-        httpd = server_class(server_address, ComsServer)
-        httpd.callback = self.xbee_callback
+        server_address = ('', 8080)
+        partial_server = partial(ComsServer, self.xbee_callback)
+        httpd = HTTPServer(server_address, partial_server)
         logging.info('Starting httpd...\n')
         try:
             httpd.serve_forever()
@@ -187,14 +187,19 @@ class Coms():
 
 class ComsServer(BaseHTTPRequestHandler, Coms):
     '''Sets response'''
+    def __init__(self, callback, *args, **kwargs):
+        self.callback = callback
+        # BaseHTTPRequestHandler calls do_GET **inside** __init__ !!!
+        # So we have to call super().__init__ after setting attributes.
+        super().__init__(*args, **kwargs)
 
     def _set_response(self):
         self.send_response(200)
         self.send_header('Content-type', 'text/html')
         self.end_headers()
 
-    '''Handles POST requests'''
     def do_POST(self):
+        '''Handles POST requests'''
         content_length = int(self.headers['Content-Length']) # <--- Gets the size of data
         post_data = self.rfile.read(content_length) # <--- Gets the data itself
         logging.info("POST request,\nPath: %s\nHeaders:\n%s\n\nBody:\n%s\n",
@@ -205,17 +210,17 @@ class ComsServer(BaseHTTPRequestHandler, Coms):
         post_data = post_data.decode()
         data = json.loads(post_data)
         cmd = data["Type"]
+        # self.wfile.close() to send to Postman before the command is called
         if cmd == "takeoff":
-            self.xbee_callback(cmd)
             self.wfile.write("Taking off\n".encode())
+            self.callback(data)
         elif cmd == "go_to":
-            lat = data["Body"]["Lat"]
-            lon = data["Body"]["Lon"]
-            alt = data["Body"]["Alt"]
-            self.wfile.write("Heading to point " + lat + ", " + lon + ", " + alt + "\n".encode())
+            self.wfile.write("Heading to point\n".encode())
+            self.callback(data)
         elif cmd == "land":
-            vtol.VTOL.coms_callback(vtol.VTOL, cmd)
             self.wfile.write("Landing\n".encode())
+            self.callback(data)
         elif cmd == "set_altitude":
             self.wfile.write("Setting altitude\n".encode())
-            alt = data["Body"]["Alt"]
+            self.callback(data)
+
