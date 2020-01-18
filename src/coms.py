@@ -225,10 +225,5 @@ class ComsServer(BaseHTTPRequestHandler, Coms):
             write.start()
         elif cmd == "set_altitude":
             self.wfile.write("Setting altitude\n".encode())
-<<<<<<< HEAD
             write = Thread(target=self.callback, args=(data,))
             write.start()
-
-=======
-            self.callback(data)
->>>>>>> 925cda6a564d7b7784a8574512d6246aac3044ef
