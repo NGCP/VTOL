@@ -137,3 +137,23 @@ settings.json
 *.store
 *.DAT
 # End of https://www.gitignore.io/api/python
+
+#VS 2019 junk & cmake junk
+.suo
+ProjectSettings.json
+slnx.sqlite
+VSWorkspaceState.json
+PythonSettings.json
+/build
+/.vscode
+CMakeFiles/
+.vs
+*.jpg
+*.png
+*.vcxproj
+*.sln
+*.exe
+*.so
+*.a
+Debug/
+Release/

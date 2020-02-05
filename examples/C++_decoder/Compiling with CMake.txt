@@ -1,0 +1,10 @@
+//When remaking cmake files in new dir, delete build folder
+//When changing dir in CMakeSettings.JSON \ must be replaced with \\
+
+Open Run in x64 Visual Studio Command Prompt
+switch drives with cd /d d: or cd /d c:
+go to dir with code
+mkdir build & cd build
+
+cmake .. -G “NMake Makefiles”
+nmake

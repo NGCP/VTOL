@@ -1,0 +1,22 @@
+﻿{
+  "configurations": [
+    {
+      "name": "x64-Release",
+      "generator": "Ninja",
+      "configurationType": "RelWithDebInfo",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\build",
+      "installRoot": "${projectDir}\\build\\install",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "-v",
+      "ctestCommandArgs": "",
+      "variables": [
+        {
+          "name": "CMAKE_INSTALL_PREFIX",
+          "value": "D:\\College\\CalPolyNGCP\\VTOL\\examples\\C++_decoder",
+          "type": "PATH"
+        }
+      ]
+    }
+  ]
+}
