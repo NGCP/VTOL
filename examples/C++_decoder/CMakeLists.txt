@@ -12,3 +12,6 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 add_executable (runtime runtime.cpp)
 target_link_libraries(runtime ${OpenCV_LIBS})
+
+add_executable (calibrate calibrate.cpp)
+target_link_libraries(calibrate ${OpenCV_LIBS})

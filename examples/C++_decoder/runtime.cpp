@@ -18,7 +18,7 @@ int main(int argc, char* argv) {
 
 	//setting up video capture
 	//Open default camera and reads video
-	VideoCapture cap(0);
+	VideoCapture cap(1);
 
 	//use pre-recored video
 	//VideoCapture cap("proofOC2.mp4");
@@ -30,8 +30,8 @@ int main(int argc, char* argv) {
 	}
 
 	//manually sets camera dimensions
-	cap.set(CAP_PROP_FRAME_WIDTH, 1280);
-	cap.set(CAP_PROP_FRAME_HEIGHT, 720);
+	cap.set(CAP_PROP_FRAME_WIDTH, 1920);
+	cap.set(CAP_PROP_FRAME_HEIGHT, 1080);
 
 	//manually sets camera dimensions
 	//cap.set(CAP_PROP_FRAME_WIDTH, 16);
@@ -47,7 +47,7 @@ int main(int argc, char* argv) {
 		"GOTURN", "MOSSE", "CSRT" };
 
 	//create a tracker
-	string trackerType = trackerTypes[2];
+	string trackerType = trackerTypes[6];
 
 	Ptr<Tracker> tracker;
 	//old pos
@@ -84,7 +84,7 @@ int main(int argc, char* argv) {
 	Rect2d bbox(287, 23, 86, 320);
 
 	//select bounding box with mouse
-	bbox = selectROI(frame, false);
+	//bbox = selectROI(frame, false);
 	//Display bounding box
 	rectangle(frame, bbox, Scalar(255, 0, 0), 2, 1);
 
