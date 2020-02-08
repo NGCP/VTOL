@@ -2,6 +2,7 @@
 #include <opencv2/tracking.hpp>
 #include <opencv2/core/ocl.hpp>
 #include <ctime>
+#include <D:\Program Files\librealsense\librealsense-2.32.1\include\librealsense2\rs.hpp>
 
 
 using namespace cv;
@@ -15,6 +16,9 @@ int main(int argc, char* argv) {
 	Mat frame, hsv, lab, YCB, grey;
 	Mat filtered_pink, upper_hsv_range;
 	bool bSuccess;
+
+	//construct a pipeline to abstract camera?
+	rs2::pipeline pipe;
 
 
 	//setting up video capture
@@ -44,7 +48,7 @@ int main(int argc, char* argv) {
 	std::cout << "Resolution is: " << dWidth << " x " << dHeight << endl;
 
 	//list of tracker types
-	string trackerTypes[8] = { "BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW", 
+	string trackerTypes[8] = { "BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW",
 		"GOTURN", "MOSSE", "CSRT" };
 
 	//create a tracker
@@ -76,7 +80,7 @@ int main(int argc, char* argv) {
 	//more accurate than kcf but a bit slower
 	if (trackerType == "CSRT")
 		tracker = TrackerCSRT::create();
-	
+
 
 	//read first frame
 	cap.read(frame);
@@ -97,7 +101,7 @@ int main(int argc, char* argv) {
 	Mat element = getStructuringElement(MORPH_CROSS,
 		Size(2 * erosion_size + 1, 2 * erosion_size + 1),
 		Point(erosion_size, erosion_size));
-	
+
 
 	while (true) {
 		bSuccess = cap.read(frame);
@@ -129,27 +133,27 @@ int main(int argc, char* argv) {
 		}
 
 		//Display tracker type on frame
-		putText(frame, trackerType + "Tracker", Point(100, 20), 
+		putText(frame, trackerType + "Tracker", Point(100, 20),
 			FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
 
 		//Display FPS on frame SSTR broken rn
 		//putText(frame, "FPS : " + SSTR(int(fps)), Point(100, 50),
 			//FONT_HERSHEY_SIMPLEX, 0.75, Scalar(50, 170, 50), 2);
-		
+
 		//Display tracking frame
 		cv::imshow("Tracking", frame);
 
 
 		//timer
 		time_t rawtime;
-		struct tm* timeinfo; 
+		struct tm* timeinfo;
 		char buffer[80];
 		std::time(&rawtime);
 		timeinfo = localtime(&rawtime);
 
 		std::strftime(buffer, sizeof(buffer), "%d-%m-%Y %H:%M:%S", timeinfo);
 		string str333(buffer);
-		
+
 
 		/*Greyscales
 		uses one BGR channel
@@ -163,7 +167,7 @@ int main(int argc, char* argv) {
 		V: value (intensity)
 		*not as sensitive to lighting varations?
 		*/
-		
+
 		cv::imshow("hsv_before", hsv);
 		cv::inRange(hsv, Scalar(50, 100, 50), Scalar(255, 255, 255), filtered_pink);
 		cv::erode(filtered_pink, filtered_pink, element);
@@ -178,30 +182,11 @@ int main(int argc, char* argv) {
 		//string timer = asctime(localtime(&result));
 		//you need endl for python reading
 		std::cout << "x: " << to_string(p.x) << " y: " << to_string(p.y) << " time: " << str333 << endl;
-		
+
 
 		circle(frame, p, 5, Scalar(128, 0, 0), -1);
 		imshow("color_tracking", frame);
 
-		/*L.A.B. 
-		L: Lightness (Intensity) (independent of color, only brightness)
-		A: Color component (green to magenta)
-		B: Color component (blue to yellow)
-		*good for telling how bright it is? will have to Ceteris paribus camera 
-		intrinsics
-		*/
-		//cvtColor(video, lab, COLOR_BGR2Lab);
-		//imshow("lab", lab);
-
-		/*YCrCb (YCB)
-		Y: Lumiance/Luma component obtain from BGR after gamma correction (whatever 
-		that means)
-		Cr = R-Y how far the red component is from Luma
-		Cb = B-Y how far the red component is from Luma
-		*good for finding reds and blues?
-		*/
-		//cvtColor(video, YCB, COLOR_BGR2YCrCb);
-		//imshow("YCB", YCB);
 
 
 		//wait for 1 ms until any key is pressed.  

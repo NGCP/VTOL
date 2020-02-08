@@ -15,3 +15,6 @@ target_link_libraries(runtime ${OpenCV_LIBS})
 
 add_executable (calibrate calibrate.cpp)
 target_link_libraries(calibrate ${OpenCV_LIBS})
+
+add_executable (Stuka Stuka.cpp)
+target_link_libraries(Stuka ${OpenCV_LIBS})
