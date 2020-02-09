@@ -26,7 +26,7 @@ if(WIN32)
         set(LIBRARY_DIR "D:\\Intel RealSense SDK 2.0\\lib\\x86")          # TODO: Update this variable to correct path - folder where realsense2.lib is found
         set(DLL_DIR "D:\\Intel RealSense SDK 2.0\\bin\\x86")              # TODO: Update this variable to correct path - folder where realsense2.dll is found
     endif()
-    set(PROJECT_BINARY_OUTPUT_PATH "${PROJECT_BINARY_DIR}/\$\(Configuration\)")                # TODO: Update this variable to correct path - folder to which your project will compile
+    set(PROJECT_BINARY_OUTPUT_PATH "${PROJECT_BINARY_DIR}/\$$\(Configuration\)")  # TODO: Update this variable to correct path - folder to which your project will compile
     set(ADDITIONAL_INCLUDE_DIRS "D:\\Intel RealSense SDK 2.0\\include")   # TODO: Update this variable to correct path - folder where librealsense2 folder is found
 endif()
 
@@ -46,9 +46,31 @@ include_directories(${OpenCV_INCLUDE_DIRS}, ${ADDITIONAL_INCLUDE_DIRS})
 
 add_executable (NordenBombsight NordenBombsight.cpp)
 
-target_link_libraries(NordenBombsight ${OpenCV_LIBS})
+
+#this needs to have only OpenCV_LIBS in it
+target_link_libraries(NordenBombsight PRIVATE ${OpenCV_LIBS} ${REALSENSE2_FOUND})
 set_target_properties (NordenBombsight PROPERTIES FOLDER Examples)
 
+
+#try manually adding realsense2.dll to build folder (next to Nordenbombsight.exe)
+
+if(WIN32)
+    message(STATUS "Adding Post build script to realsense.dll to project's binary folder")
+    message(STATUS "Will try to copy from ${DLL_DIR} to ${PROJECT_BINARY_OUTPUT_PATH}")
+    add_custom_command(TARGET NordenBombsight POST_BUILD #adds post-build event
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different    #which executes "cmake -E copy_if_different..."
+        "${DLL_DIR}/realsense2.dll"                      #<- in-file 
+        ${PROJECT_BINARY_OUTPUT_PATH})                   #<- out-file path
+endif()
+
+install(
+    TARGETS
+
+    NordenBombsight
+
+    RUNTIME DESTINATION
+    ${CMAKE_INSTALL_PREFIX}/bin
+)
 
 add_executable (runtime runtime.cpp)
 target_link_libraries(runtime ${OpenCV_LIBS})

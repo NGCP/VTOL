@@ -8,3 +8,10 @@ mkdir build & cd build
 
 cmake .. -G “NMake Makefiles”
 nmake
+
+//how to compile realsense sdk on windows with cmake
+//you can merge this with a cmake_list that builds opencv. see NordenBombsight for an example
+https://github.com/IntelRealSense/librealsense/issues/825#issuecomment-429065088
+//actually, it might have been this one:
+https://github.com/zivsha/librealsense/blob/getting_started_example/examples/getting-started/CMakeLists.txt
+//I think it was tbh
