@@ -20,14 +20,14 @@ endif()
 # Simple non robust way to find the librealsense library
 if(WIN32)
     if("${CMAKE_SIZEOF_VOID_P}" STREQUAL "8")
-        set(LIBRARY_DIR "D:\\Intel RealSense SDK 2.0\\lib\\x64")          # TODO: Update this variable to correct path - folder where realsense2.lib is found
-        set(DLL_DIR "D:\\Intel RealSense SDK 2.0\\bin\\x64")              # TODO: Update this variable to correct path - folder where realsense2.dll is found
+        set(LIBRARY_DIR "C:\\Program Files (x86)\\Intel RealSense SDK 2.0")          # TODO: Update this variable to correct path - folder where realsense2.lib is found
+        set(DLL_DIR "C:\\Program Files (x86)\\Intel RealSense SDK 2.0\\bin\\x64")              # TODO: Update this variable to correct path - folder where realsense2.dll is found
     else()
-        set(LIBRARY_DIR "D:\\Intel RealSense SDK 2.0\\lib\\x86")          # TODO: Update this variable to correct path - folder where realsense2.lib is found
-        set(DLL_DIR "D:\\Intel RealSense SDK 2.0\\bin\\x86")              # TODO: Update this variable to correct path - folder where realsense2.dll is found
+        set(LIBRARY_DIR "C:\\Program Files (x86)\\Intel RealSense SDK 2.0\\lib\\x86")          # TODO: Update this variable to correct path - folder where realsense2.lib is found
+        set(DLL_DIR "C:\\Program Files (x86)\\Intel RealSense SDK 2.0\\bin\\x86")              # TODO: Update this variable to correct path - folder where realsense2.dll is found
     endif()
     set(PROJECT_BINARY_OUTPUT_PATH "${PROJECT_BINARY_DIR}/\$$\(Configuration\)")  # TODO: Update this variable to correct path - folder to which your project will compile
-    set(ADDITIONAL_INCLUDE_DIRS "D:\\Intel RealSense SDK 2.0\\include")   # TODO: Update this variable to correct path - folder where librealsense2 folder is found
+    set(ADDITIONAL_INCLUDE_DIRS "C:\\Program Files (x86)\\Intel RealSense SDK 2.0\\include")   # TODO: Update this variable to correct path - folder where librealsense2 folder is found
 endif()
 
 find_library(REALSENSE2_FOUND realsense2 HINTS ${LIBRARY_DIR} REQUIRED)
@@ -45,10 +45,9 @@ find_package (OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS}, ${ADDITIONAL_INCLUDE_DIRS})
 
 add_executable (NordenBombsight NordenBombsight.cpp)
+set_property(TARGET NordenBombsight PROPERTY CXX_STANDARD 11)
 
-
-#this needs to have only OpenCV_LIBS in it
-target_link_libraries(NordenBombsight PRIVATE ${OpenCV_LIBS} ${REALSENSE2_FOUND})
+target_link_libraries(NordenBombsight ${OpenCV_LIBS} ${REALSENSE2_FOUND} ${DEPENDENCIES})
 set_target_properties (NordenBombsight PROPERTIES FOLDER Examples)
 
 

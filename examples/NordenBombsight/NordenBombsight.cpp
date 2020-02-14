@@ -12,14 +12,23 @@ using namespace std;
 #define SSTR( x ) static_cast< std::ostringstream & >( \
 ( std::ostringstream() << std::dec << x ) ).str()
 
+
 int main(int argc, char* argv) {
 	Mat frame, hsv, lab, YCB, grey;
 	Mat filtered_pink, upper_hsv_range;
 	bool bSuccess;
 
+
 	//abstract the device (camera?) 
 	//POINT OF FAILURE
+	//rs2::colorizer color_map;
+	//rs2::context ctx;
 	rs2::pipeline pipe;
+	pipe.start();
+	//auto pipe = std::make_shared<rs2::pipeline>();
+	//auto c = std::make_shared<rs2::config>();
+	//pipe->start(*c);
+	
 
 	//create config for configuring the pipeline with a non defult profile
 	//rs2::config cfg;
