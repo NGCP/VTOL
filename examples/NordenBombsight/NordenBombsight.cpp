@@ -18,72 +18,59 @@ int main(int argc, char* argv) {
 	Mat filtered_pink, upper_hsv_range;
 	bool bSuccess;
 
-
 	//abstract the device (camera?) 
-	//POINT OF FAILURE
-	//rs2::colorizer color_map;
-	//rs2::context ctx;
 	rs2::pipeline pipe;
-	pipe.start();
-	//auto pipe = std::make_shared<rs2::pipeline>();
-	//auto c = std::make_shared<rs2::config>();
-	//pipe->start(*c);
 	
-
 	//create config for configuring the pipeline with a non defult profile
-	//rs2::config cfg;
+	rs2::config cfg;
 
 	//Add desired streams to start streaming with the requested config
-	//cfg.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_BGR8, 30);
+	cfg.enable_stream(RS2_STREAM_COLOR, 640, 480, RS2_FORMAT_BGR8, 60);
+	//or: cfg.enable_stream(RS2_STREAM_COLOR, 1280, 720, RS2_FORMAT_BGR8, 30);
 
 	//start stream with requested config
-	//pipe.start(cfg);
+	pipe.start(cfg);
 
 	//let the camera warmup -drop the first couple of frames to let auto-exposure stablize
-	//rs2::frameset frames;
+	rs2::frameset frames;
 	for (int i = 0; i < 30; i++) {
 		//wait for all configed streams to produce a frame
-		//frames = pipe.wait_for_frames();
+		frames = pipe.wait_for_frames();
 	}
 
 	//get each frame
 	//rs2::frame color_frame = frames.get_color_frame();
 
+	
 	//now make a opencv Mat with the color image from the realsense camera
 	//Mat color(Size(640, 480), CV_8UC3, (void*)color_frame.get_data(), Mat::AUTO_STEP);
 
-	   
-
 	//setting up video capture
 	//Open default camera and reads video
-	VideoCapture cap(0);
+	//VideoCapture cap(0);
 
 	//use pre-recored video
 	//VideoCapture cap("proofOC2.mp4");
 
-	
-	if (cap.isOpened() == false) {
-		std::cout << "Cannot open camera" << endl;
-		cin.get();
-		return -1;
-	}
-	
+	//if (cap.isOpened() == false) {
+		//std::cout << "Cannot open camera" << endl;
+		//cin.get();
+		//return -1;
+	//}
 
 	//manually sets camera dimensions
-	cap.set(CAP_PROP_FRAME_WIDTH, 1920);
-	cap.set(CAP_PROP_FRAME_HEIGHT, 1080);
+	//cap.set(CAP_PROP_FRAME_WIDTH, 1920);
+	//cap.set(CAP_PROP_FRAME_HEIGHT, 1080);
 
 	//manually sets camera dimensions
 	//cap.set(CAP_PROP_FRAME_WIDTH, 16);
 	//cap.set(CAP_PROP_FRAME_HEIGHT, 9);
 
 	//finds & prints camera dimensions 
-	double dWidth = cap.get(CAP_PROP_FRAME_WIDTH);
-	double dHeight = cap.get(CAP_PROP_FRAME_HEIGHT);
-	std::cout << "Resolution is: " << dWidth << " x " << dHeight << endl;
-
+	//double dWidth = cap.get(CAP_PROP_FRAME_WIDTH);
+	//double dHeight = cap.get(CAP_PROP_FRAME_HEIGHT);
+	//std::cout << "Resolution is: " << dWidth << " x " << dHeight << endl;
 	
-
 	//list of tracker types
 	string trackerTypes[8] = { "BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW",
 		"GOTURN", "MOSSE", "CSRT" };
@@ -118,11 +105,8 @@ int main(int argc, char* argv) {
 	if (trackerType == "CSRT")
 		tracker = TrackerCSRT::create();
 
-
 	//read first frame
-	cap.read(frame);
-	//frame = color;
-
+	//cap.read(frame);
 
 	//defining inital bounding box. idk what numbers do. are they coords?
 	Rect2d bbox(287, 23, 86, 320);
@@ -140,22 +124,31 @@ int main(int argc, char* argv) {
 	Mat element = getStructuringElement(MORPH_CROSS,
 		Size(2 * erosion_size + 1, 2 * erosion_size + 1),
 		Point(erosion_size, erosion_size));
-
-
+	
 	while (true) {
 		
-		bSuccess = cap.read(frame);
+		//bSuccess = cap.read(frame);
 		
-		if (!bSuccess) {
+		//if (!bSuccess) {
 			//cout << "camera is disconnected" << endl;
 			//wait for key press
-			cin.get();
-			break;
-		}
+			//cin.get();
+			//break;
+		//}
+
+		rs2::frameset data = pipe.wait_for_frames();
+		rs2::frame colour = data.get_color_frame();
+		// Query frame size (width and height)
+		const int w = colour.as<rs2::video_frame>().get_width();
+		const int h = colour.as<rs2::video_frame>().get_height();
+
+		// Create OpenCV matrix of size (w,h) from the colorized depth data
+		cv::Mat frame(cv::Size(w, h), CV_8UC3, (void*)colour.get_data(), cv::Mat::AUTO_STEP);
+
+		imshow("realsense", frame);
 		
-		//frame = color;
 		//BGR (each channel is color and brightness)
-		cv::imshow("webcam", frame);
+		//cv::imshow("webcam", frame);
 		//grab frame from cap before i mess with it in tracking
 		cvtColor(frame, hsv, COLOR_BGR2HSV);
 
@@ -210,6 +203,7 @@ int main(int argc, char* argv) {
 		V: value (intensity)
 		*not as sensitive to lighting varations?
 		*/
+		
 
 		cv::imshow("hsv_before", hsv);
 		cv::inRange(hsv, Scalar(50, 100, 50), Scalar(255, 255, 255), filtered_pink);
@@ -229,7 +223,6 @@ int main(int argc, char* argv) {
 
 		circle(frame, p, 5, Scalar(128, 0, 0), -1);
 		imshow("color_tracking", frame);
-
 
 
 		//wait for 1 ms until any key is pressed.  

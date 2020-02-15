@@ -10,12 +10,15 @@ def read_output(p, append):
 
 def cal():
     p = subprocess.Popen(
-        "build\\runtime.exe", 
-        shell = True, 
+        "NordenBombsight\\build\\NordenBombsight.exe", 
+        
         stdout=subprocess.PIPE, 
         stdin=subprocess.PIPE, 
         stderr=subprocess.PIPE, 
         close_fds = True)
+    poll = p.poll()
+    if poll == None:
+        print ("subprocess is alive")
     q = collections.deque(maxlen=1)
     #output = p.stdout.readline()
     t = threading.Thread(target=read_output, args=(p,q.append))
@@ -40,7 +43,7 @@ def cal():
         frame_data = b''.join(q).decode("utf-8")
         frame_data_list = frame_data.split()
         if frame_data_list:
-            print (frame_data_list[0])
+            print (frame_data_list[1])
         else:
             print("no c++ input")
     p.kill()
