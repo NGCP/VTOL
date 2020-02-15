@@ -1,4 +1,4 @@
-'''Automous tools for VTOL'''
+'''Automous tools for QUAD'''
 import time
 from math import radians
 from dronekit import VehicleMode, Vehicle, LocationGlobalRelative
@@ -6,16 +6,33 @@ from pymavlink import mavutil
 from coms import Coms
 from util import get_distance_metres, to_quaternion
 
-class VTOL(Vehicle):
-    ''' VTOL basic state isolated'''
+class QUAD(Vehicle):
+    ''' QUAD basic state isolated'''
+
+
     def __init__(self, *args): #pylint: disable=useless-super-delegation
-        super(VTOL, self).__init__(*args)
+        super(QUAD, self).__init__(*args)
+
+    def state_loop(self):
+        '''monitors and reports state'''
+        if self.vehicle_state.name is "takeoff":
+            #PRINT TAKEOFF STUFF
+        elif self.vehicle_state.name is "land":
+            #PRINT LAND STUFF
+
 
     def setup(self):
-        '''vtol specific steps needed before flight'''
+        '''QUAD specific steps needed before flight'''
         print('Initializing Coms')
         self.coms = Coms(self.configs, self.coms_callback)
 
+    def set_mode(self, mode):
+        '''sets vehicle's mode'''
+        self.mode = VehicleMode(mode)
+
+    def altitude(self):
+        '''gets location'''
+        return self.location.global_relative_frame.alt
 
     # State, updated by XBee callback function
     configs = None
@@ -98,7 +115,6 @@ class VTOL(Vehicle):
             time.sleep(1)
 
         print("Taking off")
-
         altitude = self.configs['altitude']
         self.simple_takeoff(altitude)  # take off to altitude
 
@@ -112,7 +128,7 @@ class VTOL(Vehicle):
     def go_to(self, point):
         '''Commands drone to fly to a specified point perform a simple_goto '''
 
-        self.simple_goto(point, self.configs["air_speed"])
+        self.simple_goto(point)
 
         while True:
             distance = get_distance_metres(self.location.global_relative_frame, point)
@@ -236,7 +252,7 @@ class VTOL(Vehicle):
                 "tid": 0, # the ID of the GCS is 0
                 "id": self.coms.new_msg_id(),
 
-                "vehicleType": "VTOL",
+                "vehicleType": "QUAD",
                 "lat": location.lat,
                 "lon": location.lon,
                 "status": self.status,

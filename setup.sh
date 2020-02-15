@@ -11,7 +11,7 @@ then
     cd ardupilot
     ./waf configure
     ./waf configure --board sitl
-    ./waf copter 
+    ./waf copter
     cd ..
     mkdir simulator
     mv ./ardupilot/build/sitl/bin/arducopter ./simulator/

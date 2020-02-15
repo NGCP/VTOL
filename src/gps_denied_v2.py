@@ -12,7 +12,7 @@ from simple_pid import PID
 from shapely.geometry import Polygon, Point
 from dronekit import connect
 from dotenv import load_dotenv
-from vtol import VTOL
+from quad import QUAD
 
 load_dotenv()
 
@@ -25,7 +25,7 @@ def setup_vehicle(configs):
     return veh
 
 
-class GpsDeniedVtol(VTOL): #pylint: disable=too-many-instance-attributes
+class GpsDeniedVtol(QUAD): #pylint: disable=too-many-instance-attributes
     '''encapsualtes variables and tools used for GPS denied navigation'''
 
     # Quick configs

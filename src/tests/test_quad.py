@@ -1,8 +1,8 @@
-'''test for vtol.py'''
+'''test for quad.py'''
 import pytest
 from dronekit_sitl import start_default
 from dronekit import connect
-from vtol import VTOL
+from quad import QUAD
 
 CONFIGS = {
     'vehicle_simulated': True,
@@ -20,7 +20,7 @@ CONFIGS = {
 CON_STR = start_default().connection_string()
 
 with open('configs.json', 'r') as data:
-    VEHICLE = connect(CON_STR, wait_ready=True, vehicle_class=VTOL)
+    VEHICLE = connect(CON_STR, wait_ready=True, vehicle_class=QUAD)
     VEHICLE.configs = CONFIGS
 
 def test_takeoff():

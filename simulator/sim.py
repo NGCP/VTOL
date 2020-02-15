@@ -17,7 +17,7 @@ if DO_DOWNLOAD:
     SIM.download('copter', '3.3', verbose=False)
 
 SIM.launch(['--model', 'quad', ], await_ready=True, restart=False)
-print("Simulator lanched")
+print("Simulator lanched on {}".format(SIM.connection_string()))
 
 while True:
     sleep(5)

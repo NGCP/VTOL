@@ -6,7 +6,6 @@ move_to_target() to move to a target with rc_override
 
 import math
 import time
-
 import dronekit
 
 # pylint: disable=import-error

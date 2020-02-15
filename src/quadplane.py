@@ -1,9 +1,9 @@
 '''Automous tools for VTOL'''
 import json
-from vtol import VTOL
+from quad import QUAD
 from util import setup_vehicle
 
-class QuadPlane(VTOL):
+class QuadPlane(QUAD):
     '''State deffinition for QuadPlane'''
     land_mode = 'QLAND'
 

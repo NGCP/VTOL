@@ -1,28 +1,29 @@
 '''main executable for setting up VTOL'''
 import json
+from time import sleep
 from util import setup_vehicle
-from vtol import VTOL
+from quad import QUAD
+
 
 def main(configs):
     '''Configure vtol and ready for mission'''
-    setup_vehicle(configs, VTOL)
-    while True:
-        pass
+    vehicle = setup_vehicle(configs, QUAD)
     # vehicle.takeoff()
 
-    # vehicle.set_altitude(10)
+    # vehicle.set_mode("QHOVER")
+    # while True:
+        # sleep(.5)
+        # cur = pid.output(setpoint - vehicle.altitude())
+        # zero = 1530
+        # print(min(max(1300, zero + cur), 2000))
+        # vehicle.channels.overrides = {
+        #     '3': 1500, # min(max(1300, cur * 6), 2000),
+        #     '2': 1500,
+        #     '1': 1490
+        # }
+        # vehicle.channels.overrides['3'] = 1500
+        # print('overriding')
 
-    # home = vehicle.location.global_relative_frame
-
-    # # Pick-up function for ping pong balls
-
-    # vehicle.land()
-
-    # vehicle.takeoff()
-
-    # vehicle.go_to(home)
-
-    # vehicle.land()
 
 if __name__ == '__main__':
     with open('configs.json', 'r') as data:
