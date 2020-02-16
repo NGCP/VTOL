@@ -17,6 +17,24 @@
           "type": "PATH"
         }
       ]
+    },
+    {
+      "name": "x64-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "-v",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": [
+        {
+          "name": "CMAKE_INSTALL_PREFIX",
+          "value": "D:/College/CalPolyNGCP/VTOL/examples/NordenBombsight/out/install/x64-Debug",
+          "type": "PATH"
+        }
+      ]
     }
   ]
 }

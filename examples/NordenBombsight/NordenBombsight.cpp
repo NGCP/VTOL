@@ -3,9 +3,17 @@
 #include <opencv2/core/ocl.hpp>
 #include <ctime>
 #include <librealsense2/rs.hpp>
+#include <opencv2/xfeatures2d/nonfree.hpp>
+#include <opencv2/xfeatures2d.hpp>
+#include <iostream>
+#include "opencv2/core.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/features2d.hpp"
+#include "opencv2/xfeatures2d.hpp"
 
 
 using namespace cv;
+using namespace cv::xfeatures2d;
 using namespace std;
 
 //this is involved with putting text on a frame?
@@ -14,9 +22,14 @@ using namespace std;
 
 
 int main(int argc, char* argv) {
-	Mat frame, hsv, lab, YCB, grey;
+	Mat frame, hsv, lab, YCB, grey, good_matches_mat, live_descriptors, Homo;
+	vector<KeyPoint> live_keypoints;
+	std::vector<std::vector<cv::DMatch>> knn_matches;
+	vector<DMatch> good_matches;
+	vector<Point2f> SUGV_vector, live_vector, SUGV_corners(4), live_corners(4);
 	Mat filtered_pink, upper_hsv_range;
 	bool bSuccess;
+	const float ratio_thresh = 0.7f;
 
 	//abstract the device (camera?) 
 	rs2::pipeline pipe;
@@ -38,38 +51,25 @@ int main(int argc, char* argv) {
 		frames = pipe.wait_for_frames();
 	}
 
-	//get each frame
-	//rs2::frame color_frame = frames.get_color_frame();
+	//load SUGV ref_image
+	Mat ref_SUGV = imread("SUGV.jpg");
+	imshow("SUGV", ref_SUGV);
 
+	//Object detection by Homography 
+	//detect keypoints of SUGV
+	int minHessian = 400;
+	Ptr<ORB> detector = ORB::create(minHessian);
+	vector<KeyPoint> SUGV_keypoints;
+	Mat SUGV_descriptors;
+	detector->detectAndCompute(ref_SUGV, noArray(), SUGV_keypoints, SUGV_descriptors);
+
+	drawKeypoints(ref_SUGV, SUGV_keypoints, ref_SUGV);
+	imshow("keypoints", ref_SUGV);
+
+	//declare matcher
+	Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE);
 	
-	//now make a opencv Mat with the color image from the realsense camera
-	//Mat color(Size(640, 480), CV_8UC3, (void*)color_frame.get_data(), Mat::AUTO_STEP);
 
-	//setting up video capture
-	//Open default camera and reads video
-	//VideoCapture cap(0);
-
-	//use pre-recored video
-	//VideoCapture cap("proofOC2.mp4");
-
-	//if (cap.isOpened() == false) {
-		//std::cout << "Cannot open camera" << endl;
-		//cin.get();
-		//return -1;
-	//}
-
-	//manually sets camera dimensions
-	//cap.set(CAP_PROP_FRAME_WIDTH, 1920);
-	//cap.set(CAP_PROP_FRAME_HEIGHT, 1080);
-
-	//manually sets camera dimensions
-	//cap.set(CAP_PROP_FRAME_WIDTH, 16);
-	//cap.set(CAP_PROP_FRAME_HEIGHT, 9);
-
-	//finds & prints camera dimensions 
-	//double dWidth = cap.get(CAP_PROP_FRAME_WIDTH);
-	//double dHeight = cap.get(CAP_PROP_FRAME_HEIGHT);
-	//std::cout << "Resolution is: " << dWidth << " x " << dHeight << endl;
 	
 	//list of tracker types
 	string trackerTypes[8] = { "BOOSTING", "MIL", "KCF", "TLD","MEDIANFLOW",
@@ -126,16 +126,7 @@ int main(int argc, char* argv) {
 		Point(erosion_size, erosion_size));
 	
 	while (true) {
-		
-		//bSuccess = cap.read(frame);
-		
-		//if (!bSuccess) {
-			//cout << "camera is disconnected" << endl;
-			//wait for key press
-			//cin.get();
-			//break;
-		//}
-
+		//get realsense rgb
 		rs2::frameset data = pipe.wait_for_frames();
 		rs2::frame colour = data.get_color_frame();
 		// Query frame size (width and height)
@@ -163,9 +154,62 @@ int main(int argc, char* argv) {
 			rectangle(frame, bbox, Scalar(255, 0, 0), 2, 1);
 		}
 		//tracking failure detected
-		else {
+		//when target is lost, re-detect
+		else if (!frame.empty()) {
 			putText(frame, "Tracking failure detected", Point(100, 80),
 				FONT_HERSHEY_SIMPLEX, 0.75, Scalar(0, 0, 255), 2);
+
+			//detect
+			detector->detectAndCompute(frame, noArray(), live_keypoints, live_descriptors);
+			Mat frame2;
+			drawKeypoints(frame, live_keypoints, frame2);
+			imshow("live_keypoints", frame2);
+			
+			//match
+			matcher->knnMatch(SUGV_descriptors, live_descriptors, knn_matches, 2);
+			
+			//filter matches with lowe's ratio test
+			cout << knn_matches[0][0].distance << endl;
+			for (size_t i = 0; i < knn_matches.size(); i++) 
+			{
+				if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance) {
+					good_matches.push_back(knn_matches[i][0]);
+				}
+			}
+			//draw matches
+			drawMatches(ref_SUGV, SUGV_keypoints, frame, live_keypoints, good_matches,
+				good_matches_mat, Scalar::all(-1), Scalar::all(-1), vector<char>(),
+				DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
+
+			//localize SUGV
+			for (size_t i = 0; i < good_matches.size(); i++) {
+				//get the keypoints from the good matches
+				SUGV_vector.push_back(SUGV_keypoints[good_matches[i].queryIdx].pt);
+				live_vector.push_back(live_keypoints[good_matches[i].trainIdx].pt);
+			}
+
+			//find homography
+			Homo = findHomography(SUGV_vector, live_vector, RANSAC);
+			
+			//get the corners of the SUGV
+			SUGV_corners[0] = Point2f(0, 0);
+			SUGV_corners[1] = Point2f((float)ref_SUGV.cols, 0);
+			SUGV_corners[2] = Point2f((float)ref_SUGV.cols, (float)ref_SUGV.rows);
+			SUGV_corners[3] = Point2f(0, (float)ref_SUGV.rows);
+			
+			perspectiveTransform(SUGV_corners, live_corners, Homo);
+
+			//draw lines between corners on frame
+			line(good_matches_mat, live_corners[0] + Point2f((float)ref_SUGV.cols, 0),
+				live_corners[1] + Point2f((float)ref_SUGV.cols, 0), Scalar(0, 255, 0), 4);
+			line(good_matches_mat, live_corners[1] + Point2f((float)ref_SUGV.cols, 0),
+				live_corners[2] + Point2f((float)ref_SUGV.cols, 0), Scalar(0, 255, 0), 4);
+			line(good_matches_mat, live_corners[2] + Point2f((float)ref_SUGV.cols, 0),
+				live_corners[3] + Point2f((float)ref_SUGV.cols, 0), Scalar(0, 255, 0), 4);
+			line(good_matches_mat, live_corners[3] + Point2f((float)ref_SUGV.cols, 0),
+				live_corners[0] + Point2f((float)ref_SUGV.cols, 0), Scalar(0, 255, 0), 4);
+			//show matches
+			imshow("Homo", good_matches_mat);
 		}
 
 		//Display tracker type on frame

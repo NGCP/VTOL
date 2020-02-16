@@ -39,15 +39,19 @@ endif()
 
 
 SET(OpenCV_DIR D:\\OpenCV\\opencv-4.1.2\\build\\install)
-set(OPENCV_ENABLE_NONFREE)
+
 find_package (OpenCV REQUIRED)
+#SET(OPENCV_ENABLE_NONFREE:BOOL=ON)
+SET(OPENCV_ENABLE_NONFREE "Enable non-free algorithms" ON)
+#SET(OPENCV_CONTRIB_FLAGS "-lopencv_aruco")
+message(STATUS "OpenCV_LIBS = ${OpenCV_LIBS}")
 
 include_directories(${OpenCV_INCLUDE_DIRS}, ${ADDITIONAL_INCLUDE_DIRS})
 
 add_executable (NordenBombsight NordenBombsight.cpp)
 set_property(TARGET NordenBombsight PROPERTY CXX_STANDARD 11)
-
-target_link_libraries(NordenBombsight ${OpenCV_LIBS} ${REALSENSE2_FOUND} ${DEPENDENCIES})
+#add_definitions(${OPENCV_CONTRIB_FLAGS})
+target_link_libraries(NordenBombsight ${OpenCV_LIBS} ${REALSENSE2_FOUND} ${DEPENDENCIES} )
 set_target_properties (NordenBombsight PROPERTIES FOLDER Examples)
 
 
