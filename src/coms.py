@@ -62,6 +62,7 @@ class Coms():
     ack_id = None
     xbee = None  # XBee radio object
     xbee_callback = None
+
     def __init__(self, configs, xbee_callback):
         '''initializes coms object'''
         self.configs = configs

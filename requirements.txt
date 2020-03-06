@@ -1,7 +1,6 @@
 msgpack
 numpy
 opencv-python
-simple_pid
 dronekit
 dronekit_sitl
 digi-xbee

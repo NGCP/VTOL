@@ -55,4 +55,3 @@ class Vision():
         raw_capture = PiRGBArray(camera) #pylint: disable=import-error
         camera.capture(raw_capture, format="bgr")
         return raw_capture.array
-        

@@ -3,7 +3,7 @@ import json
 import datetime
 import subprocess
 import sys
-from math import cos, sin, radians, sqrt
+from math import cos, sin, radians
 import shelve
 from dronekit import connect, APIException
 
@@ -142,4 +142,4 @@ def get_distance_metres(loc_a, loc_b):
     dlat = loc_b.lat - loc_a.lat
     dlong = loc_b.lon - loc_a.lon
     dalt = loc_b.alt - loc_a.alt
-    return sqrt((((dlat**2) + (dlong**2)) * 1.113195e5 ** 2) + (dalt ** 2))
+    return (dlat * 1.113195e5, dlong * 1.113195e5, dalt)
