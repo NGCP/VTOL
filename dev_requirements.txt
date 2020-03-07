@@ -1,4 +1,2 @@
 pylint
-python-dotenv
 pytest
-shapely

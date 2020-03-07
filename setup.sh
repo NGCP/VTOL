@@ -1,5 +1,5 @@
 # install dependencies
-pip3 install -rrequirements.txt
+pip3 install -r requirements.txt
 
 # add pylint commit hook
 git config core.hooksPath hooks
