@@ -1,4 +1,4 @@
-#pylint: disable=invalid-name
+# pylint: disable=invalid-name
 
 """
 Code from https://github.com/scivision/pymap3d
@@ -7,42 +7,47 @@ Code from https://github.com/scivision/pymap3d
 from numpy import radians, sin, cos, tan, arctan, hypot, degrees, arctan2, sqrt, pi
 import numpy as np
 
+
 class Ellipsoid:
     """
     generate reference ellipsoid parameters
     https://en.wikibooks.org/wiki/PROJ.4#Spheroid
     """
 
-    def __init__(self, model='wgs84'):
-        if model == 'wgs84':
-            #https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84
-            self.a = 6378137.  # semi-major axis [m]
+    def __init__(self, model="wgs84"):
+        if model == "wgs84":
+            # https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84
+            self.a = 6378137.0  # semi-major axis [m]
             self.f = 1 / 298.2572235630  # flattening
             self.b = self.a * (1 - self.f)  # semi-minor axis
-        elif model == 'grs80':
-            #https://en.wikipedia.org/wiki/GRS_80
-            self.a = 6378137.  # semi-major axis [m]
+        elif model == "grs80":
+            # https://en.wikipedia.org/wiki/GRS_80
+            self.a = 6378137.0  # semi-major axis [m]
             self.f = 1 / 298.257222100882711243  # flattening
             self.b = self.a * (1 - self.f)  # semi-minor axis
-        elif model == 'clrk66':  # Clarke 1866
+        elif model == "clrk66":  # Clarke 1866
             self.a = 6378206.4  # semi-major axis [m]
             self.b = 6356583.8  # semi-minor axis
             self.f = -(self.b / self.a - 1)
-        elif model == 'mars':  # https://tharsis.gsfc.nasa.gov/geodesy.html
+        elif model == "mars":  # https://tharsis.gsfc.nasa.gov/geodesy.html
             self.a = 3396900
             self.b = 3376097.80585952
             self.f = 1 / 163.295274386012
-        elif model == 'moon':
-            self.a = 1738000.
-            self.b = 1738000.
-            self.f = 0.
-        elif model == 'venus':
-            self.a = 6051000.
-            self.b = 6051000.
-            self.f = 0.
+        elif model == "moon":
+            self.a = 1738000.0
+            self.b = 1738000.0
+            self.f = 0.0
+        elif model == "venus":
+            self.a = 6051000.0
+            self.b = 6051000.0
+            self.f = 0.0
         else:
-            raise NotImplementedError('''{} model not implemented, let us know
-            and we will add it (or make a pull request)'''.format(model))
+            raise NotImplementedError(
+                """{} model not implemented, let us know
+            and we will add it (or make a pull request)""".format(
+                    model
+                )
+            )
 
 
 def get_radius_normal(lat_radians, ell):
@@ -53,7 +58,9 @@ def get_radius_normal(lat_radians, ell):
     a = ell.a
     b = ell.b
 
-    return a**2 / sqrt(a**2 * cos(lat_radians)**2 + b**2 * sin(lat_radians)**2)
+    return a ** 2 / sqrt(
+        a ** 2 * cos(lat_radians) ** 2 + b ** 2 * sin(lat_radians) ** 2
+    )
 
 
 def ecef2ned(x, y, z, lat0, lon0, h0, ell=None, deg=True):
@@ -71,6 +78,7 @@ def ecef2ned(x, y, z, lat0, lon0, h0, ell=None, deg=True):
     e, n, u = ecef2enu(x, y, z, lat0, lon0, h0, ell, deg=deg)
 
     return n, e, -u
+
 
 def ecef2enu(x, y, z, lat0, lon0, h0, ell, deg):
     """
@@ -90,9 +98,9 @@ def ecef2enu(x, y, z, lat0, lon0, h0, ell, deg):
 
 
 def uvw2enu(u, v, w, lat0, lon0, deg=True):
-    '''
+    """
     uvw to enu
-    '''
+    """
     if deg:
         lat0 = radians(lat0)
         lon0 = radians(lon0)
@@ -123,30 +131,31 @@ def geodetic2ecef(lat, lon, alt, ell=None, deg=True):
         lat = radians(lat)
         lon = radians(lon)
 
-    with np.errstate(invalid='ignore'):
+    with np.errstate(invalid="ignore"):
         # need np.any() to handle scalar and array cases
         if np.any((lat < -pi / 2) | (lat > pi / 2)):
-            raise ValueError('-90 <= lat <= 90')
+            raise ValueError("-90 <= lat <= 90")
 
         if np.any((lon < -pi) | (lon > 2 * pi)):
-            raise ValueError('-180 <= lat <= 360')
+            raise ValueError("-180 <= lat <= 360")
 
         if np.any(np.asarray(alt) < 0):
-            raise ValueError('altitude  [0, Infinity)')
+            raise ValueError("altitude  [0, Infinity)")
     # radius of curvature of the prime vertical section
     N = get_radius_normal(lat, ell)
     # Compute cartesian (geocentric) coordinates given  (curvilinear) geodetic
     # coordinates.
     x = (N + alt) * cos(lat) * cos(lon)
     y = (N + alt) * cos(lat) * sin(lon)
-    z = (N * (ell.b / ell.a)**2 + alt) * sin(lat)
+    z = (N * (ell.b / ell.a) ** 2 + alt) * sin(lat)
 
     return x, y, z
 
+
 def enu2uvw(east, north, up, lat0, lon0, deg=True):
-    '''
+    """
     enu to uvw
-    '''
+    """
     if deg:
         lat0 = radians(lat0)
         lon0 = radians(lon0)
@@ -158,6 +167,7 @@ def enu2uvw(east, north, up, lat0, lon0, deg=True):
     v = sin(lon0) * t + cos(lon0) * east
 
     return u, v, w
+
 
 def enu2ecef(e1, n1, u1, lat0, lon0, h0, deg, ell=None):
     """
@@ -175,6 +185,7 @@ def enu2ecef(e1, n1, u1, lat0, lon0, h0, deg, ell=None):
     dx, dy, dz = enu2uvw(e1, n1, u1, lat0, lon0, deg=deg)
 
     return x0 + dx, y0 + dy, z0 + dz
+
 
 def ned2geodetic(n, e, d, lat0, lon0, h0, ell=None, deg=True):
     """
@@ -212,12 +223,15 @@ def ecef2geodetic(x, y, z, ell=None, deg=True):
     if ell is None:
         ell = Ellipsoid()
 
-    r = sqrt(x**2 + y**2 + z**2)
+    r = sqrt(x ** 2 + y ** 2 + z ** 2)
 
-    E = sqrt(ell.a**2 - ell.b**2)
+    E = sqrt(ell.a ** 2 - ell.b ** 2)
 
     # eqn. 4a
-    u = sqrt(0.5 * (r**2 - E**2) + 0.5 * sqrt((r**2 - E**2)**2 + 4 * E**2 * z**2))
+    u = sqrt(
+        0.5 * (r ** 2 - E ** 2)
+        + 0.5 * sqrt((r ** 2 - E ** 2) ** 2 + 4 * E ** 2 * z ** 2)
+    )
 
     Q = hypot(x, y)
 
@@ -227,17 +241,18 @@ def ecef2geodetic(x, y, z, ell=None, deg=True):
     Beta = arctan(huE / u * z / hypot(x, y))
 
     # eqn. 13
-    eps = ((ell.b * u - ell.a * huE + E**2) * sin(Beta)) / \
-        (ell.a * huE * 1 / cos(Beta) - E**2 * cos(Beta))
+    eps = ((ell.b * u - ell.a * huE + E ** 2) * sin(Beta)) / (
+        ell.a * huE * 1 / cos(Beta) - E ** 2 * cos(Beta)
+    )
 
     Beta += eps
-# %% final output
+    # %% final output
     lat = arctan(ell.a / ell.b * tan(Beta))
 
     lon = arctan2(y, x)
 
     # eqn. 7
-    alt = sqrt((z - ell.b * sin(Beta))**2 + (Q - ell.a * cos(Beta))**2)
+    alt = sqrt((z - ell.b * sin(Beta)) ** 2 + (Q - ell.a * cos(Beta)) ** 2)
 
     if deg:
         return degrees(lat), degrees(lon), alt
