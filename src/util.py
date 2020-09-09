@@ -1,4 +1,4 @@
-'''Util methods for VTOL'''
+"""Util methods for VTOL"""
 import json
 import datetime
 import subprocess
@@ -8,45 +8,50 @@ import shelve
 from functools import partial
 from dronekit import connect, APIException
 
+
 def setup_vehicle(configs, v_type):
-    '''Sets up self as a quadplane vehicle'''
+    """Sets up self as a quadplane vehicle"""
     v_type = partial(v_type, configs)
     veh = scan_ports(configs, v_type)
     return veh
 
 
 def scan_ports(configs, v_type):
-    '''scans TCP ports to find open simulator'''
+    """scans TCP ports to find open simulator"""
     itteration = 0
-    shelf = shelve.open(configs['simulation']['shelveName'])
+    shelf = shelve.open(configs["simulation"]["shelveName"])
     try:
-        port = shelf['port']
+        port = shelf["port"]
     except KeyError:
-        port = configs['simulation']['defaultPort']
+        port = configs["simulation"]["defaultPort"]
         itteration += 1
-        print('not found')
+        print("not found")
     while True:
         try:
             con_str = "tcp:127.0.0.1:{}".format(port)
             print("Attempting to connect to {}".format(con_str))
-            veh = connect(con_str, wait_ready=True, vehicle_class=v_type, )
+            veh = connect(
+                con_str,
+                wait_ready=True,
+                vehicle_class=v_type,
+            )
             veh.setup()
-            shelf['port'] = port
+            shelf["port"] = port
             shelf.close()
             break
         except (OSError, APIException):
-            port = configs['simulation']['defaultPort'] + itteration
+            port = configs["simulation"]["defaultPort"] + itteration
             itteration += 1
             if itteration == 8:
-                print('make sure your simulator is running')
+                print("make sure your simulator is running")
                 sys.exit(-1)
     return veh
 
 
 def to_quaternion(roll=0.0, pitch=0.0, yaw=0.0):
-    '''
+    """
     Convert degrees to quaternions
-    '''
+    """
     t0_val = cos(radians(yaw * 0.5))
     t1_val = sin(radians(yaw * 0.5))
     t2_val = cos(radians(roll * 0.5))
@@ -60,6 +65,7 @@ def to_quaternion(roll=0.0, pitch=0.0, yaw=0.0):
     z_val = t1_val * t2_val * t4_val - t0_val * t3_val * t5_val
 
     return [w_val, x_val, y_val, z_val]
+
 
 def parse_configs(argv):
     """Parses the .json file given as the first command line argument.
@@ -75,46 +81,70 @@ def parse_configs(argv):
 
 
 def new_output_file():
-    '''Creates a new directory for the current date if not created already
-    and creates an output file for all console output in the directory.'''
+    """Creates a new directory for the current date if not created already
+    and creates an output file for all console output in the directory."""
     curr_time = str(datetime.datetime.today()).split()
     date = curr_time[0]
     time = curr_time[1]
 
     # makes logs folder if not existing already
     try:
-        if sys.platform == "darwin" or sys.platform == "linux" or sys.platform == "linux2":
-            subprocess.check_output(["ls", "logs/"], shell=False, stderr=subprocess.STDOUT)
+        if (
+            sys.platform == "darwin"
+            or sys.platform == "linux"
+            or sys.platform == "linux2"
+        ):
+            subprocess.check_output(
+                ["ls", "logs/"], shell=False, stderr=subprocess.STDOUT
+            )
         elif sys.platform == "win32":
-            subprocess.check_output(["cd", "logs/"], shell=True, stderr=subprocess.STDOUT)
+            subprocess.check_output(
+                ["cd", "logs/"], shell=True, stderr=subprocess.STDOUT
+            )
         else:
             raise Exception("Operating system not recognized")
-    except subprocess.CalledProcessError:
-        if sys.platform == "darwin" or sys.platform == "linux" or sys.platform == "linux2":
+    except subprocess.CalledProcessError as os_error:
+        if (
+            sys.platform == "darwin"
+            or sys.platform == "linux"
+            or sys.platform == "linux2"
+        ):
             subprocess.call(["mkdir", "logs/"], shell=False)
         elif sys.platform == "win32":
             # No ls on Windows cmd
             subprocess.call(["mkdir", "logs/"], shell=True)
         else:
-            raise Exception("Operating system not recognized")
+            raise Exception("Operating system not recognized") from os_error
 
     # makes folder for the current date in logs folder if not existing already
     try:
-        if sys.platform == "darwin" or sys.platform == "linux" or sys.platform == "linux2":
-            subprocess.check_output(["ls", "logs/" + date], shell=False, stderr=subprocess.STDOUT)
+        if (
+            sys.platform == "darwin"
+            or sys.platform == "linux"
+            or sys.platform == "linux2"
+        ):
+            subprocess.check_output(
+                ["ls", "logs/" + date], shell=False, stderr=subprocess.STDOUT
+            )
         elif sys.platform == "win32":
             # No ls on Windows cmd
-            subprocess.check_output(["cd", "logs/" + date], shell=True, stderr=subprocess.STDOUT)
+            subprocess.check_output(
+                ["cd", "logs/" + date], shell=True, stderr=subprocess.STDOUT
+            )
         else:
             raise Exception("Operating system not recognized")
-    except subprocess.CalledProcessError:
-        if sys.platform == "darwin" or sys.platform == "linux" or sys.platform == "linux2":
+    except subprocess.CalledProcessError as os_error:
+        if (
+            sys.platform == "darwin"
+            or sys.platform == "linux"
+            or sys.platform == "linux2"
+        ):
             subprocess.call(["mkdir", "logs/" + date], shell=False)
         elif sys.platform == "win32":
             # Windows cmd handles mkdir path in a strange way
             subprocess.call(["mkdir", "logs\\" + date], shell=True)
         else:
-            raise Exception("Operating system not recognized")
+            raise Exception("Operating system not recognized") from os_error
 
     # open file for current time
     return open("logs/" + date + "/" + time.replace(":", ".") + ".txt", "w")
@@ -130,4 +160,4 @@ def get_distance_metres(loc_a, loc_b):
     dlat = loc_b.lat - loc_a.lat
     dlong = loc_b.lon - loc_a.lon
     dalt = loc_b.alt - loc_a.alt
-    return sqrt((((dlat**2) + (dlong**2)) * 1.113195e5 ** 2) + (dalt ** 2))
+    return sqrt((((dlat ** 2) + (dlong ** 2)) * 1.113195e5 ** 2) + (dalt ** 2))

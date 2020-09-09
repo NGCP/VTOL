@@ -11,7 +11,7 @@ ignore=CVS
 
 # Add files or directories matching the regex patterns to the blacklist. The
 # regex matches against base names, not paths.
-ignore-patterns=
+# ignore-patterns=
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
@@ -43,7 +43,7 @@ unsafe-load-any-extension=no
 
 # Only show warnings with the listed confidence levels. Leave empty to show
 # all. Valid levels: HIGH, INFERENCE, INFERENCE_FAILURE, UNDEFINED
-confidence=
+# confidence=
 
 # Disable the message, report, category or checker with the given id(s). You
 # can either give multiple identifiers separated by comma (,) or put this
@@ -186,13 +186,13 @@ max-spelling-suggestions=4
 
 # Spelling dictionary name. Available dictionaries: none. To make it working
 # install python-enchant package.
-spelling-dict=
+# spelling-dict=
 
 # List of comma separated words that should not be checked.
-spelling-ignore-words=
+# spelling-ignore-words=
 
 # A path to a file that contains private dictionary; one word per line.
-spelling-private-dict-file=
+# spelling-private-dict-file=
 
 # Tells whether to store unknown words to indicated private dictionary in
 # --spelling-private-dict-file option instead of raising a message.
@@ -216,7 +216,7 @@ contextmanager-decorators=contextlib.contextmanager
 # List of members which are set dynamically and missed by pylint inference
 # system, and so shouldn't trigger E1101 when accessed. Python regular
 # expressions are accepted.
-generated-members=
+# generated-members=
 
 # Tells whether missing members accessed in mixin class should be ignored. A
 # mixin class is detected if its name ends with "mixin" (case insensitive).
@@ -239,7 +239,7 @@ ignored-classes=optparse.Values,thread._local,_thread._local,str
 # (useful for modules/projects where namespaces are manipulated during runtime
 # and thus existing member attributes cannot be deduced by static analysis. It
 # supports qualified module names, as well as Unix pattern matching.
-ignored-modules=
+ignored-modules=numpy
 
 # Show a hint with possible names when a member name was not found. The aspect
 # of finding the hint is based on edit distance.
@@ -258,7 +258,7 @@ missing-member-max-choices=1
 
 # List of additional names supposed to be defined in builtins. Remember that
 # you should avoid to define new builtins when possible.
-additional-builtins=
+# additional-builtins=
 
 # Tells whether unused global variables should be treated as a violation.
 allow-global-unused-variables=yes
@@ -343,14 +343,14 @@ argument-naming-style=snake_case
 
 # Regular expression matching correct argument names. Overrides argument-
 # naming-style
-#argument-rgx=
+# argument-rgx=
 
 # Naming style matching correct attribute names
 attr-naming-style=snake_case
 
 # Regular expression matching correct attribute names. Overrides attr-naming-
 # style
-#attr-rgx=
+# attr-rgx=
 
 # Bad variable names which should always be refused, separated by a comma
 bad-names=foo,
@@ -371,14 +371,14 @@ class-attribute-naming-style=any
 class-naming-style=PascalCase
 
 # Regular expression matching correct class names. Overrides class-naming-style
-#class-rgx=
+# class-rgx=
 
 # Naming style matching correct constant names
 const-naming-style=UPPER_CASE
 
 # Regular expression matching correct constant names. Overrides const-naming-
 # style
-#const-rgx=
+# const-rgx=
 
 # Minimum line length for functions/classes that require docstrings, shorter
 # ones are exempt.
@@ -389,7 +389,7 @@ function-naming-style=snake_case
 
 # Regular expression matching correct function names. Overrides function-
 # naming-style
-#function-rgx=
+# function-rgx=
 
 # Good variable names which should always be accepted, separated by a comma
 good-names=i,
@@ -407,25 +407,25 @@ inlinevar-naming-style=any
 
 # Regular expression matching correct inline iteration names. Overrides
 # inlinevar-naming-style
-#inlinevar-rgx=
+# inlinevar-rgx=
 
 # Naming style matching correct method names
 method-naming-style=snake_case
 
 # Regular expression matching correct method names. Overrides method-naming-
 # style
-#method-rgx=
+# method-rgx=
 
 # Naming style matching correct module names
 module-naming-style=snake_case
 
 # Regular expression matching correct module names. Overrides module-naming-
 # style
-#module-rgx=
+# module-rgx=
 
 # Colon-delimited sets of names that determine each other's naming style when
 # the name regexes allow several styles.
-name-group=
+# name-group=
 
 # Regular expression which should only match function or class names that do
 # not require a docstring.
@@ -440,7 +440,7 @@ variable-naming-style=snake_case
 
 # Regular expression matching correct variable names. Overrides variable-
 # naming-style
-#variable-rgx=
+# variable-rgx=
 
 
 [IMPORTS]
@@ -462,15 +462,15 @@ ext-import-graph=
 
 # Create a graph of every (i.e. internal and external) dependencies in the
 # given file (report RP0402 must not be disabled)
-import-graph=
+# import-graph=
 
 # Create a graph of internal dependencies in the given file (report RP0402 must
 # not be disabled)
-int-import-graph=
+# int-import-graph=
 
 # Force import order to recognize a module as part of the standard
 # compatibility libraries.
-known-standard-library=
+# known-standard-library=
 
 # Force import order to recognize a module as part of a third party library.
 known-third-party=enchant
