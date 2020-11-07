@@ -1,4 +1,4 @@
-"""Automous tools for VTOL"""
+"""Automous tools for HEX"""
 import time
 import json
 from dronekit import VehicleMode, Vehicle, LocationGlobalRelative
@@ -6,8 +6,8 @@ from coms import Coms
 from util import get_distance_metres
 
 
-class QUAD(Vehicle):
-    """ VTOL basic state isolated"""
+class HEX(Vehicle):
+    """ HEX basic state isolated"""
 
     coms = None
 

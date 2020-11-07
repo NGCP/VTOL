@@ -1,4 +1,4 @@
-"""Util methods for VTOL"""
+"""Util methods for HEX"""
 import json
 import datetime
 import subprocess
@@ -10,7 +10,7 @@ from dronekit import connect, APIException
 
 
 def setup_vehicle(configs, v_type):
-    """Sets up self as a quadplane vehicle"""
+    """Sets up self as a hexcopter vehicle"""
     v_type = partial(v_type, configs)
     veh = scan_ports(configs, v_type)
     return veh

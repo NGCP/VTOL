@@ -1,13 +1,13 @@
 '''
 The GCS allocates roles to vehicles. The purpose of this program is to connect to the GCS and then
 read a start message from the GCS, which contains a certain job_type. It then runs the
-corresponding VTOL program (quick scan, detailed search, guide) based on the start message.
+corresponding HEX program (quick scan, detailed search, guide) based on the start message.
 '''
 import sys
 import json
 import time
 from util import parse_configs, new_output_file
-from autonomy import VTOL
+from autonomy import HEX
 import autonomy
 
 XBEE = None
