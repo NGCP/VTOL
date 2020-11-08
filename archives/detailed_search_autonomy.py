@@ -80,31 +80,31 @@ def orbit_poi(vehicle, poi, configs):
             waypoints.append(LocationGlobalRelative(lat, lon, alt))
 
     # Go to center of POI
-    if (configs["vehicle_type"] == "VTOL"):
+    if (configs["vehicle_type"] == "HEX"):
         cmds.add(
             Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
                     0, waypoint_tolerance, 0, 0, poi.lat, poi.lon, poi_scan_altitude))
 
-    elif (configs["vehicle_type"] == "Quadcopter"):
+    elif (configs["vehicle_type"] == "Hexcopter"):
         cmds.add(
             Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
                     0, 0, 0, 0, poi.lat, poi.lon, poi_scan_altitude))
 
-    # Transition to quadcopter if applicable
-    if (configs["vehicle_type"] == "VTOL"):
+    # Transition to hexcopter if applicable
+    if (configs["vehicle_type"] == "HEX"):
         cmds.add(
-            Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_VTOL_TRANSITION,
+            Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_HEX_TRANSITION,
                     0, 0,
-                    mavutil.mavlink.MAV_VTOL_STATE_MC, 0, 0, 0, 0, 0, 0))
+                    mavutil.mavlink.MAV_HEX_STATE_MC, 0, 0, 0, 0, 0, 0))
 
     # Circular waypoints
-    if (configs["vehicle_type"] == "VTOL"):
+    if (configs["vehicle_type"] == "HEX"):
         for point in waypoints:
             cmds.add(
                 Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0,
                         0,
                         waypoint_tolerance, 0, 0, 0, point.lat, point.lon, point.alt))
-    elif (configs["vehicle_type"] == "Quadcopter"):
+    elif (configs["vehicle_type"] == "Hexcopter"):
         for point in waypoints:
             cmds.add(
                 Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0,
@@ -112,11 +112,11 @@ def orbit_poi(vehicle, poi, configs):
                         0, 0, 0, 0, point.lat, point.lon, point.alt))
 
     # Transition to forward flight if applicable
-    if (configs["vehicle_type"] == "VTOL"):
+    if (configs["vehicle_type"] == "HEX"):
         cmds.add(
-            Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_VTOL_TRANSITION,
+            Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_HEX_TRANSITION,
                     0, 0,
-                    mavutil.mavlink.MAV_VTOL_STATE_MC, 0, 0, 0, 0, 0, 0))
+                    mavutil.mavlink.MAV_HEX_STATE_MC, 0, 0, 0, 0, 0, 0))
 
     # Add dummy endpoint
     cmds.add(
@@ -139,15 +139,15 @@ def detailed_search_adds_mission(configs, vehicle):
     cmds.clear()
 
     # Due to a bug presumed to be the fault of DroneKit, the first command is ignored. Thus we have two takeoff commands
-    if (configs["vehicle_type"] == "VTOL"):
-        # Separate MAVlink message for a VTOL takeoff. This takes off to altitude and transitions
+    if (configs["vehicle_type"] == "HEX"):
+        # Separate MAVlink message for a HEX takeoff. This takes off to altitude and transitions
         cmds.add(
-            Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0,
+            Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_HEX_TAKEOFF, 0,
                     0, 0, 0, 0, 0, 0, 0, altitude))
         cmds.add(
-            Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0,
+            Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_HEX_TAKEOFF, 0,
                     0, 0, 0, 0, 0, 0, 0, altitude))
-    elif (configs["vehicle_type"] == "Quadcopter"):
+    elif (configs["vehicle_type"] == "Hexcopter"):
         cmds.add(
             Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0,
                     0, 0, 0, 0, 0, 0, altitude))
@@ -233,9 +233,9 @@ def detailed_search_autonomy(configs, autonomyToCV, GCS_TIMESTAMP, CONNECTION_TI
 
             # Holds the copter in place if receives pause
         if autonomy.PAUSE_MISSION:
-            if (configs["vehicle_type"] == "VTOL"):
+            if (configs["vehicle_type"] == "HEX"):
                 vehicle.mode = VehicleMode("QHOVER")
-            elif (configs["vehicle_type"] == "Quadcopter"):
+            elif (configs["vehicle_type"] == "Hexcopter"):
                 vehicle.mode = VehicleMode("ALT_HOLD")
             change_status("paused")
 

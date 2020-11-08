@@ -160,12 +160,12 @@ def quick_scan_adds_mission(configs, vehicle, lla_waypoint_list):
     print(" Define/add new commands.")
 
     # Due to a bug presumed to be the fault of DroneKit, the first command is ignored. Thus we have two takeoff commands
-    if (configs["vehicle_type"] == "VTOL"):
-        # Separate MAVlink message for a VTOL takeoff. This takes off to altitude and transitions
-        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
-        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
+    if (configs["vehicle_type"] == "HEX"):
+        # Separate MAVlink message for a HEX takeoff. This takes off to altitude and transitions
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_HEX_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
+        cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_HEX_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
 
-    elif (configs["vehicle_type"] == "Quadcopter"):
+    elif (configs["vehicle_type"] == "Hexcopter"):
         cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
         cmds.add(Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, altitude))
 
@@ -174,7 +174,7 @@ def quick_scan_adds_mission(configs, vehicle, lla_waypoint_list):
                      0, configs["air_speed"], -1, 0, 0, 0, 0))
 
     # Add waypoints to the auto mission
-    if (configs["vehicle_type"] == "VTOL"):
+    if (configs["vehicle_type"] == "HEX"):
         for point in lla_waypoint_list:
             # Planes need a waypoint tolerance
             cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
@@ -182,7 +182,7 @@ def quick_scan_adds_mission(configs, vehicle, lla_waypoint_list):
         # Adds dummy end point - this endpoint is the same as the last waypoint and lets us know we have reached destination.
         cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
                             0, configs["waypoint_tolerance"], 0, 0, lla_waypoint_list[-1].lat, lla_waypoint_list[-1].lon, lla_waypoint_list[-1].alt))
-    elif (configs["vehicle_type"] == "Quadcopter"):
+    elif (configs["vehicle_type"] == "Hexcopter"):
         for point in lla_waypoint_list:
             cmds.add(Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0,
                              0, 0, 0, 0, point.lat, point.lon, point.alt))
@@ -259,9 +259,9 @@ def quick_scan_autonomy(configs, autonomyToCV, GCS_TIMESTAMP, CONNECTION_TIMESTA
         time.sleep(1)
         # Holds the copter in place if receives pause
         if autonomy.PAUSE_MISSION:
-            if (configs["vehicle_type"] == "VTOL"):
+            if (configs["vehicle_type"] == "HEX"):
                 vehicle.mode = VehicleMode("QHOVER")
-            elif (configs["vehicle_type"] == "Quadcopter"):
+            elif (configs["vehicle_type"] == "Hexcopter"):
                 vehicle.mode = VehicleMode("ALT_HOLD")
         # Lands the vehicle if receives stop mission
         elif autonomy.STOP_MISSION:

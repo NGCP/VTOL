@@ -1,7 +1,7 @@
-"""test for vtol.py"""
+"""test for hex.py"""
 from dronekit_sitl import start_default
 from util import setup_vehicle
-from quad import QUAD
+from hex import HEX
 
 CONFIGS = {
     "vehicle_simulated": True,
@@ -16,11 +16,11 @@ CONFIGS = {
 CON_STR = start_default().connection_string()
 
 with open("configs.json", "r") as data:
-    VEHICLE = setup_vehicle(CONFIGS, QUAD)
+    VEHICLE = setup_vehicle(CONFIGS, HEX)
 
 
 def test_takeoff():
-    """quadcopter dronekit-sitl takeoff"""
+    """hexcopter dronekit-sitl takeoff"""
     global VEHICLE  # pylint: disable=global-statement
     VEHICLE.takeoff()
     alt = VEHICLE.location.global_relative_frame.alt
@@ -28,7 +28,7 @@ def test_takeoff():
 
 
 def test_land():
-    """quadcopter dronekit-sitl land"""
+    """hexcopter dronekit-sitl land"""
     global VEHICLE  # pylint: disable=global-statement
     VEHICLE.land()
     alt = VEHICLE.location.global_relative_frame.alt

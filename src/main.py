@@ -1,13 +1,15 @@
-"""main executable for setting up VTOL"""
+"""main executable for setting up HEX"""
 import json
 from util import setup_vehicle
-from quad import QUAD
+from hex import HEX
 
 
 def main(configs):
-    """Configure vtol and ready for mission"""
-    quad = setup_vehicle(configs, QUAD)
-    quad.land()
+    """Configure hexcopter and ready for mission"""
+    hexa = setup_vehicle(configs, HEX)
+    hexa.takeoff()
+    hexa.go_to(27.28, 153.01)
+    hexa.land()
 
 
 if __name__ == "__main__":
